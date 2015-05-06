@@ -1,4 +1,7 @@
 !     Last change:  JM   21 Jun 2011   11:54 am
+!v On the 6th of May 2015 Roberton Antolin and John Hickey agreed that the version Roberto has becomes the master version. The expectation is that this should include all changes made by John when visiting Holland and prior to Roberto starting to work here. John will keep his old version in case this turns out not to be true
+!v Roberto will take the fastPHASE HMM and add it to this code and also do the shuffling of markers Speed up to this code. 
+!v We have diffed the version of the first commit and John's vesion and they are exactly the same file (i.e., Roberto's master is 100% certain to include Johns original edits in holland etc)
 !####################################################################################################################################################################
 
 module Global
