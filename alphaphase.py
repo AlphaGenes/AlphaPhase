@@ -65,9 +65,11 @@ USAGE
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument(dest="output", help="Output file", metavar="file", type=str)
         parser.add_argument("-P", "--pedigree", dest="pedigree",
-            help="File containing the pedigree information", metavar="file", type=file)
+            help="File containing the pedigree information", metavar="file", type=file, required=False)
         parser.add_argument("-G", "--genotype", dest="genotype",
             help="File containing the genotypes", metavar="file", type=file)
+        parser.add_argument("-f", "--format", help="Format of the genotypes [Default: %(default)s]", metavar=str,
+            required=False, dest="genoFormat", choices=["GenotypeFormat", "UnorderedFormat"], default="GenotypeFormat")
         parser.add_argument("-S", "--snp", dest='nSNPs',
             help="Number of SNP in the genotype file", type=int, metavar="nSNP", required=True)
         parser.add_argument("-t", "--tails", help="Core and Tail lengths [Default: %(default)d]",
@@ -97,12 +99,12 @@ USAGE
         parser.add_argument("--simulation",
             help='Analysis involves simulated data where the true phase is known',
             action="store_true", dest='simulation')
-        parser.add_argument("-M", "--hmm",
-            help="Use Hidden Markov Model [Default: %(default)s]",
-            dest="hmm", choices=["No", "Yes"], metavar="str")
-        parser.add_argument("-m", "--hmm_param",
-            help="Hidden Markov Model parameters[Default: %(default)s]",
-            nargs=7, default=[5,100,-123432345,10.5,10.0,'Centre',2], metavar="str", dest="hmmParam")
+        # parser.add_argument("-M", "--hmm",
+        #     help="Use Hidden Markov Model [Default: %(default)s]",
+        #     dest="hmm", choices=["No", "Yes"], metavar="str")
+        # parser.add_argument("-m", "--hmm_param",
+        #     help="Hidden Markov Model parameters[Default: %(default)s]",
+        #     nargs=7, default=[5,100,-123432345,10.5,10.0,'Centre',2], metavar="str", dest="hmmParam")
         parser.add_argument("-T", "--truephase",
             help="True Phase File", metavar="file", type=file, dest='truePhase')
         parser.add_argument("-V", "--version", action="version", version=program_version_message)
@@ -114,6 +116,7 @@ USAGE
         outputFile = args.output
         pedigreeFile = args.pedigree
         genotypeFile = args.genotype
+        genoFormat = args.genoFormat
         nSNPs = args.nSNPs
         tailsLength = args.tails
         coresLength = args.cores
@@ -126,17 +129,20 @@ USAGE
         useFullOutput = args.fullOutput
         useGraphics = args.graphics
         useSimulation = args.simulation
-        hmm = args.hmm
-        hmmParameters = args.hmmParam
+        # hmm = args.hmm
+        # hmmParameters = args.hmmParam
         truePhaseFile = args.truePhase
         
 
         # Construct file
-        spec= 'PedigreeFile\t\t\t\t,{0}\n'.format(pedigreeFile.name)
-        spec+= 'GenotypeFile\t\t\t\t,{0}\n'.format(genotypeFile.name)
-        spec+= 'NumberSnp\t\t\t\t,{0}\n'.format(nSNPs)
-        spec+= 'CoreAndTailLengths\t\t\t,{0}\n'.format(tailsLength)
-        spec+= 'CoreLengths\t\t\t\t,{0}'.format(coresLength)
+        if pedigreeFile:
+            spec= 'PedigreeFile\t\t\t\t,"{0}"\n'.format(pedigreeFile.name)
+        else:
+            spec= 'PedigreeFile\t\t\t\t,NoPedigree\n'
+        spec+= 'GenotypeFile\t\t\t\t,"{0}",{1}\n'.format(genotypeFile.name,genoFormat)
+        spec+= 'NumberOfSnp\t\t\t\t,{0}\n'.format(nSNPs)
+        spec+= 'GeneralCoreAndTailLength\t\t,{0}\n'.format(tailsLength)
+        spec+= 'GeneralCoreLength\t\t\t,{0}'.format(coresLength)
         if useOffset:
             spec+= ',{0}\n'.format('Offset')
         else:
@@ -158,14 +164,14 @@ USAGE
             spec+= 'Simulation\t\t\t\t,1\n'
         else:
             spec+= 'Simulation\t\t\t\t,0\n'
-        if hmm=="Yes":
-            spec+= 'ManageHMM\t\t\t\t,Yes'
-        else:
-            spec+= 'ManageHMM\t\t\t\t,No'
+        # if hmm=="Yes":
+        #     spec+= 'ManageHMM\t\t\t\t,Yes'
+        # else:
+        #     spec+= 'ManageHMM\t\t\t\t,No'
 
-        for param in hmmParameters:
-            spec+= ',' + str(param)
-        spec+= '\n'
+        # for param in hmmParameters:
+        #     spec+= ',' + str(param)
+        # spec+= '\n'
         if truePhaseFile is not None and os.path.isfile(truePhaseFile.name):
             spec+= 'TruePhaseFile\t\t\t\t,{0}\n'.format(truePhaseFile.name)
         else:
