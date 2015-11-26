@@ -27,6 +27,7 @@ double precision :: GenotypeMissingErrorPercentage,PercSurrDisagree,PercGenoHapl
 double precision :: NrmThresh
 
 integer :: StartSurrSnp,EndSurrSnp,StartCoreSnp,EndCoreSnp,nSnpErrorThresh,OutputPoint,CurrentLoop,NumSurrDisagree,CurrentCore
+integer,allocatable,dimension(:,:) :: nSnpErrorThreshAnims
 
 integer :: ErdosNumber,HighestErdos
 integer(kind=1),allocatable,dimension (:) :: Visited
@@ -351,6 +352,8 @@ allocate(HapAnis(nAnisG,2))
 allocate(AllHapAnis(nAnisG,2,nCores))
 AllHapAnis=-99
 
+allocate(nSnpErrorThreshAnims(nAnisG,nAnisG))
+
 end subroutine AllocateGlobalArrays
 
 !########################################################################################################################################################################
@@ -360,7 +363,7 @@ use Global
 use GlobalClustering
 implicit none
 
-integer :: i,j,k,Counter,truth,PseudoDam,PseudoSire,PseudoSireOld
+integer :: i,j,k,Counter,truth,PseudoDam,PseudoSire,PseudoSireOld,nSnpCommon
 integer,allocatable,dimension(:) :: Partitioned,SurrogateList,ProgCount
 integer :: CountAgreePat,CountAgreeMat,DumSire,DumDam,temp
 character(len=300) :: filout
@@ -371,6 +374,9 @@ double precision,allocatable :: Sums(:)
 logical :: NoCommonGroup
 
 integer,parameter :: SortOrMedoid=0 !if 1 it uses Brians Sort, If Zero it uses k-medoids
+
+! integer,allocatable,dimension(:,:) :: nSnpErrorThreshAnims
+
 
 allocate(Partitioned(nAnisG))
 allocate(SurrogateList(nAnisG))
@@ -386,15 +392,21 @@ print*, " Identifying surrogates"
 if (CurrentCore==1) Surrogates=0
 Surrogates(:,:,2:3)=0
 
+nSnpErrorThreshAnims=nSnpErrorThresh
+
 do i=1,nAnisG
         do j=i,nAnisG
                 Counter=0
+                nSnpCommon=0
                 do k=StartSurrSnp,EndSurrSnp
                         if ((Genos(i,k)==0).and.(Genos(j,k)==2)) Counter=Counter+1
                         if ((Genos(i,k)==2).and.(Genos(j,k)==0)) Counter=Counter+1
+                        if ((Genos(i,k)/=MissingGenotypeCode).and.(Genos(j,k)/=MissingGenotypeCode)) nSnpCommon=nSnpCommon+1
                 end do
                 Surrogates(i,j,1)=Counter
                 Surrogates(j,i,1)=Counter
+                nSnpErrorThreshAnims(i,j)=int(GenotypeMissingErrorPercentage*nSnpCommon)    ! Threshold for the number of snp
+
         end do
         Surrogates(i,i,1)=0
         if (mod(i,400)==0) print*, "   Surrogate identification done for genotyped individual --- ", i
@@ -420,31 +432,31 @@ do i=1,nAnisG
         if ((SireGenotyped(i)/=0).and.(DamGenotyped(i)/=0)) then
                 do j=1,nAnisG
                         truth=0
-                        if ((Surrogates(i,j,1)<=nSnpErrorThresh).and.(Surrogates((SireGenotyped(i)),j,1)<=nSnpErrorThresh)&
-                                    .and.(Surrogates((DamGenotyped(i)),j,1)>nSnpErrorThresh)) then
+                        if ((Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j)).and.(Surrogates((SireGenotyped(i)),j,1)<=nSnpErrorThreshAnims(SireGenotyped(i),j))&
+                                    .and.(Surrogates((DamGenotyped(i)),j,1)>nSnpErrorThreshAnims(DamGenotyped(i),j))) then
                             Surrogates(i,j,2)=1
                         endif
-                        if ((Surrogates(i,j,1)<=nSnpErrorThresh).and.(Surrogates((DamGenotyped(i)),j,1)<=nSnpErrorThresh)&
-                                    .and.(Surrogates((SireGenotyped(i)),j,1)>nSnpErrorThresh)) then
+                        if ((Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j)).and.(Surrogates((DamGenotyped(i)),j,1)<=nSnpErrorThreshAnims(DamGenotyped(i),j))&
+                                    .and.(Surrogates((SireGenotyped(i)),j,1)>nSnpErrorThreshAnims(SireGenotyped(i),j))) then
                             Surrogates(i,j,2)=2
                         endif
                 end do
-                if (Surrogates(i,SireGenotyped(i),1)<=nSnpErrorThresh) Surrogates(i,SireGenotyped(i),2)=1
-                if (Surrogates(i,DamGenotyped(i),1)<=nSnpErrorThresh) Surrogates(i,DamGenotyped(i),2)=2
+                if (Surrogates(i,SireGenotyped(i),1)<=nSnpErrorThreshAnims(i,SireGenotyped(i))) Surrogates(i,SireGenotyped(i),2)=1
+                if (Surrogates(i,DamGenotyped(i),1)<=nSnpErrorThreshAnims(i,DamGenotyped(i))) Surrogates(i,DamGenotyped(i),2)=2
                 Partitioned(i)=1
         end if
 
         if ((Partitioned(i)==0).and.(SireGenotyped(i)/=0)) then
                 Surrogates(i,SireGenotyped(i),2)=1
                 do j=1,nAnisG
-                        if ((i/=j).and.(Surrogates(SireGenotyped(i),j,1)<=nSnpErrorThresh).and.&
-                                                (Surrogates(i,j,1)<=nSnpErrorThresh)) then
+                        if ((i/=j).and.(Surrogates(SireGenotyped(i),j,1)<=nSnpErrorThreshAnims(SireGenotyped(i),j)).and.&
+                                                (Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))) then
                                 Surrogates(i,j,2)=1
                         endif
                 enddo
                 counter=nSnp
                 do j=1,nAnisG
-                        if ((Surrogates(SireGenotyped(i),j,1)>nSnpErrorThresh).and.(Surrogates(i,j,1)<=nSnpErrorThresh)) then
+                        if ((Surrogates(SireGenotyped(i),j,1)>nSnpErrorThreshAnims(SireGenotyped(i),j)).and.(Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))) then
                                 if (Surrogates(i,j,1)<counter) then
                                         DumDam=j
                                         counter=Surrogates(i,j,1)
@@ -452,7 +464,7 @@ do i=1,nAnisG
                         endif
                 end do
                 if (DumDam/=0) then
-                    if (Surrogates(SireGenotyped(i),DumDam,1)<(int(0.1*CoreAndTailLength)+nSnpErrorThresh)) then
+                    if (Surrogates(SireGenotyped(i),DumDam,1)<(int(0.1*CoreAndTailLength)+nSnpErrorThreshAnims(SireGenotyped(i),DumDam))) then
                             DumDam=0
                     endif
                 end if
@@ -462,14 +474,14 @@ do i=1,nAnisG
         if ((Partitioned(i)==0).and.(DamGenotyped(i)/=0)) then
                 Surrogates(i,DamGenotyped(i),2)=2
                 do j=1,nAnisG
-                        if ((i/=j).and.(Surrogates(DamGenotyped(i),j,1)<=nSnpErrorThresh).and.&
-                                                (Surrogates(i,j,1)<=nSnpErrorThresh)) then
+                        if ((i/=j).and.(Surrogates(DamGenotyped(i),j,1)<=nSnpErrorThreshAnims(DamGenotyped(i),j)).and.&
+                                                (Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))) then
                                 Surrogates(i,j,2)=2
                         endif
                 enddo
                 counter=nSnp
                 do j=1,nAnisG
-                        if ((Surrogates(DamGenotyped(i),j,1)>nSnpErrorThresh).and.(Surrogates(i,j,1)<=nSnpErrorThresh)) then
+                        if ((Surrogates(DamGenotyped(i),j,1)>nSnpErrorThreshAnims(DamGenotyped(i),j)).and.(Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))) then
                                 if (Surrogates(i,j,1)<counter) then
                                         DumSire=j
                                         counter=Surrogates(i,j,1)
@@ -477,7 +489,7 @@ do i=1,nAnisG
                         endif
                 end do
                 if (DumSire/=0) then
-                    if (Surrogates(DamGenotyped(i),DumSire,1)<(int(0.1*CoreAndTailLength)+nSnpErrorThresh)) then
+                    if (Surrogates(DamGenotyped(i),DumSire,1)<(int(0.1*CoreAndTailLength)+nSnpErrorThreshAnims(DamGenotyped(i),DumSire))) then
                             DumSire=0
                     endif
                 endif
@@ -486,7 +498,7 @@ do i=1,nAnisG
 
         if ((Partitioned(i)==0).and.(SireGenotyped(i)==0).and.(DamGenotyped(i)==0)) then
                 do j=1,nAnisG
-                    if ((PseudoNRM(i,j)==1).and.(Surrogates(i,j,1)<=nSnpErrorThresh)) then
+                    if ((PseudoNRM(i,j)==1).and.(Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))) then
                                 DumSire=j
                                 Surrogates(i,j,2)=1
                                 Partitioned(i)=4
@@ -494,7 +506,7 @@ do i=1,nAnisG
                         endif
                 end do
                 do j=1,nAnisG
-                    if ((PseudoNRM(i,j)==2).and.(Surrogates(i,j,1)<=nSnpErrorThresh)) then
+                    if ((PseudoNRM(i,j)==2).and.(Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))) then
                                 DumDam=j
                                 Surrogates(i,j,2)=2
                                 Partitioned(i)=4
@@ -506,11 +518,11 @@ do i=1,nAnisG
         if ((Partitioned(i)==0).and.(ProgCount(i)/=0)) then
                 DumSire=0
             do j=1,nAnisG
-                        if ((i==DamGenotyped(j)).and.(Surrogates(i,j,1)<=nSnpErrorThresh)) then
+                        if ((i==DamGenotyped(j)).and.(Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))) then
                                 DumSire=j
                                 exit
                         endif
-                        if ((i==SireGenotyped(j)).and.(Surrogates(i,j,1)<=nSnpErrorThresh)) then
+                        if ((i==SireGenotyped(j)).and.(Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))) then
                                 DumSire=j
                                 exit
                         endif
@@ -520,8 +532,8 @@ do i=1,nAnisG
                         truth=0
                         do j=1,nAnisG
                                 if ((i==SireGenotyped(j)).or.(i==DamGenotyped(j))) then
-                                        if (Surrogates(i,j,1)<=nSnpErrorThresh) then
-                                            if (Surrogates(j,DumSire,1)>nSnpErrorThresh) then
+                                        if (Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j)) then
+                                            if (Surrogates(j,DumSire,1)>nSnpErrorThreshAnims(j,DumSire)) then
                                                     Surrogates(i,j,2)=2
                                                         truth=1
                                                         exit
@@ -532,8 +544,8 @@ do i=1,nAnisG
                         if (truth==0) then
                         counter=nSnp
                         do j=1,nAnisG
-                                if ((Surrogates(DumSire,j,1)>nSnpErrorThresh).and.&
-                                                        (Surrogates(i,j,1)<=nSnpErrorThresh)) then
+                                if ((Surrogates(DumSire,j,1)>nSnpErrorThreshAnims(DumSire,j)).and.&
+                                                        (Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))) then
                                         if (Surrogates(i,j,1)<counter) then
                                                 DumDam=j
                                                 counter=Surrogates(i,j,1)
@@ -541,7 +553,7 @@ do i=1,nAnisG
                                 endif
                         end do
                         if (DumDam>0) then
-                            if (Surrogates(DumSire,DumDam,1)<(int(0.1*CoreAndTailLength)+nSnpErrorThresh)) then
+                            if (Surrogates(DumSire,DumDam,1)<(int(0.1*CoreAndTailLength)+nSnpErrorThreshAnims(DumSire,DumDam))) then
                                     DumDam=0
                             endif
                         end if
@@ -555,13 +567,13 @@ do i=1,nAnisG
                         CountAgreePat=0
                         CountAgreeMat=0
                         do k=1,nAnisG
-                            if ((Surrogates(i,k,2)==1).and.(Surrogates(i,j,1)<=nSnpErrorThresh)&
-                                                        .and.(Surrogates(k,j,1)<=nSnpErrorThresh)) then
+                            if ((Surrogates(i,k,2)==1).and.(Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))&
+                                                        .and.(Surrogates(k,j,1)<=nSnpErrorThreshAnims(k,j))) then
                                         CountAgreePat=CountAgreePat+1
                     exit !here
                                 endif
-                            if ((Surrogates(i,k,2)==2).and.(Surrogates(i,j,1)<=nSnpErrorThresh)&
-                                                        .and.(Surrogates(k,j,1)<=nSnpErrorThresh)) then
+                            if ((Surrogates(i,k,2)==2).and.(Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j))&
+                                                        .and.(Surrogates(k,j,1)<=nSnpErrorThreshAnims(k,j))) then
                                     CountAgreeMat=CountAgreeMat+1
                     exit !here
                                 endif
@@ -574,7 +586,7 @@ do i=1,nAnisG
        if (Partitioned(i)==0) then
         SurrCounter=0
                 do j=1,nAnisG
-                        if ((Surrogates(i,j,1)<=nSnpErrorThresh).and.(i/=j)) then
+                        if ((Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j)).and.(i/=j)) then
                                 SurrCounter=SurrCounter+1
                         endif
                 end do
@@ -583,7 +595,7 @@ do i=1,nAnisG
                         allocate(TempSurrVector(SurrCounter))
                         SurrCounter=0
                     do j=1,nAnisG
-                            if ((Surrogates(i,j,1)<=nSnpErrorThresh).and.(i/=j)) then
+                            if ((Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j)).and.(i/=j)) then
                                     SurrCounter=SurrCounter+1
                                     TempSurrVector(SurrCounter)=j
                             endif
@@ -591,7 +603,7 @@ do i=1,nAnisG
                         TempSurrArray=0
                     do j=1,SurrCounter
                             do k=1,SurrCounter
-                                    if (Surrogates(TempSurrVector(j),TempSurrVector(k),1)<=nSnpErrorThresh) then
+                                    if (Surrogates(TempSurrVector(j),TempSurrVector(k),1)<=nSnpErrorThreshAnims(TempSurrVector(j),TempSurrVector(k))) then
                                             TempSurrArray(j,k)=1
                                     end if
                             end do
@@ -789,7 +801,7 @@ if (FullFileOutput==1) then
                 end if
                 write (19,'(a20,20000i6,20000i6,20000i6,20000i6)') &
                     GenotypeId(i),count(Surrogates(i,:,2)==1),count(Surrogates(i,:,2)==2)&
-                        ,count(Surrogates(i,:,2)==3),count(Surrogates(i,:,1)<=nSnpErrorThresh),Partitioned(i)
+                        ,count(Surrogates(i,:,2)==3),count(Surrogates(i,:,1)<=nSnpErrorThreshAnims(i,:)),Partitioned(i)
         enddo
 end if
 
@@ -876,7 +888,7 @@ do i=1,nAnisG
         value=0
         counter=0
         do j=1,nAnisG
-                if (Surrogates(i,j,1)>nSnpErrorThresh) then
+                if (Surrogates(i,j,1)>nSnpErrorThreshAnims(i,j)) then
                     value=value+Surrogates(i,j,1)
                         counter=counter+1
                 endif
@@ -968,11 +980,11 @@ allocate(ErdosNextVec(nAnisG))
 
 ErdosNumber=1
 do i=1,nAnisG
-        if ((Surrogates(animal,i,1)<=nSnpErrorThresh).and.(Surrogates(animal,i,2)/=SideOn)) then
+        if ((Surrogates(animal,i,1)<=nSnpErrorThreshAnims(animal,i)).and.(Surrogates(animal,i,2)/=SideOn)) then
                 Visited(i)=1
         endif
-        if ((Surrogates(animal,i,1)>nSnpErrorThresh).and.(Surrogates(animal,i,1)<=SurrAveDiff(i))) then
-        !if ((Surrogates(animal,i,1)>nSnpErrorThresh).and.(Surrogates(animal,i,1)<=(nSnpErrorThresh+15))) then
+        if ((Surrogates(animal,i,1)>nSnpErrorThreshAnims(animal,i)).and.(Surrogates(animal,i,1)<=SurrAveDiff(i))) then
+        ! if ((Surrogates(animal,i,1)>nSnpErrorThreshAnims(animal,i)).and.(Surrogates(animal,i,1)<=(nSnpErrorThreshAnims(animal,i)+15))) then
                 Visited(i)=1
         end if
         if (Surrogates(animal,i,3)==1) Visited(i)=1
@@ -1021,7 +1033,7 @@ ErdosNextVec=0
 do i=1,nAnisG
         if (ErdosNowVec(i)/=0) then
                 do j=1,nAnisG
-                        if (Surrogates(i,j,1)>nSnpErrorThresh) then
+                        if (Surrogates(i,j,1)>nSnpErrorThreshAnims(i,j)) then
                             if (Surrogates(i,j,1)<=SurrAveDiff(j)) Visited(j)=1
                         else
                                 if (Visited(j)/=1) then
@@ -1089,7 +1101,7 @@ do i=1,nAnisG
                 CountDisagree12=0
                 CountDisagree21=0
                 CountDisagree22=0
-                if (Surrogates(i,j,1)<=nSnpErrorThresh) then
+                if (Surrogates(i,j,1)<=nSnpErrorThreshAnims(i,j)) then
                     do k=StartCoreSnp,EndCoreSnp
                             if ((Phase(i,k,1)/=Phase(j,k,1)).and.(Phase(i,k,1)/=9).and.(Phase(j,k,1)/=9)) &
                                                             CountDisagree11=CountDisagree11+1
@@ -2700,7 +2712,7 @@ PercErrCountMatWrong(i)=100*(float(ErrCountMatWrong(i))&
 
         if (FullFileOutput==1) then
             write (17,'(a20,a3,3i5,a3,6i6,a6,6i6,a6,6i6,a6,6i6)') GenotypeId(i),"|",&
-                 count(Surrogates(i,:,2)==1),count(Surrogates(i,:,2)==2),count(Surrogates(i,:,1)<=nSnpErrorThresh),"|",&
+                 count(Surrogates(i,:,2)==1),count(Surrogates(i,:,2)==2),count(Surrogates(i,:,1)<=nSnpErrorThreshAnims(i,:)),"|",&
                             CountPatCorrect(i),CountMatCorrect(i),CountPatNotPhased(i),&
                             CountMatNotPhased(i),CountPatWrong(i),CountMatWrong(i),"|",&
                                         HetCountPatCorrect(i),HetCountMatCorrect(i),HetCountPatNotPhased(i),&
@@ -2710,7 +2722,7 @@ PercErrCountMatWrong(i)=100*(float(ErrCountMatWrong(i))&
                                         ErrCountPatCorrect(i),ErrCountMatCorrect(i),ErrCountPatNotPhased(i),&
                             ErrCountMatNotPhased(i),ErrCountPatWrong(i),ErrCountMatWrong(i)
             write (20,'(a20,a3,3i5,a3,6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') GenotypeId(i),"|",&
-                 count(Surrogates(i,:,2)==1),count(Surrogates(i,:,2)==2),count(Surrogates(i,:,1)<=nSnpErrorThresh),"|",&
+                 count(Surrogates(i,:,2)==1),count(Surrogates(i,:,2)==2),count(Surrogates(i,:,1)<=nSnpErrorThreshAnims(i,:)),"|",&
                             PercCountPatCorrect(i),PercCountMatCorrect(i),PercCountPatNotPhased(i),&
                             PercCountMatNotPhased(i),PercCountPatWrong(i),PercCountMatWrong(i),"|",&
                                         PercHetCountPatCorrect(i),PercHetCountMatCorrect(i),PercHetCountPatNotPhased(i),&
