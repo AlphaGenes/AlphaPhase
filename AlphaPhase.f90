@@ -1127,7 +1127,7 @@ subroutine CheckCompatHapGeno
 use Global
 implicit none
 
-integer :: i,j,CountError,SizeCore,ErrorAllow,Disagree,counter
+integer :: i,j,CountError,SizeCore,ErrorAllow,Disagree,counter,counterMissing
 double precision :: value,Yield
 
 SizeCore=(EndCoreSnp-StartCoreSnp)+1
@@ -1135,11 +1135,14 @@ ErrorAllow=int(PercGenoHaploDisagree*SizeCore)
 
 do i=1,nAnisG
         CountError=0
+        counterMissing=0
         do j=StartCoreSnp,EndCoreSnp
                 if ((Phase(i,j,1)/=9).and.(Phase(i,j,2)/=9)) then
+                        counterMissing=counterMissing+1
                         if ((Genos(i,j)/=MissingGenotypeCode).and.(sum(Phase(i,j,:))/=Genos(i,j))) CountError=CountError+1
                 end if
         end do
+        ErrorAllow=int(PercGenoHaploDisagree*counterMissing)
         if (CountError>=ErrorAllow) then
                 do j=StartCoreSnp,EndCoreSnp
                         if (Genos(i,j)/=MissingGenotypeCode) then
@@ -1470,7 +1473,7 @@ implicit none
 integer :: i,j,k,l,m,truth,truth1,HapLibIter,nHapsOld,Disagree,SizeCore,ErrorAllow,HapM,HapP,nCand,nCandPat,Miss,nHapsTmp
 integer :: CompatPairs,value,WorkScaler,CountZero,CountOne,Switch
 integer :: CountA,CountB,ErrorCountAB
-integer,allocatable,dimension(:) :: CandGenos,CandHaps,WorkVec
+integer,allocatable,dimension(:) :: CandGenos,CandHaps,WorkVec!,ErrorAllow
 integer,allocatable,dimension(:,:) :: CandPairs
 character(len=300) :: filout
 
@@ -1500,6 +1503,7 @@ do while (nHapsOld/=nHaps)
     do i=1,nAnisG
         CandHaps=0
         nCand=0
+        ErrorAllow=int(PercGenoHaploDisagree*count(Genos(i,StartCoreSnp:EndCoreSnp)/=MissingGenotypeCode))
         if (sum(FullyPhased(i,:))/=2) then
 
             ! If one of the gametes is completely phased (Section Step 2e.i Hickey et al. 2011): PATERNAL HAPLOTYPE
