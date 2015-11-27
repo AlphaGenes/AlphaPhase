@@ -488,7 +488,8 @@ do i=1,nAnisG
                         endif
                 end do
                 if (DumDam/=0) then
-                    if (Surrogates(SireGenotyped(i),DumDam,1)<(int(0.1*CoreAndTailLength)+GetnSnpErrorThreshAnims(SireGenotyped(i),DumDam))) then
+                    nSnpCommon=GetnSnpErrorThreshAnims(SireGenotyped(i),DumDam)/GenotypeMissingErrorPercentage
+                    if (Surrogates(SireGenotyped(i),DumDam,1)<(int(0.1*nSnpCommon)+GetnSnpErrorThreshAnims(SireGenotyped(i),DumDam))) then
                             DumDam=0
                     endif
                 end if
@@ -513,7 +514,8 @@ do i=1,nAnisG
                         endif
                 end do
                 if (DumSire/=0) then
-                    if (Surrogates(DamGenotyped(i),DumSire,1)<(int(0.1*CoreAndTailLength)+GetnSnpErrorThreshAnims(DamGenotyped(i),DumSire))) then
+                    nSnpCommon=GetnSnpErrorThreshAnims(DamGenotyped(i),DumSire)/GenotypeMissingErrorPercentage
+                    if (Surrogates(DamGenotyped(i),DumSire,1)<(int(0.1*nSnpCommon)+GetnSnpErrorThreshAnims(DamGenotyped(i),DumSire))) then
                             DumSire=0
                     endif
                 endif
@@ -577,7 +579,8 @@ do i=1,nAnisG
                                 endif
                         end do
                         if (DumDam>0) then
-                            if (Surrogates(DumSire,DumDam,1)<(int(0.1*CoreAndTailLength)+GetnSnpErrorThreshAnims(DumSire,DumDam))) then
+                            nSnpCommon=GetnSnpErrorThreshAnims(DumSire,DumDam)/GenotypeMissingErrorPercentage
+                            if (Surrogates(DumSire,DumDam,1)<(int(0.1*nSnpCommon)+GetnSnpErrorThreshAnims(DumSire,DumDam))) then
                                     DumDam=0
                             endif
                         end if
