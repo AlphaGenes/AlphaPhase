@@ -50,6 +50,8 @@ integer,allocatable,dimension (:) :: HapFreq
 integer :: nHaps,nGlobalHaps,nGlobalHapsIter
 character (len=300) :: PedigreeFile
 
+integer :: secs
+
 end module Global
 
 !####################################################################################################################################################################
@@ -101,8 +103,12 @@ program Rlrplhi
 use Global
 implicit none
 
-integer :: h,i,j,counter,SizeCore,nGlobalHapsOld
+integer :: h,i,j,counter,SizeCore,nGlobalHapsOld,nCount
 double precision :: value,Yield
+
+! Create a seed for RNG
+call system_clock(nCount)
+secs = mod(nCount,int(1e6))
 
 call Titles
 call ReadInParameterFile
@@ -1405,17 +1411,35 @@ use GlobalClusteringHaps
 implicit none
 
 integer :: i,j,k,l,m,truth,truth1
+integer :: nSNPcore
+integer,allocatable :: Shuffle(:)
+
+INTERFACE
+  subroutine RandomOrder(order,n,start,idum)
+    !     Generate a random ordering of the integers 1 ... n.
+
+    integer, INTENT(IN)  :: n,start
+    integer, allocatable, INTENT(OUT) :: order(:)
+  end subroutine RandomOrder
+END INTERFACE
 
 nHaps=0
 HapFreq=0
 FullyPhased=0
 HapAnis=-99
 
+! Create random indexes
+nSNPcore=EndCoreSnp-StartCoreSnp+1                ! Total number of markers in the core
+allocate(Shuffle(nSNPcore))
+call RandomOrder(Shuffle,nSNPcore,StartCoreSnp,-abs(secs))
+
 do i=1,nAnisG
         !Paternal Haps
         truth=0
-        do j=StartCoreSnp,EndCoreSnp
-                if (Phase(i,j,1)==9) then
+        ! do j=StartCoreSnp,EndCoreSnp
+                ! if (Phase(i,j,1)==9) then
+        do j=1,nSNPcore
+                if (Phase(i,Shuffle(j),1)==9) then
                     truth=1
                     exit
                 endif
@@ -1429,8 +1453,10 @@ do i=1,nAnisG
                 else
                     do k=1,nHaps
                             Truth1=0
-                            do j=StartCoreSnp,EndCoreSnp
-                                    if (HapLib(k,j)/=Phase(i,j,1)) then
+                            ! do j=StartCoreSnp,EndCoreSnp
+                            !         if (HapLib(k,j)/=Phase(i,j,1)) then
+                            do j=1,nSNPcore
+                                    if (HapLib(k,Shuffle(j))/=Phase(i,Shuffle(j),1)) then
                                             Truth1=1
                                             exit
                                     end if
@@ -1452,8 +1478,10 @@ do i=1,nAnisG
         endif
         !Maternal Haps
         truth=0
-        do j=StartCoreSnp,EndCoreSnp
-                if (Phase(i,j,2)==9) then
+        ! do j=StartCoreSnp,EndCoreSnp
+        !         if (Phase(i,j,2)==9) then
+        do j=1,nSNPcore
+                if (Phase(i,Shuffle(j),2)==9) then
                     truth=1
                     exit
                 endif
@@ -1467,8 +1495,10 @@ do i=1,nAnisG
                 else
                     do k=1,nHaps
                             Truth1=0
-                            do j=StartCoreSnp,EndCoreSnp
-                                    if (HapLib(k,j)/=Phase(i,j,2)) then
+                            ! do j=StartCoreSnp,EndCoreSnp
+                            !         if (HapLib(k,j)/=Phase(i,j,2)) then
+                            do j=1,nSNPcore
+                                    if (HapLib(k,Shuffle(j))/=Phase(i,Shuffle(j),2)) then
                                             Truth1=1
                                             exit
                                     end if
@@ -1514,10 +1544,29 @@ integer,allocatable,dimension(:) :: CandGenos,CandHaps,WorkVec!,ErrorAllow
 integer,allocatable,dimension(:,:) :: CandPairs
 character(len=300) :: filout
 
+integer :: nSNPcore
+integer,allocatable :: Shuffle(:)
+
+
+INTERFACE
+  subroutine RandomOrder(order,n,start,idum)
+    !     Generate a random ordering of the integers 1 ... n.
+
+    integer, INTENT(IN)  :: n,start
+    integer, allocatable, INTENT(OUT) :: order(:)
+  end subroutine RandomOrder
+END INTERFACE
+
+
 allocate(CandGenos(nSnp))
 allocate(CandHaps(nAnisG*2))
 allocate(WorkVec(nAnisG*2))
 allocate(CandPairs(nAnisG*2,2))
+
+! Create random indexes
+nSNPcore=EndCoreSnp-StartCoreSnp+1                ! Total number of markers in the core
+allocate(Shuffle(nSNPcore))
+call RandomOrder(Shuffle,nSNPcore,StartCoreSnp,-abs(secs))
 
 SizeCore=(EndCoreSnp-StartCoreSnp)+1
 ErrorAllow=int(PercGenoHaploDisagree*SizeCore)
@@ -1552,9 +1601,12 @@ do while (nHapsOld/=nHaps)
                 do k=1,nHaps
                     truth=0
                     Disagree=0
-                    do j=StartCoreSnp,EndCoreSnp
-                        if (Genos(i,j)/=MissingGenotypeCode) then
-                            if (HapLib(k,j)+Phase(i,j,1)/=Genos(i,j)) then
+                    ! do j=StartCoreSnp,EndCoreSnp
+                    do j=1,nSNPcore
+                        ! if (Genos(i,j)/=MissingGenotypeCode) then
+                            ! if (HapLib(k,j)+Phase(i,j,1)/=Genos(i,j)) then
+                        if (Genos(i,Shuffle(j))/=MissingGenotypeCode) then
+                            if (HapLib(k,Shuffle(j))+Phase(i,Shuffle(j),1)/=Genos(i,Shuffle(j))) then
                                 Disagree=Disagree+1
                                 if (Disagree>ErrorAllow) then
                                     truth=1
@@ -1571,17 +1623,20 @@ do while (nHapsOld/=nHaps)
                 end do
 
                 if (nCand>1) then
-                    do j=StartCoreSnp,EndCoreSnp
+                    ! do j=StartCoreSnp,EndCoreSnp
+                    do j=1,nSNPcore
                         Disagree=0
                         do k=1,nCand
                             do l=k,nCand
-                                if (HapLib(CandHaps(k),j)/=HapLib(CandHaps(l),j)) then
+                                ! if (HapLib(CandHaps(k),j)/=HapLib(CandHaps(l),j)) then
+                                if (HapLib(CandHaps(k),Shuffle(j))/=HapLib(CandHaps(l),Shuffle(j))) then
                                     Disagree=1
                                 end if
                             end do
                         end do
                         if (Disagree==0) then
-                            Phase(i,j,2)=HapLib(CandHaps(1),j)
+                            ! Phase(i,j,2)=HapLib(CandHaps(1),j)
+                            Phase(i,Shuffle(j),2)=HapLib(CandHaps(1),Shuffle(j))
                         end if
                     end do
                 endif
@@ -1612,8 +1667,10 @@ do while (nHapsOld/=nHaps)
                         truth=0
                         do k=1,nHaps
                             Disagree=0
-                            do j=StartCoreSnp,EndCoreSnp
-                                if (HapLib(k,j)/=Phase(i,j,2)) then
+                            ! do j=StartCoreSnp,EndCoreSnp
+                                ! if (HapLib(k,j)/=Phase(i,j,2)) then
+                            do j=1,nSNPcore
+                                if (HapLib(k,Shuffle(j))/=Phase(i,Shuffle(j),2)) then
                                     Disagree=1
                                     exit
                                 endif
@@ -1644,9 +1701,12 @@ do while (nHapsOld/=nHaps)
                 do k=1,nHaps
                     truth=0
                     Disagree=0
-                    do j=StartCoreSnp,EndCoreSnp
-                        if (Genos(i,j)/=MissingGenotypeCode) then
-                            if (HapLib(k,j)+Phase(i,j,2)/=Genos(i,j)) then
+                    ! do j=StartCoreSnp,EndCoreSnp
+                    do j=1,nSNPcore
+                        ! if (Genos(i,j)/=MissingGenotypeCode) then
+                        !     if (HapLib(k,j)+Phase(i,j,2)/=Genos(i,j)) then
+                        if (Genos(i,Shuffle(j))/=MissingGenotypeCode) then
+                            if (HapLib(k,Shuffle(j))+Phase(i,Shuffle(j),2)/=Genos(i,Shuffle(j))) then
                                 Disagree=Disagree+1
                                 if (Disagree>ErrorAllow) then
                                     truth=1
@@ -1663,17 +1723,20 @@ do while (nHapsOld/=nHaps)
                 enddo
 
                 if (nCand>1) then
-                    do j=StartCoreSnp,EndCoreSnp
+                    ! do j=StartCoreSnp,EndCoreSnp
+                    do j=1,nSNPcore
                         Disagree=0
                         do k=1,nCand
                             do l=k,nCand
-                                if (HapLib(CandHaps(k),j)/=HapLib(CandHaps(l),j)) then
+                                ! if (HapLib(CandHaps(k),j)/=HapLib(CandHaps(l),j)) then
+                                if (HapLib(CandHaps(k),Shuffle(j))/=HapLib(CandHaps(l),Shuffle(j))) then
                                     Disagree=1
                                 end if
                             end do
                         end do
                         if (Disagree==0) then
-                            Phase(i,j,1)=HapLib(CandHaps(1),j)
+                            ! Phase(i,j,1)=HapLib(CandHaps(1),j)
+                            Phase(i,Shuffle(j),1)=HapLib(CandHaps(1),Shuffle(j))
                         end if
                     enddo
                 endif
@@ -1704,8 +1767,10 @@ do while (nHapsOld/=nHaps)
                         truth=0
                         do k=1,nHaps
                             Disagree=0
-                            do j=StartCoreSnp,EndCoreSnp
-                                if (HapLib(k,j)/=Phase(i,j,1)) then
+                            ! do j=StartCoreSnp,EndCoreSnp
+                            do j=1,nSNPcore
+                                ! if (HapLib(k,j)/=Phase(i,j,1)) then
+                                if (HapLib(k,Shuffle(j))/=Phase(i,Shuffle(j),1)) then
                                     Disagree=1
                                     exit
                                 endif
@@ -1738,8 +1803,10 @@ do while (nHapsOld/=nHaps)
                 do k=1,nHaps
                     truth=0
                     Disagree=0
-                    do j=StartCoreSnp,EndCoreSnp
-                        if ((Phase(i,j,1)/=9).and.(Phase(i,j,1)/=HapLib(k,j))) Disagree=Disagree+1
+                    ! do j=StartCoreSnp,EndCoreSnp
+                    do j=1,nSNPcore
+                        ! if ((Phase(i,j,1)/=9).and.(Phase(i,j,1)/=HapLib(k,j))) Disagree=Disagree+1
+                        if ((Phase(i,Shuffle(j),1)/=9).and.(Phase(i,Shuffle(j),1)/=HapLib(k,Shuffle(j)))) Disagree=Disagree+1
                         if (Disagree>ErrorAllow) then
                             truth=1
                             exit
@@ -1764,8 +1831,10 @@ do while (nHapsOld/=nHaps)
                 do k=1,nHaps
                     truth=0
                     Disagree=0
-                    do j=StartCoreSnp,EndCoreSnp
-                        if ((Phase(i,j,2)/=9).and.(Phase(i,j,2)/=HapLib(k,j))) Disagree=Disagree+1
+                    ! do j=StartCoreSnp,EndCoreSnp
+                    do j=1,nSNPcore
+                        ! if ((Phase(i,j,2)/=9).and.(Phase(i,j,2)/=HapLib(k,j))) Disagree=Disagree+1
+                        if ((Phase(i,Shuffle(j),2)/=9).and.(Phase(i,Shuffle(j),2)/=HapLib(k,Shuffle(j)))) Disagree=Disagree+1
                         if (Disagree>ErrorAllow) then
                             truth=1
                             exit
@@ -1798,9 +1867,12 @@ do while (nHapsOld/=nHaps)
                     do k=1,nCandPat
                         Disagree=0
                         truth=1
-                        do j=StartCoreSnp,EndCoreSnp
-                            if ((Genos(i,j)/=MissingGenotypeCode).and.&
-                                    (Genos(i,j)/=(HapLib(HapM,j)+HapLib(CandHaps(k),j)))) then
+                        ! do j=StartCoreSnp,EndCoreSnp
+                            ! if ((Genos(i,j)/=MissingGenotypeCode).and.&
+                            !         (Genos(i,j)/=(HapLib(HapM,j)+HapLib(CandHaps(k),j)))) then
+                        do j=1,nSNPcore
+                            if ((Genos(i,Shuffle(j))/=MissingGenotypeCode).and.&
+                                    (Genos(i,Shuffle(j))/=(HapLib(HapM,Shuffle(j))+HapLib(CandHaps(k),Shuffle(j))))) then
                                 Disagree=Disagree+1
                                 if (Disagree>ErrorAllow) then
                                     truth=0
@@ -1824,8 +1896,10 @@ do while (nHapsOld/=nHaps)
                     do k=nCandPat+1,nCand
                         Disagree=0
                         truth=1
-                        do j=StartCoreSnp,EndCoreSnp
-                            if ((Genos(i,j)/=MissingGenotypeCode).and.(Genos(i,j)/=(HapLib(HapP,j)+HapLib(CandHaps(k),j)))) then                                                             
+                        ! do j=StartCoreSnp,EndCoreSnp
+                            ! if ((Genos(i,j)/=MissingGenotypeCode).and.(Genos(i,j)/=(HapLib(HapP,j)+HapLib(CandHaps(k),j)))) then                                                             
+                        do j=1,nSNPcore
+                            if ((Genos(i,Shuffle(j))/=MissingGenotypeCode).and.(Genos(i,Shuffle(j))/=(HapLib(HapP,Shuffle(j))+HapLib(CandHaps(k),Shuffle(j))))) then                                                             
                                 Disagree=Disagree+1
                                 if (Disagree>ErrorAllow) then
                                     truth=0
@@ -1876,8 +1950,10 @@ do while (nHapsOld/=nHaps)
                             ! Update (if necessary) Haplotype Library with the new maternal gamete found
                             do k=1,nHaps
                                 Disagree=0
-                                do j=StartCoreSnp,EndCoreSnp
-                                    if (HapLib(k,j)/=Phase(i,j,2)) then
+                                ! do j=StartCoreSnp,EndCoreSnp
+                                    ! if (HapLib(k,j)/=Phase(i,j,2)) then
+                                do j=1,nSNPcore
+                                    if (HapLib(k,Shuffle(j))/=Phase(i,Shuffle(j),2)) then
                                         Disagree=1
                                         exit
                                     endif
@@ -1937,8 +2013,10 @@ do while (nHapsOld/=nHaps)
                             ! Update (if necessary) Haplotype Library with the new maternal gamete found
                             do k=1,nHaps
                                 Disagree=0
-                                do j=StartCoreSnp,EndCoreSnp
-                                    if (HapLib(k,j)/=Phase(i,j,1)) then
+                                ! do j=StartCoreSnp,EndCoreSnp
+                                    ! if (HapLib(k,j)/=Phase(i,j,1)) then
+                                do j=1,nSNPcore
+                                    if (HapLib(k,Shuffle(j))/=Phase(i,Shuffle(j),1)) then
                                         Disagree=1
                                         exit
                                     endif
@@ -1971,9 +2049,12 @@ do while (nHapsOld/=nHaps)
                             truth=1
 
                             ! Check agreement between pairs
-                            do j=StartCoreSnp,EndCoreSnp
-                                if (Genos(i,j)/=MissingGenotypeCode)then
-                                    if ((HapLib(CandHaps(k),j)+HapLib(CandHaps(l),j))/=Genos(i,j)) then
+                            ! do j=StartCoreSnp,EndCoreSnp
+                                ! if (Genos(i,j)/=MissingGenotypeCode)then
+                                !     if ((HapLib(CandHaps(k),j)+HapLib(CandHaps(l),j))/=Genos(i,j)) then
+                            do j=1,nSNPcore
+                                if (Genos(i,Shuffle(j))/=MissingGenotypeCode)then
+                                    if ((HapLib(CandHaps(k),Shuffle(j))+HapLib(CandHaps(l),Shuffle(j)))/=Genos(i,Shuffle(j))) then
                                         Disagree=Disagree+1
                                         if (Disagree>ErrorAllow) then
                                             truth=0
@@ -2033,17 +2114,21 @@ do while (nHapsOld/=nHaps)
                             ! If only one haplotype is found for the paternal gamete 
                             ! and many for the maternal gamete, phase each loci only all pairs agree
                             ! (Step 2e.ii.B)
-                            do j=StartCoreSnp,EndCoreSnp
-                                value=HapLib(CandPairs(1,2),j)
+                            ! do j=StartCoreSnp,EndCoreSnp
+                            do j=1,nSNPcore
+                                ! value=HapLib(CandPairs(1,2),j)
+                                value=HapLib(CandPairs(1,2),Shuffle(j))
                                 truth1=1
                                 do k=2,CompatPairs
-                                    if (HapLib(CandPairs(k,2),j)/=value) then
+                                    ! if (HapLib(CandPairs(k,2),j)/=value) then
+                                    if (HapLib(CandPairs(k,2),Shuffle(j))/=value) then
                                         truth1=0
                                         exit
                                     end if
                                 end do
                                 if (truth1==1) then
-                                    Phase(i,j,2)=value
+                                    ! Phase(i,j,2)=value
+                                    Phase(i,Shuffle(j),2)=value
                                 end if
                             end do
                             Switch=1
@@ -2066,17 +2151,21 @@ do while (nHapsOld/=nHaps)
                             ! If only one haplotype is found for the paternal gamete 
                             ! and many for the maternal gamete, phase each loci only all pairs agree
                             ! (Step 2e.ii.C)
-                            do j=StartCoreSnp,EndCoreSnp
-                                value=HapLib(CandPairs(1,1),j)
+                            ! do j=StartCoreSnp,EndCoreSnp
+                            do j=1,nSNPcore
+                                ! value=HapLib(CandPairs(1,1),j)
+                                value=HapLib(CandPairs(1,1),Shuffle(j))
                                 truth1=1
                                 do k=2,CompatPairs
-                                    if (HapLib(CandPairs(k,1),j)/=value) then
+                                    ! if (HapLib(CandPairs(k,1),j)/=value) then
+                                    if (HapLib(CandPairs(k,1),Shuffle(j))/=value) then
                                         truth1=0
                                         exit
                                     end if
                                 end do
                                 if (truth1==1) then
-                                    Phase(i,j,1)=value
+                                    ! Phase(i,j,1)=value
+                                    Phase(i,Shuffle(j),1)=value
                                 endif
                             enddo
                             Switch=1
@@ -3871,4 +3960,75 @@ end subroutine PrintTimerTitles
 
 
 
+
+
+subroutine RandomOrder(order,n,start,idum)
+!     Generate a random ordering of the integers 1 ... n.
+implicit none
+
+integer, INTENT(IN)  :: n,start
+!integer, INTENT(OUT) :: order(n)
+integer, allocatable, INTENT(OUT) :: order(:)
+integer :: idum
+double precision ran1
+
+!     Local variables
+integer :: i, j, k
+double precision    :: wk
+
+allocate(order(n))
+
+do i = 1, n
+  order(i) = start-1+i
+end do
+
+!     Starting at the end, swap the current last indicator with one
+!     randomly chosen from those preceeding it.
+
+do i = n, 2, -1
+  wk=ran1(idum)
+  j = 1 + i * wk
+  if (j < i) then
+    k = order(i)
+    order(i) = order(j)
+    order(j) = k
+  end if
+end do
+
+RETURN
+end subroutine RandomOrder
+
+
+
+FUNCTION ran1(idum)
+! This Function returns a uniform random deviate between 0.0 and 1.0.
+! Set IDUM to any negative value to initialize or reinitialize the sequence.
+!MODIFIED FOR REAL
+IMPLICIT NONE
+ INTEGER idum,IA,IM,IQ,IR,NTAB,NDIV
+ DOUBLE PRECISION ran1,AM,EPS,RNMX
+ PARAMETER (IA=16807,IM=2147483647,AM=1./IM,IQ=127773,IR=2836,NTAB=32,NDIV=1+(IM-1)/NTAB,EPS=1.2e-7,RNMX=1.-EPS)
+ INTEGER j,k,iv(NTAB),iy
+ SAVE iv,iy
+ DATA iv /NTAB*0/, iy /0/
+  IF (idum.le.0.or.iy.eq.0) then
+      idum=max(-idum,1)
+  DO 11 j=NTAB+8,1,-1
+      k=idum/IQ
+      idum=IA*(idum-k*IQ)-IR*k
+  IF (idum.lt.0) idum=idum+IM
+  IF (j.le.NTAB) iv(j)=idum
+
+11 CONTINUE
+     iy=iv(1)
+  END IF
+     k=idum/IQ
+     idum=IA*(idum-k*IQ)-IR*k
+  IF (idum.lt.0) idum=idum+IM
+     j=1+iy/NDIV
+     iy=iv(j)
+     iv(j)=idum
+     ran1=min(AM*iy,RNMX)
+  RETURN
+END function ran1
 
