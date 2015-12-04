@@ -107,8 +107,8 @@ integer :: h,i,j,counter,SizeCore,nGlobalHapsOld,nCount
 double precision :: value,Yield
 
 ! Create a seed for RNG
-call system_clock(nCount)
-secs = mod(nCount,int(1e6))
+! call system_clock(nCount)
+! secs = mod(nCount,int(1e6))
 
 call Titles
 call ReadInParameterFile
@@ -1411,7 +1411,7 @@ use GlobalClusteringHaps
 implicit none
 
 integer :: i,j,k,l,m,truth,truth1
-integer :: nSNPcore
+integer :: nSNPcore,nCount
 integer,allocatable :: Shuffle(:)
 
 INTERFACE
@@ -1427,6 +1427,10 @@ nHaps=0
 HapFreq=0
 FullyPhased=0
 HapAnis=-99
+
+! Create a seed for RNG
+call system_clock(nCount)
+secs = mod(nCount,int(1e6))
 
 ! Create random indexes
 nSNPcore=EndCoreSnp-StartCoreSnp+1                ! Total number of markers in the core
@@ -1544,7 +1548,7 @@ integer,allocatable,dimension(:) :: CandGenos,CandHaps,WorkVec!,ErrorAllow
 integer,allocatable,dimension(:,:) :: CandPairs
 character(len=300) :: filout
 
-integer :: nSNPcore
+integer :: nSNPcore, nCount
 integer,allocatable :: Shuffle(:)
 
 
@@ -1562,6 +1566,10 @@ allocate(CandGenos(nSnp))
 allocate(CandHaps(nAnisG*2))
 allocate(WorkVec(nAnisG*2))
 allocate(CandPairs(nAnisG*2,2))
+
+! Create a seed for RNG
+call system_clock(nCount)
+secs = mod(nCount,int(1e6))
 
 ! Create random indexes
 nSNPcore=EndCoreSnp-StartCoreSnp+1                ! Total number of markers in the core
