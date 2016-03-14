@@ -37,7 +37,7 @@ module Global
   integer(kind = 4), allocatable, dimension (:) :: SireGenotyped, DamGenotyped
   integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM, Genos
   integer(kind = 1), allocatable, dimension (:,:,:) :: Phase
-  integer(kind = 2), allocatable, dimension (:,:,:) :: Surrogates
+  !integer(kind = 2), allocatable, dimension (:,:,:) :: Surrogates
   real(kind = 4), allocatable, dimension (:,:) :: NRM
   double precision, allocatable, dimension (:) :: AlleleFreq
   double precision, allocatable, dimension (:,:) :: MarkerNRM
@@ -102,12 +102,14 @@ end module GlobalPedigree
 program Rlrplhi
   use Global
   use HaplotypeLibrary
+  use SurrogateDefinition
   implicit none
 
   integer :: h, i, j, counter, SizeCore, nGlobalHapsOld, nCount
   double precision :: value, Yield
   
   type(HapLib) :: library
+  type(SurrDef) :: surrogates
 
   ! Create a seed for RNG
   ! call system_clock(nCount)
@@ -134,24 +136,22 @@ program Rlrplhi
     EndCoreSnp = CoreIndex(h, 2)
     StartSurrSnp = TailIndex(h, 1)
     EndSurrSnp = TailIndex(h, 2)
-    call MakeStartSurrogateArray
-    do i = 1, nPruneIterations
-      CurrentLoop = i
-      call Erdos
-      call CheckCompatHapGeno
-      call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)
+    
+    !call MakeStartSurrogateArray
+    !!!!!!NEED TO SORT OUT THE THRESHOLD!!!!!
+    call surrogates%calculate(Genos(:,StartSurrSnp:EndSurrSnp), SireGenotyped, DamGenotyped, 0)
+    call Erdos(surrogates, 0)
+    call CheckCompatHapGeno
+    call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)
+    call MakeHapLib(library)
+    nGlobalHapsOld = nGlobalHaps
+    print*, " "
+    print*, "  ", "Haplotype library imputation step"
+    do j = 1, 20
+      call ImputeFromLib(library)
       call MakeHapLib(library)
+      if (nGlobalHapsOld == nGlobalHaps) exit
       nGlobalHapsOld = nGlobalHaps
-      print*, " "
-      print*, "  ", "Haplotype library imputation step"
-      do j = 1, 20
-	call ImputeFromLib(library)
-	call MakeHapLib(library)
-	if (nGlobalHapsOld == nGlobalHaps) exit
-	nGlobalHapsOld = nGlobalHaps
-      end do
-      !print*, " Pruning surrogates iteration ",CurrentLoop
-      !call PruneSurr
     end do
     call WriteHapLib(library)
     call HapCommonality(library)
@@ -159,10 +159,10 @@ program Rlrplhi
     ! HIDDEN MARKOV MODEL SHOULD COME HERE
 
     !call RationaliseLibrary
-    if (Simulation == 1) then
-      call Flipper
-      call Checker
-    end if
+!    if (Simulation == 1) then
+!      call Flipper
+!      call Checker
+!    end if
   end do
 
   call WriteOutResults
@@ -355,7 +355,7 @@ subroutine AllocateGlobalArrays
   use Global
   implicit none
 
-  allocate(Surrogates(nAnisG, nAnisG, 3))
+  !allocate(Surrogates(nAnisG, nAnisG, 3))
   allocate(FullyPhased(nAnisG, 2))
   allocate(HapFreq(nAnisG * 2))
   allocate(HapAnis(nAnisG, 2))
@@ -385,473 +385,6 @@ pure function GetnSnpErrorThreshAnims(i, j)
   GetnSnpErrorThreshAnims = nSnpErrorThreshAnims(k)
 
 end function GetnSnpErrorThreshAnims
-
-!########################################################################################################################################################################
-
-subroutine MakeStartSurrogateArray
-  use Global
-  use GlobalClustering
-  implicit none
-
-  integer :: i, j, k, Counter, truth, PseudoDam, PseudoSire, PseudoSireOld, nSnpCommon
-  integer, allocatable, dimension(:) :: Partitioned, SurrogateList, ProgCount
-  integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam, temp
-  character(len = 300) :: filout
-
-  integer :: ii, jj, kk, l, Noffset, Limit, Switch, CurrentGroup, ChangeThreshold, flag, FirstGroup0
-  integer, allocatable :: SumsOld(:), Rank(:), SumDiff(:), SumSame(:), Group(:)
-  double precision, allocatable :: Sums(:)
-  logical :: NoCommonGroup
-
-  integer, parameter :: SortOrMedoid = 0 !if 1 it uses Brians Sort, If Zero it uses k-medoids
-
-  integer :: GetnSnpErrorThreshAnims, nSurrogates
-
-  ! integer,allocatable,dimension(:,:) :: nSnpErrorThreshAnims
-
-
-  allocate(Partitioned(nAnisG))
-  allocate(SurrogateList(nAnisG))
-  allocate(ProgCount(nAnisG))
-
-  if (nClusters /= 2) then
-    print*, "nClusters must equal 2"
-    stop
-  end if
-
-  print*, " "
-  print*, " Identifying surrogates"
-  if (CurrentCore == 1) Surrogates = 0
-  Surrogates(:,:, 2:3) = 0
-
-  nSnpErrorThreshAnims = nSnpErrorThresh
-
-  do i = 1, nAnisG
-    do j = i, nAnisG
-      Counter = 0
-      nSnpCommon = 0
-      do k = StartSurrSnp, EndSurrSnp
-	if ((Genos(i, k) == 0).and.(Genos(j, k) == 2)) Counter = Counter + 1
-	if ((Genos(i, k) == 2).and.(Genos(j, k) == 0)) Counter = Counter + 1
-	if ((Genos(i, k) /= MissingGenotypeCode).and.(Genos(j, k) /= MissingGenotypeCode)) nSnpCommon = nSnpCommon + 1
-      end do
-      Surrogates(i, j, 1) = Counter
-      Surrogates(j, i, 1) = Counter
-      ! nSnpErrorThreshAnims(i,j)=int(GenotypeMissingErrorPercentage*nSnpCommon)    ! Threshold for the number of snp
-      k = (j - 1) * j/2 + i
-      nSnpErrorThreshAnims(k) = int(GenotypeMissingErrorPercentage * nSnpCommon) ! Threshold for the number of snp
-
-    end do
-    Surrogates(i, i, 1) = 0
-    if (mod(i, 400) == 0) print*, "   Surrogate identification done for genotyped individual --- ", i
-  end do
-
-  ProgCount = 0
-  do i = 1, nAnisG
-    if (SireGenotyped(i) /= 0) then
-      ProgCount(SireGenotyped(i)) = ProgCount(SireGenotyped(i)) + 1
-    end if
-    if (DamGenotyped(i) /= 0) then
-      ProgCount(DamGenotyped(i)) = ProgCount(DamGenotyped(i)) + 1
-    end if
-  end do
-
-  print*, " "
-  print*, " Partitioning surrogates"
-  Partitioned = 0
-  do i = 1, nAnisG
-
-    DumSire = 0
-    DumDam = 0
-    if ((SireGenotyped(i) /= 0).and.(DamGenotyped(i) /= 0)) then
-      do j = 1, nAnisG
-	truth = 0
-	if ((Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j)).and.(Surrogates((SireGenotyped(i)), j, 1) <= GetnSnpErrorThreshAnims(SireGenotyped(i),j))&
-	.and.(Surrogates((DamGenotyped(i)), j, 1) > GetnSnpErrorThreshAnims(DamGenotyped(i), j))) then
-	Surrogates(i, j, 2) = 1
-      endif
-      if ((Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j)).and.(Surrogates((DamGenotyped(i)), j, 1) <= GetnSnpErrorThreshAnims(DamGenotyped(i),j))&
-      .and.(Surrogates((SireGenotyped(i)), j, 1) > GetnSnpErrorThreshAnims(SireGenotyped(i), j))) then
-      Surrogates(i, j, 2) = 2
-    endif
-  end do
-  if (Surrogates(i, SireGenotyped(i), 1) <= GetnSnpErrorThreshAnims(i, SireGenotyped(i))) Surrogates(i, SireGenotyped(i), 2) = 1
-  if (Surrogates(i, DamGenotyped(i), 1) <= GetnSnpErrorThreshAnims(i, DamGenotyped(i))) Surrogates(i, DamGenotyped(i), 2) = 2
-  Partitioned(i) = 1
-end if
-
-if ((Partitioned(i) == 0).and.(SireGenotyped(i) /= 0)) then
-  Surrogates(i, SireGenotyped(i), 2) = 1
-  do j = 1, nAnisG
-    if ((i /= j).and.(Surrogates(SireGenotyped(i), j, 1) <= GetnSnpErrorThreshAnims(SireGenotyped(i), j)).and.&
-      (Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j))) then
-      Surrogates(i, j, 2) = 1
-    endif
-  enddo
-  counter = nSnp
-  do j = 1, nAnisG
-    if ((Surrogates(SireGenotyped(i), j, 1) > GetnSnpErrorThreshAnims(SireGenotyped(i), j)).and.(Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i,j))) then
-    if (Surrogates(i, j, 1) < counter) then
-      DumDam = j
-      counter = Surrogates(i, j, 1)
-    end if
-  endif
-end do
-if (DumDam /= 0) then
-  nSnpCommon = GetnSnpErrorThreshAnims(SireGenotyped(i), DumDam)/GenotypeMissingErrorPercentage
-  if (Surrogates(SireGenotyped(i), DumDam, 1) < (int(0.1 * nSnpCommon) + GetnSnpErrorThreshAnims(SireGenotyped(i), DumDam))) then
-  DumDam = 0
-endif
-end if
-Partitioned(i) = 2
-endif
-
-if ((Partitioned(i) == 0).and.(DamGenotyped(i) /= 0)) then
-  Surrogates(i, DamGenotyped(i), 2) = 2
-  do j = 1, nAnisG
-    if ((i /= j).and.(Surrogates(DamGenotyped(i), j, 1) <= GetnSnpErrorThreshAnims(DamGenotyped(i), j)).and.&
-      (Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j))) then
-      Surrogates(i, j, 2) = 2
-    endif
-  enddo
-  counter = nSnp
-  do j = 1, nAnisG
-    if ((Surrogates(DamGenotyped(i), j, 1) > GetnSnpErrorThreshAnims(DamGenotyped(i), j)).and.(Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i,j))) then
-    if (Surrogates(i, j, 1) < counter) then
-      DumSire = j
-      counter = Surrogates(i, j, 1)
-    end if
-  endif
-end do
-if (DumSire /= 0) then
-  nSnpCommon = GetnSnpErrorThreshAnims(DamGenotyped(i), DumSire)/GenotypeMissingErrorPercentage
-  if (Surrogates(DamGenotyped(i), DumSire, 1) < (int(0.1 * nSnpCommon) + GetnSnpErrorThreshAnims(DamGenotyped(i), DumSire))) then
-  DumSire = 0
-endif
-endif
-Partitioned(i) = 3
-endif
-
-if ((Partitioned(i) == 0).and.(SireGenotyped(i) == 0).and.(DamGenotyped(i) == 0)) then
-  do j = 1, nAnisG
-    if ((PseudoNRM(i, j) == 1).and.(Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j))) then
-      DumSire = j
-      Surrogates(i, j, 2) = 1
-      Partitioned(i) = 4
-      exit
-    endif
-  end do
-  do j = 1, nAnisG
-    if ((PseudoNRM(i, j) == 2).and.(Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j))) then
-      DumDam = j
-      Surrogates(i, j, 2) = 2
-      Partitioned(i) = 4
-      exit
-    endif
-  end do
-endif
-
-if ((Partitioned(i) == 0).and.(ProgCount(i) /= 0)) then
-  DumSire = 0
-  do j = 1, nAnisG
-    if ((i == DamGenotyped(j)).and.(Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j))) then
-      DumSire = j
-      exit
-    endif
-    if ((i == SireGenotyped(j)).and.(Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j))) then
-      DumSire = j
-      exit
-    endif
-  end do
-  if (DumSire /= 0) then
-    Surrogates(i, DumSire, 2) = 1
-    truth = 0
-    do j = 1, nAnisG
-      if ((i == SireGenotyped(j)).or.(i == DamGenotyped(j))) then
-	if (Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j)) then
-	  if (Surrogates(j, DumSire, 1) > GetnSnpErrorThreshAnims(j, DumSire)) then
-	    Surrogates(i, j, 2) = 2
-	    truth = 1
-	    exit
-	  endif
-	endif
-      end if
-    end do
-    if (truth == 0) then
-      counter = nSnp
-      do j = 1, nAnisG
-	if ((Surrogates(DumSire, j, 1) > GetnSnpErrorThreshAnims(DumSire, j)).and.&
-	  (Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j))) then
-	  if (Surrogates(i, j, 1) < counter) then
-	    DumDam = j
-	    counter = Surrogates(i, j, 1)
-	  end if
-	endif
-      end do
-      if (DumDam > 0) then
-	nSnpCommon = GetnSnpErrorThreshAnims(DumSire, DumDam)/GenotypeMissingErrorPercentage
-	if (Surrogates(DumSire, DumDam, 1) < (int(0.1 * nSnpCommon) + GetnSnpErrorThreshAnims(DumSire, DumDam))) then
-	  DumDam = 0
-	endif
-      end if
-    end if
-  end if
-  Partitioned(i) = 5
-end if
-
-if (Partitioned(i) == 2.or.Partitioned(i) == 3.or.Partitioned(i) == 4.or.Partitioned(i) == 5) then
-  do j = 1, nAnisG
-    CountAgreePat = 0
-    CountAgreeMat = 0
-    do k = 1, nAnisG
-      if ((Surrogates(i, k, 2) == 1).and.(Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j))&
-	.and.(Surrogates(k, j, 1) <= GetnSnpErrorThreshAnims(k, j))) then
-	CountAgreePat = CountAgreePat + 1
-	exit !here
-      endif
-      if ((Surrogates(i, k, 2) == 2).and.(Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j))&
-	.and.(Surrogates(k, j, 1) <= GetnSnpErrorThreshAnims(k, j))) then
-	CountAgreeMat = CountAgreeMat + 1
-	exit !here
-      endif
-    end do
-    if ((CountAgreePat /= 0).and.(CountAgreeMat == 0)) Surrogates(i, j, 2) = 1
-    if ((CountAgreePat == 0).and.(CountAgreeMat /= 0)) Surrogates(i, j, 2) = 2
-  end do
-end if
-
-if (Partitioned(i) == 0) then
-  SurrCounter = 0
-  do j = 1, nAnisG
-    if ((Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j)).and.(i /= j)) then
-      SurrCounter = SurrCounter + 1
-    endif
-  end do
-  if (SurrCounter > 0) then
-    allocate(TempSurrArray(SurrCounter, SurrCounter))
-    allocate(TempSurrVector(SurrCounter))
-    SurrCounter = 0
-    do j = 1, nAnisG
-      if ((Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j)).and.(i /= j)) then
-	SurrCounter = SurrCounter + 1
-	TempSurrVector(SurrCounter) = j
-      endif
-    end do
-    TempSurrArray = 0
-    do j = 1, SurrCounter
-      do k = 1, SurrCounter
-	if (Surrogates(TempSurrVector(j), TempSurrVector(k), 1) <= GetnSnpErrorThreshAnims(TempSurrVector(j),TempSurrVector(k))) then
-	TempSurrArray(j, k) = 1
-      end if
-    end do
-    TempSurrArray(j, j) = 1
-  end do
-
-  if (SortOrMedoid == 1) then
-    allocate(Sums(SurrCounter))
-    allocate(Rank(SurrCounter))
-    allocate(SumDiff(SurrCounter))
-    allocate(SumSame(SurrCounter))
-    allocate(Group(SurrCounter))
-    do j = 1, SurrCounter
-      Sums(j) = 0
-      do k = 1, SurrCounter
-	if (TempSurrArray(j, k) == 1) Sums(j) = Sums(j) + 1
-      enddo
-    enddo
-    do j = 1, SurrCounter
-      Rank(j) = j
-    enddo
-    Noffset = int(SurrCounter/2)
-    do while (Noffset > 0)
-      Limit = SurrCounter - Noffset
-      Switch = 1
-      do while (Switch .ne. 0)
-	Switch = 0
-	do j = 1, Limit
-	  if (Sums(Rank(j)) < Sums(Rank(j + Noffset))) then
-	    k = Rank(j)
-	    Rank(j) = Rank(j + Noffset)
-	    Rank(j + Noffset) = k
-	    Switch = j
-	  endif
-	enddo
-	Limit = Switch - Noffset
-      enddo
-      Noffset = int(Noffset/2)
-    enddo
-    do j = 1, SurrCounter
-      Sums(Rank(j)) = 0
-      do k = 1, SurrCounter
-	if (TempSurrArray(Rank(j), Rank(k)) == 1) Sums(Rank(j)) = &
-	Sums(Rank(j)) + 1.2**(SurrCounter - k + 1)
-      enddo
-    enddo
-    Noffset = int(SurrCounter/2)
-    do while (Noffset > 0)
-      Limit = SurrCounter - Noffset
-      Switch = 1
-      do while (Switch .ne. 0)
-	Switch = 0
-	do j = 1, Limit
-	  if (Sums(Rank(j)) < Sums(Rank(j + Noffset))) then
-	    k = Rank(j)
-	    Rank(j) = Rank(j + Noffset)
-	    Rank(j + Noffset) = k
-	    Switch = j
-	  endif
-	enddo
-	Limit = Switch - Noffset
-      enddo
-      Noffset = int(Noffset/2)
-    enddo
-    do j = 2, SurrCounter
-      SumDiff(j) = 0
-      SumSame(j) = 0
-      do k = 1, SurrCounter
-	SumDiff(j) = SumDiff(j) + abs(TempSurrArray(rank(j), k) - TempSurrArray(rank(j - 1), k))
-	if (TempSurrArray(rank(j), k) == 1.and.TempSurrArray(rank(j - 1), k) == 1) SumSame(j)&
-	= SumSame(j) + 1
-      enddo
-    end do
-    NoCommonGroup = .false.
-    CurrentGroup = 3
-    Group(Rank(1)) = CurrentGroup
-    ChangeThreshold = 0
-    flag = 1
-    do while (flag == 1)
-      flag = 0
-      inner: do j = 1, SurrCounter
-      if (CurrentGroup == 3 .and. SumSame(j) == 0)then
-	NoCommonGroup = .true.
-	do ii = 1, j - 1
-	  Group(rank(ii)) = Group(rank(ii)) - 1
-	enddo
-	CurrentGroup = CurrentGroup - 1
-	if (CurrentGroup == 0) FirstGroup0 = j
-      endif
-      if (SumDiff(j) > ChangeThreshold)then
-	CurrentGroup = CurrentGroup - 1
-	if (CurrentGroup == 0) FirstGroup0 = j
-      endif
-      if (CurrentGroup == 0) then
-	l = 0
-	kk = 0
-	k = 1
-	do while (Group(rank(k)) == 3)
-	  if (TempSurrArray(rank(j), rank(k)) == 1) l = l + 1
-	  k = k + 1
-	enddo
-	if (float(l)/float(k - 1) > 0.4) then
-	  ChangeThreshold = ChangeThreshold + 1
-	  flag = 1
-	endif
-      endif
-      if (flag == 1) then
-	CurrentGroup = 3
-	exit inner
-      endif
-      if (SumDiff(j) > ChangeThreshold .and. CurrentGroup <= 0) then
-	l = 0
-	do ii = 1, FirstGroup0 - 1
-	  do jj = j, SurrCounter
-	    if (TempSurrArray(rank(ii), rank(jj)) == 1)then
-	      l = l + 1
-	    endif
-	  enddo
-	enddo
-      endif
-      Group(rank(j)) = CurrentGroup
-    end do inner
-  end do
-  do j = 1, SurrCounter
-    if (Group(rank(j)) == 1) Surrogates(i, TempSurrVector(rank(j)), 2) = 1
-    if (Group(rank(j)) == 2) Surrogates(i, TempSurrVector(rank(j)), 2) = 2
-  enddo
-
-  deallocate(Sums)
-  deallocate(Rank)
-  deallocate(SumSame)
-  deallocate(SumDiff)
-  deallocate(Group)
-else
-  allocate(Medoids(nClusters, SurrCounter))
-  allocate(ClusterMember(SurrCounter))
-  allocate(MinClust(SurrCounter))
-  ClusterMember(1) = 1
-  do j = 1, SurrCounter
-    if (TempSurrArray(1, j) == 0) then
-      ClusterMember(j) = 2
-    else
-      ClusterMember(j) = 1
-    endif
-  end do
-  call EvaluateMedoids
-  Change = 0
-  MinClust = 1
-  rounds = 1
-  call RePartition
-  do j = 1, SurrCounter
-    call EvaluateMedoids
-    Change = 0
-    call RePartition
-    if (Change == 0) exit
-  enddo
-  if (rounds <= SurrCounter) then
-  do j = 1, SurrCounter
-    Surrogates(i, TempSurrVector(j), 2) = ClusterMember(j)
-  enddo
-  Partitioned(i) = 7
-  end if
-
-  deallocate(Medoids)
-  deallocate(ClusterMember)
-  deallocate(MinClust)
-endif
-deallocate(TempSurrArray)
-deallocate(TempSurrVector)
-endif
-Partitioned(i) = 6
-endif
-if (mod(i, 400) == 0) print*, "   Partitioning done for genotyped individual --- ", i
-Surrogates(i, i, 2) = 0
-end do
-
-if (FullFileOutput == 1) then
-  if (WindowsLinux == 1) then
-    write (filout, '(".\Miscellaneous\Surrogates",i0,".txt")') OutputPoint
-    open (unit = 13, FILE = filout, status = 'unknown')
-    write (filout, '(".\Miscellaneous\SurrogatesSummary",i0,".txt")') OutputPoint
-    open (unit = 19, FILE = filout, status = 'unknown')
-
-  else
-    write (filout, '("./Miscellaneous/Surrogates",i0,".txt")') OutputPoint
-    open (unit = 13, FILE = filout, status = 'unknown')
-    write (filout, '("./Miscellaneous/SurrogatesSummary",i0,".txt")') OutputPoint
-    open (unit = 19, FILE = filout, status = 'unknown')
-  endif
-  do i = 1, nAnisG
-    nSurrogates = 0
-    if (nAnisG < 20000) then
-      write (13, '(a20,20000i6,20000i6,20000i6,20000i6)') GenotypeId(i), Surrogates(i,:, 2)
-    else
-      write (13, *) GenotypeId(i), Surrogates(i,:, 2)
-    end if
-    do j = i, nAnisG
-      if (Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j)) nSurrogates = nSurrogates + 1
-    enddo
-    write (19, '(a20,20000i6,20000i6,20000i6,20000i6)') &
-    GenotypeId(i), count(Surrogates(i,:, 2) == 1), count(Surrogates(i,:, 2) == 2)&
-    , count(Surrogates(i,:, 2) == 3), nSurrogates, Partitioned(i)
-  enddo
-end if
-
-deallocate(Partitioned)
-deallocate(SurrogateList)
-deallocate(ProgCount)
-
-
-end subroutine MakeStartSurrogateArray
 
 !######################################################################################################################################################
 
@@ -914,10 +447,14 @@ end subroutine RePartition
 
 !######################################################################################################################################################
 
-subroutine Erdos
+subroutine Erdos(surrogates, threshold)
   use Global
+  use SurrogateDefinition
   implicit none
 
+  type(SurrDef), intent(in) :: surrogates
+  integer :: threshold
+  
   integer :: i, j
   integer :: counter, IterAllele, SizeCore
   double precision :: value
@@ -931,8 +468,8 @@ subroutine Erdos
     value = 0
     counter = 0
     do j = 1, nAnisG
-      if (Surrogates(i, j, 1) > GetnSnpErrorThreshAnims(i, j)) then
-	value = value+Surrogates(i, j, 1)
+      if (surrogates%numOppose(i, j) > threshold) then
+	value = value+surrogates%numOppose(i, j)
 	counter = counter + 1
       endif
     end do
@@ -962,7 +499,7 @@ subroutine Erdos
 	  Phase(i, j, 1) = 1
 	endif
       else
-	Phase(i, j, 1) = IterAllele(i, j, 1)
+	Phase(i, j, 1) = IterAllele(i, j, 1, surrogates, threshold)
 	if (ErdosNumber > HighestErdos) HighestErdos = ErdosNumber
       end if
     end do
@@ -994,7 +531,7 @@ subroutine Erdos
 	  Phase(i, j, 2) = 1
 	endif
       else
-	Phase(i, j, 2) = IterAllele(i, j, 2)
+	Phase(i, j, 2) = IterAllele(i, j, 2, surrogates, threshold)
 	if (ErdosNumber > HighestErdos) HighestErdos = ErdosNumber
       end if
     end do
@@ -1010,9 +547,13 @@ end subroutine Erdos
 
 !#################################################################################################################################################################
 
-function IterAllele(animal, snp, SideOn) result (iAllele)
+function IterAllele(animal, snp, SideOn, surrogates, threshold) result (iAllele)
   use Global
+  use SurrogateDefinition
   implicit none
+  
+  type(SurrDef), intent(in) :: surrogates
+  integer :: threshold
 
   integer :: i, j, animal, snp, iAllele, SideOn
   integer(kind = 1), allocatable, dimension(:) :: ErdosNowVec, ErdosNextVec
@@ -1025,20 +566,19 @@ function IterAllele(animal, snp, SideOn) result (iAllele)
 
   ErdosNumber = 1
   do i = 1, nAnisG
-    if ((Surrogates(animal, i, 1) <= GetnSnpErrorThreshAnims(animal, i)).and.(Surrogates(animal, i, 2) /= SideOn)) then
+    if ((surrogates%numOppose(animal, i) <= threshold).and.(surrogates%partition(animal, i) /= SideOn)) then
       Visited(i) = 1
     endif
-    if ((Surrogates(animal, i, 1) > GetnSnpErrorThreshAnims(animal, i)).and.(Surrogates(animal, i, 1) <= SurrAveDiff(i))) then
+    if ((surrogates%numOppose(animal, i) > threshold).and.(surrogates%numOppose(animal, i) <= SurrAveDiff(i))) then
       ! if ((Surrogates(animal,i,1)>GetnSnpErrorThreshAnims(animal,i)).and.(Surrogates(animal,i,1)<=(GetnSnpErrorThreshAnims(animal,i)+15))) then
       Visited(i) = 1
     end if
-    if (Surrogates(animal, i, 3) == 1) Visited(i) = 1
   enddo
 
   ErdosNowVec = 0
   ErdosNextVec = 0
   do i = 1, nAnisG
-    if ((Surrogates(animal, i, 2) == SideOn).and.(Visited(i) /= 1)) then
+    if ((surrogates%partition(animal, i) == SideOn).and.(Visited(i) /= 1)) then
       if (genos(i, snp) == 0) then
 	Visited(i) = 1
 	AlleleCount(1) = AlleleCount(1) + 1
@@ -1078,8 +618,8 @@ function IterAllele(animal, snp, SideOn) result (iAllele)
   do i = 1, nAnisG
     if (ErdosNowVec(i) /= 0) then
       do j = 1, nAnisG
-	if (Surrogates(i, j, 1) > GetnSnpErrorThreshAnims(i, j)) then
-	  if (Surrogates(i, j, 1) <= SurrAveDiff(j)) Visited(j) = 1
+	if (surrogates%numOppose(i, j) > threshold) then
+	  if (surrogates%numOppose(i, j) <= SurrAveDiff(j)) Visited(j) = 1
 	else
 	  if (Visited(j) /= 1) then
 	  Visited(j) = 1
@@ -1109,12 +649,10 @@ function IterAllele(animal, snp, SideOn) result (iAllele)
 	      return
 	    end if
 	  end if
-	  if ((genos(j, snp) == MissingGenotypeCode).or.(genos(j, snp) == 1).and.&
-	    (Surrogates(i, j, 3) /= 1)) then
+	  if ((genos(j, snp) == MissingGenotypeCode).or.(genos(j, snp) == 1)) then
 	    ErdosNextVec(j) = 1
 	  endif
 	  end if
-	  if (Surrogates(i, j, 3) == 1) Visited(j) = 1
 	endif
       end do
     end if
@@ -1130,43 +668,6 @@ function IterAllele(animal, snp, SideOn) result (iAllele)
   return
 
 end function IterAllele
-
-!#################################################################################################################################################################
-
-subroutine PruneSurr
-  use Global
-  implicit none
-
-  integer :: i, j, k, l, CountDisagree11, CountDisagree12, CountDisagree21, CountDisagree22
-
-  integer :: GetnSnpErrorThreshAnims
-
-  do i = 1, nAnisG
-    if (mod(i, 400) == 0) print*, "   Pruning done for genotyped individual --- ", i
-    do j = 1, nAnisG
-      CountDisagree11 = 0
-      CountDisagree12 = 0
-      CountDisagree21 = 0
-      CountDisagree22 = 0
-      if (Surrogates(i, j, 1) <= GetnSnpErrorThreshAnims(i, j)) then
-	do k = StartCoreSnp, EndCoreSnp
-	  if ((Phase(i, k, 1) /= Phase(j, k, 1)).and.(Phase(i, k, 1) /= 9).and.(Phase(j, k, 1) /= 9)) &
-	  CountDisagree11 = CountDisagree11 + 1
-	  if ((Phase(i, k, 1) /= Phase(j, k, 2)).and.(Phase(i, k, 1) /= 9).and.(Phase(j, k, 2) /= 9)) &
-	  CountDisagree12 = CountDisagree12 + 1
-	  if ((Phase(i, k, 2) /= Phase(j, k, 1)).and.(Phase(i, k, 2) /= 9).and.(Phase(j, k, 1) /= 9)) &
-	  CountDisagree21 = CountDisagree21 + 1
-	  if ((Phase(i, k, 2) /= Phase(j, k, 2)).and.(Phase(i, k, 2) /= 9).and.(Phase(j, k, 2) /= 9)) &
-	  CountDisagree22 = CountDisagree22 + 1
-	end do
-	if ((CountDisagree11 > 0).and.(CountDisagree12 > 0).and.(CountDisagree21 > 0).and.(CountDisagree22 > 0)) then
-	  Surrogates(i, j, 3) = 1
-	endif
-      endif
-    end do
-  end do
-
-end subroutine PruneSurr
 
 !#################################################################################################################################################################
 
@@ -2438,59 +1939,6 @@ end subroutine RePartitionHaps
 
 !########################################################################################################################################################################
 
-subroutine TestingProgram
-  use Global
-  implicit none
-
-  integer :: i
-  integer(kind = 1), allocatable, dimension(:,:,:) :: TruePhase
-  character(len = 300) :: dumC
-
-  allocate(TruePhase(nAnisG, nSnp, 2))
-  rewind (16)
-  do i = 1, nAnisG
-    read (16, *) dumC, TruePhase(i,:, 1)
-    read (16, *) dumC, TruePhase(i,:, 2)
-  end do
-  rewind (16)
-
-  open (unit = 1000, file = "Testing1.txt", status = "unknown")
-  open (unit = 1001, file = "Testing2.txt", status = "unknown")
-
-  do i = 1, nAnisG
-    if (Surrogates(1550, i, 1) == 0) write (1000, *) 1550, i, Surrogates(1550, i, 2), Genos(i, 217), truephase(i, 217,:)
-  end do
-  write (1000, *) " "
-  do i = 1, nAnisG
-    if (Surrogates(95, i, 1) == 0) write (1000, *) 95, i, Surrogates(95, i, 2), Genos(i, 217), truephase(i, 217,:)
-  end do
-  write (1000, *) " "
-  do i = 1, nAnisG
-    if (Surrogates(685, i, 1) == 0) write (1000, *) 685, i, Surrogates(685, i, 2), Genos(i, 217), truephase(i, 217,:)
-  end do
-  write (1000, *) " "
-  do i = 1, nAnisG
-    if (Surrogates(1294, i, 1) == 0) write (1000, *) 1294, i, Surrogates(1294, i, 2), Genos(i, 217), truephase(i, 217,:)
-  end do
-  write (1000, *) " "
-  do i = 1, nAnisG
-    if (Surrogates(1413, i, 1) == 0) write (1000, *) 1413, i, Surrogates(1413, i, 2), Genos(i, 217), truephase(i, 217,:)
-  end do
-  write (1000, *) " "
-  write (1001, *) genos(918, 1:400)
-  write (1001, *) genos(912, 1:400)
-  write (1001, *) genos(915, 1:400)
-  write (1001, *) truephase(918, 1:400, 1)
-  write (1001, *) truephase(918, 1:400, 2)
-  write (1001, *) truephase(912, 1:400, 1)
-  write (1001, *) truephase(912, 1:400, 2)
-  write (1001, *) truephase(915, 1:400, 1)
-  write (1001, *) truephase(915, 1:400, 2)
-
-end subroutine TestingProgram
-
-!########################################################################################################################################################################
-
 subroutine WriteOutResults
   use Global
   implicit none
@@ -2565,372 +2013,6 @@ subroutine WriteOutResults
   end do
 
 end subroutine WriteOutResults
-
-!########################################################################################################################################################################
-
-subroutine Checker
-  use Global
-  implicit none
-
-  integer :: i, j, k, SizeCore, nSurrogates
-  integer(kind = 1), allocatable, dimension(:,:,:) :: TruePhase, MistakePhase
-  integer, allocatable, dimension(:) :: HetCountPatWrong, HetCountPatNotPhased, HetCountPatCorrect, ErrCountMatWrong, ErrCountMatNotPhased
-  integer, allocatable, dimension(:) :: ErrCountMatCorrect, MissCountMatWrong, MissCountMatNotPhased, MissCountMatCorrect, HetCountMatWrong
-  integer, allocatable, dimension(:) :: HetCountMatNotPhased, HetCountMatCorrect, CountMatWrong, CountMatNotPhased
-  integer, allocatable, dimension(:) :: CountMatCorrect, MissCountPatWrong
-  integer, allocatable, dimension(:) :: MissCountPatNotPhased, MissCountPatCorrect, CountPatWrong, CountPatNotPhased, CountPatCorrect
-  integer, allocatable, dimension(:) :: ErrCountPatWrong, ErrCountPatNotPhased, ErrCountPatCorrect
-  double precision, allocatable, dimension(:,:) :: AverageMatrix
-  double precision, allocatable, dimension(:) :: PercCountPatWrong, PercCountPatNotPhased, PercCountPatCorrect
-  double precision, allocatable, dimension(:) :: PercHetCountPatWrong, PercHetCountPatNotPhased, PercHetCountPatCorrect
-  double precision, allocatable, dimension(:) :: PercMissCountPatWrong, PercMissCountPatNotPhased, PercMissCountPatCorrect
-  double precision, allocatable, dimension(:) :: PercErrCountPatWrong, PercErrCountPatNotPhased, PercErrCountPatCorrect
-  double precision, allocatable, dimension(:) :: PercCountMatWrong, PercCountMatNotPhased, PercCountMatCorrect
-  double precision, allocatable, dimension(:) :: PercHetCountMatWrong, PercHetCountMatNotPhased, PercHetCountMatCorrect
-  double precision, allocatable, dimension(:) :: PercMissCountMatWrong, PercMissCountMatNotPhased, PercMissCountMatCorrect
-  double precision, allocatable, dimension(:) :: PercErrCountMatWrong, PercErrCountMatNotPhased, PercErrCountMatCorrect
-  character(len = 300) :: dumC, filout
-
-  integer :: GetnSnpErrorThreshAnims
-
-  allocate(PercCountPatWrong(nAnisG))
-  allocate(PercCountPatNotPhased(nAnisG))
-  allocate(PercCountPatCorrect(nAnisG))
-  allocate(AverageMatrix(nCores, 6))
-  allocate(PercHetCountPatWrong(nAnisG))
-  allocate(PercHetCountPatNotPhased(nAnisG))
-  allocate(PercHetCountPatCorrect(nAnisG))
-  allocate(PercMissCountPatWrong(nAnisG))
-  allocate(PercMissCountPatNotPhased(nAnisG))
-  allocate(PercMissCountPatCorrect(nAnisG))
-  allocate(PercErrCountPatWrong(nAnisG))
-  allocate(PercErrCountPatNotPhased(nAnisG))
-  allocate(PercErrCountPatCorrect(nAnisG))
-  allocate(PercCountMatWrong(nAnisG))
-  allocate(PercCountMatNotPhased(nAnisG))
-  allocate(PercCountMatCorrect(nAnisG))
-  allocate(PercHetCountMatWrong(nAnisG))
-  allocate(PercHetCountMatNotPhased(nAnisG))
-  allocate(PercHetCountMatCorrect(nAnisG))
-  allocate(PercMissCountMatWrong(nAnisG))
-  allocate(PercMissCountMatNotPhased(nAnisG))
-  allocate(PercMissCountMatCorrect(nAnisG))
-  allocate(PercErrCountMatWrong(nAnisG))
-  allocate(PercErrCountMatNotPhased(nAnisG))
-  allocate(PercErrCountMatCorrect(nAnisG))
-  allocate(TruePhase(nAnisG, nSnp, 2))
-  allocate(MistakePhase(nAnisG, nSnp, 2))
-  allocate(HetCountPatWrong(nAnisG))
-  allocate(HetCountPatNotPhased(nAnisG))
-  allocate(HetCountPatCorrect(nAnisG))
-  allocate(ErrCountMatWrong(nAnisG))
-  allocate(ErrCountMatNotPhased(nAnisG))
-  allocate(ErrCountMatCorrect(nAnisG))
-  allocate(MissCountMatWrong(nAnisG))
-  allocate(MissCountMatNotPhased(nAnisG))
-  allocate(MissCountMatCorrect(nAnisG))
-  allocate(HetCountMatWrong(nAnisG))
-  allocate(HetCountMatNotPhased(nAnisG))
-  allocate(HetCountMatCorrect(nAnisG))
-  allocate(CountMatWrong(nAnisG))
-  allocate(CountMatNotPhased(nAnisG))
-  allocate(CountMatCorrect(nAnisG))
-  allocate(MissCountPatWrong(nAnisG))
-  allocate(MissCountPatNotPhased(nAnisG))
-  allocate(MissCountPatCorrect(nAnisG))
-  allocate(CountPatWrong(nAnisG))
-  allocate(CountPatNotPhased(nAnisG))
-  allocate(CountPatCorrect(nAnisG))
-  allocate(ErrCountPatWrong(nAnisG))
-  allocate(ErrCountPatNotPhased(nAnisG))
-  allocate(ErrCountPatCorrect(nAnisG))
-
-  SizeCore = (EndCoreSnp - StartCoreSnp) + 1
-
-  print*, " "
-  print*, " Checking simulation"
-  print*, " "
-  if (OutputPoint == 1) then
-    if (WindowsLinux == 1) then
-      call system("rmdir /s /q Simulation")
-    else
-      call system("rm -r Simulation")
-    endif
-
-    if (WindowsLinux == 1) then
-      if (FullFileOutput == 1) then
-	call system("mkdir Simulation")
-      endif
-    else
-      if (FullFileOutput == 1) then
-      call system("mkdir Simulation")
-      endif
-    endif
-  end if
-
-  close(17)
-  close(18)
-  close(20)
-  if (FullFileOutput == 1) then
-    if (WindowsLinux == 1) then
-      write (filout, '(".\Simulation\IndivMistakes",i0,".txt")') OutputPoint
-      open (unit = 17, FILE = filout, status = 'unknown')
-      write (filout, '(".\Simulation\Mistakes",i0,".txt")') OutputPoint
-      open (unit = 18, FILE = filout, status = 'unknown')
-      write (filout, '(".\Simulation\IndivMistakesPercent",i0,".txt")') OutputPoint
-      open (unit = 20, FILE = filout, status = 'unknown')
-      if (OutputPoint == 1) then
-	write (filout, '(".\Simulation\CoreMistakesPercent.txt")')
-	open (unit = 31, FILE = filout, status = 'unknown')
-      end if
-    else
-      write (filout, '("./Simulation/IndivMistakes",i0,".txt")') OutputPoint
-      open (unit = 17, FILE = filout, status = 'unknown')
-      write (filout, '("./Simulation/Mistakes",i0,".txt")') OutputPoint
-      open (unit = 18, FILE = filout, status = 'unknown')
-      write (filout, '("./Simulation/IndivMistakesPercent",i0,".txt")') OutputPoint
-      open (unit = 20, FILE = filout, status = 'unknown')
-      if (OutputPoint == 1) then
-      write (filout, '("./Simulation/CoreMistakesPercent.txt")')
-      open (unit = 31, FILE = filout, status = 'unknown')
-      end if
-    endif
-  end if
-
-  rewind(16)
-  do i = 1, nAnisG
-    read (16, *) dumC, TruePhase(i,:, 1)
-    read (16, *) dumC, TruePhase(i,:, 2)
-  end do
-
-  MistakePhase = 9
-  do i = 1, nAnisG
-    CountPatNotPhased(i) = 0
-    CountPatCorrect(i) = 0
-    CountPatWrong(i) = 0
-    HetCountPatNotPhased(i) = 0
-    HetCountPatCorrect(i) = 0
-    HetCountPatWrong(i) = 0
-    MissCountPatNotPhased(i) = 0
-    MissCountPatCorrect(i) = 0
-    MissCountPatWrong(i) = 0
-    ErrCountPatNotPhased(i) = 0
-    ErrCountPatCorrect(i) = 0
-    ErrCountPatWrong(i) = 0
-
-    CountMatNotPhased(i) = 0
-    CountMatCorrect(i) = 0
-    CountMatWrong(i) = 0
-    HetCountMatNotPhased(i) = 0
-    HetCountMatCorrect(i) = 0
-    HetCountMatWrong(i) = 0
-    MissCountMatNotPhased(i) = 0
-    MissCountMatCorrect(i) = 0
-    MissCountMatWrong(i) = 0
-    ErrCountMatNotPhased(i) = 0
-    ErrCountMatCorrect(i) = 0
-    ErrCountMatWrong(i) = 0
-
-    do j = StartCoreSnp, EndCoreSnp
-      if (Phase(i, j, 1) == 9) then
-	MistakePhase(i, j, 1) = 9
-	CountPatNotPhased(i) = CountPatNotPhased(i) + 1
-	if (Genos(i, j) == 1) then
-	  HetCountPatNotPhased(i) = HetCountPatNotPhased(i) + 1
-	end if
-	if (Genos(i, j) == MissingGenotypeCode) then
-	  MissCountPatNotPhased(i) = MissCountPatNotPhased(i) + 1
-	end if
-	if ((Genos(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 1) + TruePhase(i, j, 2)) /= Genos(i, j))) then
-	  ErrCountPatNotPhased(i) = ErrCountPatNotPhased(i) + 1
-	end if
-
-
-      else
-	if (TruePhase(i, j, 1) == Phase(i, j, 1)) then
-	MistakePhase(i, j, 1) = 1
-	CountPatCorrect(i) = CountPatCorrect(i) + 1
-	if (Genos(i, j) == 1) then
-	  HetCountPatCorrect(i) = HetCountPatCorrect(i) + 1
-	end if
-	if (Genos(i, j) == MissingGenotypeCode) then
-	  MissCountPatCorrect(i) = MissCountPatCorrect(i) + 1
-	end if
-	if ((Genos(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 1) + TruePhase(i, j, 2)) /= Genos(i, j))) then
-	  ErrCountPatCorrect(i) = ErrCountPatCorrect(i) + 1
-	end if
-      else
-	MistakePhase(i, j, 1) = 5
-	CountPatWrong(i) = CountPatWrong(i) + 1
-	if (Genos(i, j) == 1) then
-	HetCountPatWrong(i) = HetCountPatWrong(i) + 1
-	end if
-	if (Genos(i, j) == MissingGenotypeCode) then
-	MissCountPatWrong(i) = MissCountPatWrong(i) + 1
-	end if
-	if ((Genos(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 1) + TruePhase(i, j, 2)) /= Genos(i, j))) then
-	ErrCountPatWrong(i) = ErrCountPatWrong(i) + 1
-	end if
-
-	end if
-      endif
-
-      if (Phase(i, j, 2) == 9) then
-	MistakePhase(i, j, 2) = 9
-	CountMatNotPhased(i) = CountMatNotPhased(i) + 1
-	if (Genos(i, j) == 1) then
-	  HetCountMatNotPhased(i) = HetCountMatNotPhased(i) + 1
-	end if
-	if (Genos(i, j) == MissingGenotypeCode) then
-	  MissCountMatNotPhased(i) = MissCountMatNotPhased(i) + 1
-	end if
-	if ((Genos(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 2) + TruePhase(i, j, 1)) /= Genos(i, j))) then
-	  ErrCountMatNotPhased(i) = ErrCountMatNotPhased(i) + 1
-	end if
-      else
-	if (TruePhase(i, j, 2) == Phase(i, j, 2)) then
-	MistakePhase(i, j, 2) = 1
-	CountMatCorrect(i) = CountMatCorrect(i) + 1
-	if (Genos(i, j) == 1) then
-	  HetCountMatCorrect(i) = HetCountMatCorrect(i) + 1
-	end if
-	if (Genos(i, j) == MissingGenotypeCode) then
-	  MissCountMatCorrect(i) = MissCountMatCorrect(i) + 1
-	end if
-	if ((Genos(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 2) + TruePhase(i, j, 1)) /= Genos(i, j))) then
-	  ErrCountMatCorrect(i) = ErrCountMatCorrect(i) + 1
-	end if
-      else
-	MistakePhase(i, j, 2) = 5
-	CountMatWrong(i) = CountMatWrong(i) + 1
-	if (Genos(i, j) == 1) then
-	HetCountMatWrong(i) = HetCountMatWrong(i) + 1
-	end if
-	if (Genos(i, j) == MissingGenotypeCode) then
-	MissCountMatWrong(i) = MissCountMatWrong(i) + 1
-	end if
-	if ((Genos(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 2) + TruePhase(i, j, 1)) /= Genos(i, j))) then
-	ErrCountMatWrong(i) = ErrCountMatWrong(i) + 1
-	end if
-
-	end if
-      endif
-    end do
-    PercCountPatCorrect(i) = 100 * (float(CountPatCorrect(i))/SizeCore)
-    PercCountMatCorrect(i) = 100 * (float(CountMatCorrect(i))/SizeCore)
-    PercCountPatNotPhased(i) = 100 * (float(CountPatNotPhased(i))/SizeCore)
-    PercCountMatNotPhased(i) = 100 * (float(CountMatNotPhased(i))/SizeCore)
-    PercCountPatWrong(i) = 100 * (float(CountPatWrong(i))/SizeCore)
-    PercCountMatWrong(i) = 100 * (float(CountMatWrong(i))/SizeCore)
-    PercHetCountPatCorrect(i) = 100 * (float(HetCountPatCorrect(i))&
-    /(HetCountPatCorrect(i) + HetCountPatNotPhased(i) + HetCountPatWrong(i) + 0.0000000001))
-    PercHetCountMatCorrect(i) = 100 * (float(HetCountMatCorrect(i))&
-    /(HetCountMatCorrect(i) + HetCountMatNotPhased(i) + HetCountMatWrong(i) + 0.0000000001))
-    PercHetCountPatNotPhased(i) = 100 * (float(HetCountPatNotPhased(i))&
-    /(HetCountPatCorrect(i) + HetCountPatNotPhased(i) + HetCountPatWrong(i) + 0.0000000001))
-    PercHetCountMatNotPhased(i) = 100 * (float(HetCountMatNotPhased(i))&
-    /(HetCountMatCorrect(i) + HetCountMatNotPhased(i) + HetCountMatWrong(i) + 0.0000000001))
-    PercHetCountPatWrong(i) = 100 * (float(HetCountPatWrong(i))&
-    /(HetCountPatCorrect(i) + HetCountPatNotPhased(i) + HetCountPatWrong(i) + 0.0000000001))
-    PercHetCountMatWrong(i) = 100 * (float(HetCountMatWrong(i))&
-    /(HetCountMatCorrect(i) + HetCountMatNotPhased(i) + HetCountMatWrong(i) + 0.00000000001))
-    PercMissCountPatCorrect(i) = &
-    100 * (float(MissCountPatCorrect(i))/(MissCountPatCorrect(i) + MissCountPatNotPhased(i) + MissCountPatWrong(i) + 0.00000000001))
-    PercMissCountMatCorrect(i) = &
-    100 * (float(MissCountMatCorrect(i))/(MissCountMatCorrect(i) + MissCountMatNotPhased(i) + MissCountMatWrong(i) + 0.00000000001))
-    PercMissCountPatNotPhased(i) = &
-    100 * (float(MissCountPatNotPhased(i))/(MissCountPatCorrect(i) + MissCountPatNotPhased(i) + MissCountPatWrong(i) + 0.00000000001))
-    PercMissCountMatNotPhased(i) = &
-    100 * (float(MissCountMatNotPhased(i))/(MissCountMatCorrect(i) + MissCountMatNotPhased(i) + MissCountMatWrong(i) + 0.00000000001))
-    PercMissCountPatWrong(i) = 100 * (float(MissCountPatWrong(i))&
-    /(MissCountPatCorrect(i) + MissCountPatNotPhased(i) + MissCountPatWrong(i) + 0.00000000001))
-    PercMissCountMatWrong(i) = 100 * (float(MissCountMatWrong(i))&
-    /(MissCountMatCorrect(i) + MissCountMatNotPhased(i) + MissCountMatWrong(i) + 0.00000000001))
-    PercErrCountPatCorrect(i) = 100 * (float(ErrCountPatCorrect(i))&
-    /(ErrCountPatCorrect(i) + ErrCountPatNotPhased(i) + ErrCountPatWrong(i) + 0.00000000001))
-    PercErrCountMatCorrect(i) = 100 * (float(ErrCountMatCorrect(i))&
-    /(ErrCountMatCorrect(i) + ErrCountMatNotPhased(i) + ErrCountMatWrong(i) + 0.00000000001))
-    PercErrCountPatNotPhased(i) = 100 * (float(ErrCountPatNotPhased(i))&
-    /(ErrCountPatCorrect(i) + ErrCountPatNotPhased(i) + ErrCountPatWrong(i) + 0.00000000001))
-    PercErrCountMatNotPhased(i) = 100 * (float(ErrCountMatNotPhased(i))&
-    /(ErrCountMatCorrect(i) + ErrCountMatNotPhased(i) + ErrCountMatWrong(i) + 0.00000000001))
-    PercErrCountPatWrong(i) = 100 * (float(ErrCountPatWrong(i))&
-    /(ErrCountPatCorrect(i) + ErrCountPatNotPhased(i) + ErrCountPatWrong(i) + 0.00000000001))
-    PercErrCountMatWrong(i) = 100 * (float(ErrCountMatWrong(i))&
-    /(ErrCountMatCorrect(i) + ErrCountMatNotPhased(i) + ErrCountMatWrong(i) + 0.00000000001))
-
-    if (FullFileOutput == 1) then
-      nSurrogates = 0
-      do k = i, nAnisG
-	if (Surrogates(i, k, 1) <= GetnSnpErrorThreshAnims(i, k)) nSurrogates = nSurrogates + 1
-      enddo
-      write (17, '(a20,a3,3i5,a3,6i6,a6,6i6,a6,6i6,a6,6i6)') GenotypeId(i), "|", &
-      count(Surrogates(i,:, 2) == 1), count(Surrogates(i,:, 2) == 2), nSurrogates, "|", &
-      CountPatCorrect(i), CountMatCorrect(i), CountPatNotPhased(i), &
-      CountMatNotPhased(i), CountPatWrong(i), CountMatWrong(i), "|", &
-      HetCountPatCorrect(i), HetCountMatCorrect(i), HetCountPatNotPhased(i), &
-      HetCountMatNotPhased(i), HetCountPatWrong(i), HetCountMatWrong(i), "|", &
-      MissCountPatCorrect(i), MissCountMatCorrect(i), MissCountPatNotPhased(i), &
-      MissCountMatNotPhased(i), MissCountPatWrong(i), MissCountMatWrong(i), "|", &
-      ErrCountPatCorrect(i), ErrCountMatCorrect(i), ErrCountPatNotPhased(i), &
-      ErrCountMatNotPhased(i), ErrCountPatWrong(i), ErrCountMatWrong(i)
-      write (20, '(a20,a3,3i5,a3,6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') GenotypeId(i), "|", &
-      count(Surrogates(i,:, 2) == 1), count(Surrogates(i,:, 2) == 2), nSurrogates, "|", &
-      PercCountPatCorrect(i), PercCountMatCorrect(i), PercCountPatNotPhased(i), &
-      PercCountMatNotPhased(i), PercCountPatWrong(i), PercCountMatWrong(i), "|", &
-      PercHetCountPatCorrect(i), PercHetCountMatCorrect(i), PercHetCountPatNotPhased(i), &
-      PercHetCountMatNotPhased(i), PercHetCountPatWrong(i), PercHetCountMatWrong(i), "|", &
-      PercMissCountPatCorrect(i), PercMissCountMatCorrect(i), PercMissCountPatNotPhased(i), &
-      PercMissCountMatNotPhased(i), PercMissCountPatWrong(i), PercMissCountMatWrong(i), "|", &
-      PercErrCountPatCorrect(i), PercErrCountMatCorrect(i), PercErrCountPatNotPhased(i), &
-      PercErrCountMatNotPhased(i), PercErrCountPatWrong(i), PercErrCountMatWrong(i)
-
-      write (18, '(a20,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3)') GenotypeId(i), &
-      MistakePhase(i,:, 1)
-      write (18, '(a20,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3)') GenotypeId(i), &
-      MistakePhase(i,:, 2)
-    endif
-
-  end do
-
-  print*, "   Summary statistics                               ", "Paternal  Maternal"
-  write (*, '(a40,a12,2f8.1)') "Percent correctly phased    All Snps", " ", &
-  sum(PercCountPatCorrect(:))/nAnisG, sum(PercCountMatCorrect(:))/nAnisG
-  write (*, '(a49,a3,2f8.1)') "Percent correctly phased    Heterozygous Snps", " ", sum(PercHetCountPatCorrect(:))/nAnisG&
-  , sum(PercHetCountMatCorrect(:))/nAnisG
-  write (*, *) " "
-  write (*, '(a34,a18,2f8.1)') "Percent not phased    All Snps", " ", &
-  sum(PercCountPatNotPhased(:))/nAnisG, sum(PercCountMatNotPhased(:))/nAnisG
-  write (*, '(a43,a9,2f8.1)') "Percent not phased    Heterozygous Snps", " ", sum(PercHetCountPatNotPhased(:))/nAnisG&
-  , sum(PercHetCountMatNotPhased(:))/nAnisG
-  write (*, *) " "
-  write (*, '(a42,a10,2f8.1)') "Percent incorrectly phased    All Snps", " ", &
-  sum(PercCountPatWrong(:))/nAnisG, sum(PercCountMatWrong(:))/nAnisG
-  write (*, '(a51,a1,2f8.1)') "Percent incorrectly phased    Heterozygous Snps", " ", sum(PercHetCountPatWrong(:))/nAnisG&
-  , sum(PercHetCountMatWrong(:))/nAnisG
-
-  if (FullFileOutput == 1) then
-    write (31, '(6f9.4)') (sum(PercCountPatCorrect(:)) + sum(PercCountMatCorrect(:)))/(2 * nAnisG), &
-    (sum(PercHetCountPatCorrect(:)) + sum(PercHetCountMatCorrect(:)))/(2 * nAnisG), &
-    (sum(PercCountPatNotPhased(:)) + sum(PercCountMatNotPhased(:)))/(2 * nAnisG), &
-    (sum(PercHetCountPatNotPhased(:)) + sum(PercHetCountMatNotPhased(:)))/(2 * nAnisG), &
-    (sum(PercCountPatWrong(:)) + sum(PercCountMatWrong(:)))/(2 * nAnisG), &
-    (sum(PercHetCountPatWrong(:)) + sum(PercHetCountMatWrong(:)))/(2 * nAnisG)
-  endif
-
-  if (OutputPoint == nCores) then
-    if (FullFileOutput == 1) then
-      rewind(31)
-      do i = 1, nCores
-	read (31, *) AverageMatrix(i,:)
-      end do
-      write (31, *) " "
-      write (31, '(6f9.4)') sum(AverageMatrix(:, 1))/nCores, sum(AverageMatrix(:, 2))/nCores, sum(AverageMatrix(:, 3))/nCores, &
-      sum(AverageMatrix(:, 4))/nCores, sum(AverageMatrix(:, 5))/nCores, sum(AverageMatrix(:, 6))/nCores
-    endif
-  end if
-
-end subroutine Checker
 
 !########################################################################################################################################################################
 
