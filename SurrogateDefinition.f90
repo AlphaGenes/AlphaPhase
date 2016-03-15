@@ -7,6 +7,7 @@ module SurrogateDefinition
     !Almost definitely shouldn't be public but for now...
     integer(kind = 2), allocatable, dimension(:,:), public :: numOppose
     integer(kind = 1), allocatable, dimension(:,:), public :: partition
+    integer(kind = 1), allocatable, dimension(:), public :: method
   contains
     private
     procedure, public :: calculate
@@ -16,8 +17,6 @@ contains
   subroutine calculate(definition, genos, SireGenotyped, DamGenotyped, threshold)
     !Don't like this but for now!!
     use GlobalClustering
-    !Here for input / output crap!!
-    use Global, only : FullFileOutput, OutputPoint, WindowsLinux, GenotypeId
     
     class(SurrDef) :: definition
     integer(kind = 1), dimension (:,:), intent(in) :: genos
@@ -26,16 +25,15 @@ contains
 
 
     integer :: i, j, k, Counter, truth, PseudoDam, PseudoSire, PseudoSireOld
-    integer, allocatable, dimension(:) :: Partitioned, SurrogateList, ProgCount
+    integer, allocatable, dimension(:) :: SurrogateList, ProgCount
     integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam, temp
-    character(len = 300) :: filout
 
     integer :: ii, jj, kk, l, Noffset, Limit, Switch, CurrentGroup, ChangeThreshold, flag, FirstGroup0
     integer, allocatable :: SumsOld(:), Rank(:), SumDiff(:), SumSame(:), Group(:)
     double precision, allocatable :: Sums(:)
     logical :: NoCommonGroup
 
-    integer :: GetnSnpErrorThreshAnims, nSurrogates
+    integer :: GetnSnpErrorThreshAnims
     
     ! integer,allocatable,dimension(:,:) :: nSnpErrorThreshAnims
     
@@ -49,14 +47,14 @@ contains
     if (allocated(definition%numOppose)) then
       deallocate(definition%numOppose)
       deallocate(definition%partition)
+      deallocate(definition%method)
     end if
     allocate(definition%numOppose(nAnisG,nAnisG))
     allocate(definition%partition(nAnisG,nAnisG))
+    allocate(definition%method(nAnisG))
     
     definition%partition = 0
 
-
-    allocate(Partitioned(nAnisG))
     allocate(SurrogateList(nAnisG))
     allocate(ProgCount(nAnisG))
 
@@ -89,7 +87,7 @@ contains
 
     print*, " "
     print*, " Partitioning surrogates"
-    Partitioned = 0
+    definition%method = 0
     do i = 1, nAnisG
    
       DumSire = 0
@@ -111,10 +109,10 @@ contains
 	if (definition%numOppose(i, DamGenotyped(i)) <= threshold) then
 	  definition%partition(i, DamGenotyped(i)) = 2
 	end if
-	Partitioned(i) = 1
+	definition%method(i) = 1
       end if
       
-      if ((Partitioned(i) == 0).and.(SireGenotyped(i) /= 0)) then
+      if ((definition%method(i) == 0).and.(SireGenotyped(i) /= 0)) then
 	definition%partition(i, SireGenotyped(i)) = 1
 	do j = 1, nAnisG
 	  if ((i /= j).and.(definition%numOppose(SireGenotyped(i), j) <= threshold).and.&
@@ -122,10 +120,10 @@ contains
 	    definition%partition(i, j) = 1
 	  endif
 	enddo
-        Partitioned(i) = 2
+        definition%method(i) = 2
       endif
 
-      if ((Partitioned(i) == 0).and.(DamGenotyped(i) /= 0)) then
+      if ((definition%method(i) == 0).and.(DamGenotyped(i) /= 0)) then
 	definition%partition(i, DamGenotyped(i)) = 2
 	do j = 1, nAnisG
 	  if ((i /= j).and.(definition%numOppose(DamGenotyped(i), j) <= threshold).and.&
@@ -133,10 +131,10 @@ contains
 	    definition%partition(i, j) = 2
 	  endif
 	enddo
-	Partitioned(i) = 3
+	definition%method(i) = 3
       endif
       
-      if ((Partitioned(i) == 0).and.(ProgCount(i) /= 0)) then
+      if ((definition%method(i) == 0).and.(ProgCount(i) /= 0)) then
 	DumSire = 0
 	do j = 1, nAnisG
 	  if ((i == DamGenotyped(j)).and.(definition%numOppose(i, j) <= threshold)) then
@@ -163,10 +161,10 @@ contains
 	    end if
 	  end do
 	end if
-	Partitioned(i) = 5
+	definition%method(i) = 5
       end if
       
-      if (Partitioned(i) == 2.or.Partitioned(i) == 3.or.Partitioned(i) == 4.or.Partitioned(i) == 5) then
+      if (definition%method(i) == 2.or.definition%method(i) == 3.or.definition%method(i) == 4.or.definition%method(i) == 5) then
 	do j = 1, nAnisG
 	  CountAgreePat = 0
 	  CountAgreeMat = 0
@@ -191,7 +189,7 @@ contains
 	end do
       end if
       
-      if (Partitioned(i) == 0) then
+      if (definition%method(i) == 0) then
 	SurrCounter = 0
 	do j = 1, nAnisG
 	  if ((definition%numOppose(i, j) <= threshold).and.(i /= j)) then
@@ -244,7 +242,7 @@ contains
 	    do j = 1, SurrCounter
 	      definition%partition(i, TempSurrVector(j)) = ClusterMember(j)
 	    enddo
-	    Partitioned(i) = 7
+	    definition%method(i) = 7
 	  end if
 
 	  deallocate(Medoids)
@@ -253,43 +251,13 @@ contains
 	  deallocate(TempSurrArray)
 	  deallocate(TempSurrVector)
 	endif
-	Partitioned(i) = 6
+	definition%method(i) = 6
       endif
       
       if (mod(i, 400) == 0) print*, "   Partitioning done for genotyped individual --- ", i
       definition%partition(i, i) = 0
     end do
 
-    if (FullFileOutput == 1) then
-      if (WindowsLinux == 1) then
-	write (filout, '(".\Miscellaneous\Surrogates",i0,".txt")') OutputPoint
-	open (unit = 13, FILE = filout, status = 'unknown')
-	write (filout, '(".\Miscellaneous\SurrogatesSummary",i0,".txt")') OutputPoint
-	open (unit = 19, FILE = filout, status = 'unknown')
-
-      else
-	write (filout, '("./Miscellaneous/Surrogates",i0,".txt")') OutputPoint
-	open (unit = 13, FILE = filout, status = 'unknown')
-	write (filout, '("./Miscellaneous/SurrogatesSummary",i0,".txt")') OutputPoint
-	open (unit = 19, FILE = filout, status = 'unknown')
-      endif
-      do i = 1, nAnisG
-	nSurrogates = 0
-	if (nAnisG < 20000) then
-	  write (13, '(a20,20000i6,20000i6,20000i6,20000i6)') GenotypeId(i), definition%partition(i,:)
-	else
-	  write (13, *) GenotypeId(i), definition%partition(i,:)
-	end if
-	do j = i, nAnisG
-	  if (definition%numOppose(i, j) <= threshold) nSurrogates = nSurrogates + 1
-	enddo
-	write (19, '(a20,20000i6,20000i6,20000i6,20000i6)') &
-	GenotypeId(i), count(definition%partition(i,:) == 1), count(definition%partition(i,:) == 2)&
-	, count(definition%partition(i,:) == 3), nSurrogates, Partitioned(i)
-      enddo
-    end if
-
-    deallocate(Partitioned)
     deallocate(SurrogateList)
     deallocate(ProgCount)
   end subroutine calculate
