@@ -138,6 +138,7 @@ contains
     integer, intent(in) :: id
     integer(kind = 1), dimension(:), allocatable :: hap
 
+    allocate(hap(library % nSnps))
     hap = library % store(id,:)
   end function getHap
 
@@ -146,10 +147,11 @@ contains
     integer, intent(in) :: id, snp
     integer(kind = 1) :: phase
 
-    integer(kind = 1), dimension(:), allocatable :: hap
+    !integer(kind = 1), dimension(:), allocatable :: hap
 
-    hap = library % getHap(id)
-    phase = hap(snp)
+    !hap = library % getHap(id)
+    !phase = hap(snp)
+    phase = library % store(id,snp)
   end function getPhase
 
   function getSize(library) result(size)

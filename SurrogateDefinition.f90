@@ -22,59 +22,132 @@ contains
     integer(kind = 1), dimension (:,:), intent(in) :: genos
     integer(kind = 4), allocatable, dimension (:), intent(in) :: SireGenotyped, DamGenotyped
     integer :: threshold
+    
+    integer, allocatable, dimension(:,:) :: passThres
+    integer, allocatable, dimension(:) :: numPassThres
 
-
-    integer :: i, j, k, Counter, truth, PseudoDam, PseudoSire, PseudoSireOld
+    integer :: nAnisG, nSnp
+    
+    integer :: i, j, k, Counter, truth, PseudoDam, PseudoSire, PseudoSireOld, nSnpCommon
     integer, allocatable, dimension(:) :: SurrogateList, ProgCount
     integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam, temp
+    character(len = 300) :: filout
 
     integer :: ii, jj, kk, l, Noffset, Limit, Switch, CurrentGroup, ChangeThreshold, flag, FirstGroup0
     integer, allocatable :: SumsOld(:), Rank(:), SumDiff(:), SumSame(:), Group(:)
     double precision, allocatable :: Sums(:)
     logical :: NoCommonGroup
 
-    integer :: GetnSnpErrorThreshAnims
-    
+    integer :: ai, aj, ak
+
+    integer, parameter :: SortOrMedoid = 0 !if 1 it uses Brians Sort, If Zero it uses k-medoids
+
+    integer :: nSurrogates
+
+    integer :: numsections, overhang, cursection, curpos
+    integer(kind = 8), allocatable, dimension(:,:) :: homo, additional
+
+    integer :: thres, pass
+
     ! integer,allocatable,dimension(:,:) :: nSnpErrorThreshAnims
-    
-    
-    !!OLD GLOBAL!!
-    integer :: nAnisG, nSnps
-   
+
+    logical :: subtract1 ! Fudge to produce same results as old version.  Effectively does old buggy logic.  Should be removed
+    ! once finished with speed ups.
+
     nAnisG = size(genos,1)
-    nSnps = size(genos,2)
-    
-    if (allocated(definition%numOppose)) then
-      deallocate(definition%numOppose)
-      deallocate(definition%partition)
-      deallocate(definition%method)
-    end if
-    allocate(definition%numOppose(nAnisG,nAnisG))
-    allocate(definition%partition(nAnisG,nAnisG))
-    allocate(definition%method(nAnisG))
-    
-    definition%partition = 0
+    nSnp = size(genos,2)
 
     allocate(SurrogateList(nAnisG))
     allocate(ProgCount(nAnisG))
 
-    print*, " "
-    print*, " Identifying surrogates"
+    numsections = nSnp / 64 + 1
+    overhang = 64 - (nSnp - (numsections - 1) * 64)
+
+    allocate(homo(nAnisG, numsections))
+    allocate(additional(nAnisG, numsections))
+    homo = 0
+    additional = 0
+
+    !if (allocated(passThres)) then
+    !  deallocate(passThres)
+    !  deallocate(numPassThres)
+    !end if
+    allocate(passThres(nAnisG, nAnisG))
+    allocate(numPassThres(nAnisG))
+    numPassThres = 0
+    passThres = 0
 
     do i = 1, nAnisG
-      do j = i + 1, nAnisG
-	Counter = 0
-	do k = 1, nSnps
-	  if ((Genos(i, k) == 0).and.(Genos(j, k) == 2)) Counter = Counter + 1
-	  if ((Genos(i, k) == 2).and.(Genos(j, k) == 0)) Counter = Counter + 1
-	end do
-	definition%numOppose(i, j) = Counter
-	definition%numOppose(j, i) = Counter
+      cursection = 1
+      curpos = 1
+
+      do j = 1, nSnp
+	select case (Genos(i, j))
+	case (0)
+	  homo(i, cursection) = ibset(homo(i, cursection), curpos)
+	  !additional(i,cursection) = ibclr(additional(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
+	case (1)
+	  !homo(i,cursection) = ibclr(homo(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
+	  !additional(i,cursection) = ibclr(additional(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
+	case (2)
+	  homo(i, cursection) = ibset(homo(i, cursection), curpos)
+	  additional(i, cursection) = ibset(additional(i, cursection), curpos)
+	case default
+	  !Asuume missing
+	  !homo(i,cursection) = ibclr(homo(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
+	  additional(i, cursection) = ibset(additional(i, cursection), curpos)
+	end select
+	curpos = curpos + 1
+	if (curpos == 65) then
+	  curpos = 1
+	  cursection = cursection + 1
+	end if
       end do
-      definition%numOppose(i, i) = 0
-      if (mod(i, 400) == 0) print*, "   Surrogate identification done for genotyped individual --- ", i
     end do
 
+    if (nClusters /= 2) then
+      print*, "nClusters must equal 2"
+      stop
+    end if
+
+    print*, " "
+    print*, " Identifying surrogates"
+    
+    if (allocated(definition%partition)) then
+      deallocate(definition%partition)
+      deallocate(definition%numoppose)
+      deallocate(definition%method)
+    end if
+    allocate(definition%partition(nAnisG,nAnisG))
+    allocate(definition%numoppose(nAnisG,nAnisG))
+    allocate(definition%method(nAnisG))
+
+    definition%partition = 0
+    definition%numoppose = 0
+    definition%method = 0
+
+    do i = 1, nAnisG
+      pass = 0
+      do j = i + 1, nAnisG
+	Counter = 0
+	nSnpCommon = 0
+
+	Counter = mismatches(homo, additional, i, j, numsections)
+
+	definition%numoppose(i, j) = Counter
+	definition%numoppose(j, i) = Counter
+
+	if (Counter <= threshold) then
+	  numPassThres(i) = numPassThres(i) + 1
+	  passThres(i, numPassThres(i)) = j
+	  numPassThres(j) = numPassThres(j) + 1
+	  passThres(j, numPassThres(j)) = i
+	end if
+      end do
+      definition%numoppose(i, i) = 0
+      if (mod(i, 400) == 0) print*, "   Surrogate identification done for genotyped individual --- ", i
+    end do
+    
     ProgCount = 0
     do i = 1, nAnisG
       if (SireGenotyped(i) /= 0) then
@@ -87,61 +160,65 @@ contains
 
     print*, " "
     print*, " Partitioning surrogates"
-    definition%method = 0
     do i = 1, nAnisG
-   
+
       DumSire = 0
       DumDam = 0
+
       if ((SireGenotyped(i) /= 0).and.(DamGenotyped(i) /= 0)) then
-	do j = 1, nAnisG
-	  if ((definition%numOppose(i, j) <= threshold).and.(definition%numOppose((SireGenotyped(i)), j) <= threshold) &
-	  .and.(definition%numOppose((DamGenotyped(i)), j) > threshold)) then
+	!do j = 1, nAnisG
+	do aj = 1, numPassThres(i)
+	  j = passThres(i, aj)
+	  truth = 0
+	  if ((definition%numoppose((SireGenotyped(i)), j) <=  threshold) &
+	    .and.(definition%numoppose((DamGenotyped(i)), j) > threshold)) then
 	    definition%partition(i, j) = 1
 	  endif
-	  if ((definition%numOppose(i, j) <= threshold).and.(definition%numOppose((DamGenotyped(i)), j) <= threshold)&
-	  .and.(definition%numOppose((SireGenotyped(i)), j) > threshold)) then
+	  if ((definition%numoppose((DamGenotyped(i)), j) <= threshold)&
+	    .and.(definition%numoppose((SireGenotyped(i)), j) > threshold)) then
 	    definition%partition(i, j) = 2
 	  endif
 	end do
-	if (definition%numOppose(i, SireGenotyped(i)) <= threshold) then
+	if (definition%numoppose(i, SireGenotyped(i)) <= threshold) then
 	  definition%partition(i, SireGenotyped(i)) = 1
 	end if
-	if (definition%numOppose(i, DamGenotyped(i)) <= threshold) then
+	if (definition%numoppose(i, DamGenotyped(i)) <= threshold) then
 	  definition%partition(i, DamGenotyped(i)) = 2
 	end if
 	definition%method(i) = 1
       end if
-      
+
       if ((definition%method(i) == 0).and.(SireGenotyped(i) /= 0)) then
 	definition%partition(i, SireGenotyped(i)) = 1
-	do j = 1, nAnisG
-	  if ((i /= j).and.(definition%numOppose(SireGenotyped(i), j) <= threshold).and.&
-	    (definition%numOppose(i, j) <= threshold)) then
+	do aj = 1, numPassThres(i)
+	  j = passThres(i, aj)
+	  if (definition%numoppose(SireGenotyped(i), j) <= threshold) then
 	    definition%partition(i, j) = 1
 	  endif
 	enddo
-        definition%method(i) = 2
+	definition%method(i) = 2
       endif
 
       if ((definition%method(i) == 0).and.(DamGenotyped(i) /= 0)) then
 	definition%partition(i, DamGenotyped(i)) = 2
-	do j = 1, nAnisG
-	  if ((i /= j).and.(definition%numOppose(DamGenotyped(i), j) <= threshold).and.&
-	    (definition%numOppose(i, j) <= threshold)) then
+	do aj = 1, numPassThres(i)
+	  j = passThres(i, aj)
+	  if (definition%numoppose(DamGenotyped(i), j) <= threshold) then
 	    definition%partition(i, j) = 2
 	  endif
 	enddo
 	definition%method(i) = 3
       endif
-      
+
       if ((definition%method(i) == 0).and.(ProgCount(i) /= 0)) then
 	DumSire = 0
-	do j = 1, nAnisG
-	  if ((i == DamGenotyped(j)).and.(definition%numOppose(i, j) <= threshold)) then
+	do aj = 1, numPassThres(i)
+	  j = passThres(i, aj)
+	  if (i == DamGenotyped(j)) then
 	    DumSire = j
 	    exit
 	  endif
-	  if ((i == SireGenotyped(j)).and.(definition%numOppose(i, j) <= threshold)) then
+	  if (i == SireGenotyped(j)) then
 	    DumSire = j
 	    exit
 	  endif
@@ -149,33 +226,47 @@ contains
 	if (DumSire /= 0) then
 	  definition%partition(i, DumSire) = 1
 	  truth = 0
-	  do j = 1, nAnisG
+	  do aj = 1, numPassThres(i)
+	    j = passThres(i, aj)
 	    if ((i == SireGenotyped(j)).or.(i == DamGenotyped(j))) then
-	      if (definition%numOppose(i, j) <= threshold) then
-		if (definition%numOppose(j, DumSire) > threshold) then
-		  definition%partition(i, j) = 2
-		  truth = 1
-		  exit
-		endif
+	      if (definition%numoppose(j, DumSire) > threshold) then
+		definition%partition(i, j) = 2
+		truth = 1
+		exit
 	      endif
 	    end if
 	  end do
 	end if
 	definition%method(i) = 5
       end if
-      
-      if (definition%method(i) == 2.or.definition%method(i) == 3.or.definition%method(i) == 4.or.definition%method(i) == 5) then
-	do j = 1, nAnisG
+
+      if (definition%method(i) > 1) then
+	subtract1 = .false.
+	!do j = 1, nAnisG
+	do aj = 1, numPassThres(i) + 1
+	  ! Fudge to get same (buggy) result as before.  Should really be just:
+	  ! j = passThres(i,aj)
+	  if (.not.subtract1) then
+	    j = passThres(i, aj)
+	    if ((j > i) .or. (j == 0)) then
+	      j = i
+	      subtract1 = .true.
+	    end if
+	  else
+	    j = passThres(i, aj - 1)
+	  end if
+	  if (j < 0) then
+	    print *, i, numPassThres(i), subtract1, passThres(i, aj)
+	  end if
 	  CountAgreePat = 0
 	  CountAgreeMat = 0
-	  do k = 1, nAnisG
-	    if ((definition%partition(i, k) == 1).and.(definition%numOppose(i, j) <= threshold)&
-	      .and.(definition%numOppose(k, j) <= threshold)) then
+	  do ak = 1, numPassThres(j)
+	    k = passThres(j, ak)
+	    if (definition%partition(i, k) == 1) then
 	      CountAgreePat = CountAgreePat + 1
 	      exit !here
 	    endif
-	    if ((definition%partition(i, k) == 2).and.(definition%numOppose(i, j) <= threshold)&
-	      .and.(definition%numOppose(k, j) <= threshold)) then
+	    if (definition%partition(i, k) == 2) then
 	      CountAgreeMat = CountAgreeMat + 1
 	      exit !here
 	    endif
@@ -185,14 +276,14 @@ contains
 	  end if
 	  if ((CountAgreePat == 0).and.(CountAgreeMat /= 0)) then
 	    definition%partition(i, j) = 2
-	  end if	    
+	  end if
 	end do
       end if
-      
+
       if (definition%method(i) == 0) then
 	SurrCounter = 0
 	do j = 1, nAnisG
-	  if ((definition%numOppose(i, j) <= threshold).and.(i /= j)) then
+	  if ((definition%numoppose(i, j) <= threshold).and.(i /= j)) then
 	    SurrCounter = SurrCounter + 1
 	  endif
 	end do
@@ -201,7 +292,7 @@ contains
 	  allocate(TempSurrVector(SurrCounter))
 	  SurrCounter = 0
 	  do j = 1, nAnisG
-	    if ((definition%numOppose(i, j) <= threshold).and.(i /= j)) then
+	    if ((definition%numoppose(i, j) <= threshold).and.(i /= j)) then
 	      SurrCounter = SurrCounter + 1
 	      TempSurrVector(SurrCounter) = j
 	    endif
@@ -209,7 +300,7 @@ contains
 	  TempSurrArray = 0
 	  do j = 1, SurrCounter
 	    do k = 1, SurrCounter
-	      if (definition%numOppose(TempSurrVector(j), TempSurrVector(k)) <= threshold) then
+	      if (definition%numoppose(TempSurrVector(j), TempSurrVector(k)) <= threshold) then
 		TempSurrArray(j, k) = 1
 	      end if
 	    end do
@@ -253,12 +344,20 @@ contains
 	endif
 	definition%method(i) = 6
       endif
-      
       if (mod(i, 400) == 0) print*, "   Partitioning done for genotyped individual --- ", i
       definition%partition(i, i) = 0
     end do
-
-    deallocate(SurrogateList)
-    deallocate(ProgCount)
   end subroutine calculate
+  
+  function mismatches(homo, additional, first, second, numsections) result(c)
+    integer(kind = 8), dimension(:,:), intent(in) :: homo, additional
+    integer, intent(in) :: first, second, numsections
+    integer :: c, i
+
+    c = 0
+    do i = 1, numsections
+	c = c + POPCNT(IAND(IAND(homo(first, i), homo(second, i)), &
+	IEOR(additional(first, i), additional(second, i))))
+    end do
+  end function mismatches
 end module SurrogateDefinition
