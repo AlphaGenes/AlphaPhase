@@ -4,7 +4,8 @@ module HaplotypeLibrary
 
   type, public :: HapLib
     private
-    integer(kind = 1), dimension (:,:), pointer :: store => null()
+    !integer(kind = 1), dimension (:,:), pointer :: store => null()
+    integer(kind = 1), dimension (:,:), allocatable :: store
     integer :: size
     integer :: nSnps
     integer :: storeSize, stepSize
@@ -36,6 +37,9 @@ contains
     library % size = 0
     library % storeSize = storeSize
     library % stepSize = stepSize
+    if (allocated(library%store)) then
+      deallocate(library%store)
+    end if
     allocate(library % store(storeSize, nSnps))
     library % store = 0
     call system_clock(nCount)
@@ -75,15 +79,25 @@ contains
     !integer :: id
 
     integer :: newStoreSize
-    integer(kind = 1), dimension(:,:), allocatable, target :: newStore
+!    integer(kind = 1), dimension(:,:), allocatable, target :: newStore
+    integer(kind = 1), dimension(:,:), allocatable :: tempStore
 
     if (library % Size == library % storeSize) then
+!      newStoreSize = library % storeSize + library % stepSize
+!      allocate(newStore(newStoreSize, library % nSnps))
+!      newStore = 0
+!      newStore(1:library % Size,:) = library % Store
+!      !deallocate(library%Store)
+!      library % Store => newStore
+!      library % StoreSize = newStoreSize
       newStoreSize = library % storeSize + library % stepSize
-      allocate(newStore(newStoreSize, library % nSnps))
-      newStore = 0
-      newStore(1:library % Size,:) = library % Store
-      !deallocate(library%Store)
-      library % Store => newStore
+      allocate(tempStore(library % storeSize, library % nSnps))
+      tempStore = library%store
+      deallocate(library%store)
+      allocate(library%store(newStoreSize, library % nSnps))
+      library % store = 0
+      library % store(1:library % Size,:) = tempStore
+      deallocate(tempStore)
       library % StoreSize = newStoreSize
     end if
 
@@ -151,6 +165,10 @@ contains
 
     !hap = library % getHap(id)
     !phase = hap(snp)
+    !if ((id == 13) .and. (snp == 1)) then
+    !  print *, "ERR:", library % store(id,snp)
+    !end if
+    
     phase = library % store(id,snp)
   end function getPhase
 
@@ -385,7 +403,7 @@ subroutine MakeHapLib(library, phase, fullyPhased, startCoreSnp, endCoreSnp, cur
 
   AllHapAnis(:, 1, CurrentCore) = HapAnis(:, 1)
   AllHapAnis(:, 2, CurrentCore) = HapAnis(:, 2)
-
+  
 end subroutine MakeHapLib
 
 subroutine ImputeFromLib(library, genos, phase, fullyphased, startcoresnp, endcoresnp, hapfreq, hapanis)
@@ -414,7 +432,7 @@ subroutine ImputeFromLib(library, genos, phase, fullyphased, startcoresnp, endco
 
   integer :: nSNPcore, nCount, nAnisG, nSnp, secs, nHaps
   integer, allocatable :: Shuffle(:)
-
+  
   
   INTERFACE
     subroutine RandomOrder(order, n, start, idum)
@@ -424,7 +442,7 @@ subroutine ImputeFromLib(library, genos, phase, fullyphased, startcoresnp, endco
       integer, allocatable, INTENT(OUT) :: order(:)
     end subroutine RandomOrder
   END INTERFACE
-  
+
   nAnisG = size(genos,1)
   nSnp = size(genos,2)
   nHaps = library%getSize()
@@ -702,7 +720,7 @@ subroutine ImputeFromLib(library, genos, phase, fullyphased, startcoresnp, endco
 	  ! If only have one paternal candidate haplotype, then
 	  ! the paternal haplotype is nCand
 	  if (nCand == 1) HapP = CandHaps(nCand)
-
+	  
 	  ! Find candidates for maternal haplotype
 	  do k = 1, nHaps
 	    truth = 0
@@ -736,7 +754,7 @@ subroutine ImputeFromLib(library, genos, phase, fullyphased, startcoresnp, endco
 	  ! If only have one maternal candidate haplotype, then
 	  ! the maternal haplotype is nCand
 	  if ((nCand - nCandPat) == 1) HapM = CandHaps(nCand)
-
+	  
 	  ! If only one maternal candidate haplotype and many paternal candidate haplotypes
 	  if ((HapM > 0).AND.(HapP == 0)) then
 	    truth1 = 0
@@ -794,7 +812,7 @@ subroutine ImputeFromLib(library, genos, phase, fullyphased, startcoresnp, endco
 	    end if
 	  end do
 	end if
-
+	
 	! If only have one paternal candidate haplotype
 	if (HapP /= 0) then
 	  Phase(i, StartCoreSnp:EndCoreSnp, 1) = library%getHap(HapP)
