@@ -17,6 +17,7 @@ contains
   subroutine calculate(definition, genos, SireGenotyped, DamGenotyped, threshold)
     !Don't like this but for now!!
     use GlobalClustering
+    use Global, only: pseudoNRM, genotypeID
     
     class(SurrDef) :: definition
     integer(kind = 1), dimension (:,:), intent(in) :: genos
@@ -51,7 +52,7 @@ contains
 
     ! integer,allocatable,dimension(:,:) :: nSnpErrorThreshAnims
 
-    logical :: subtract1 ! Fudge to produce same results as old version.  Effectively does old buggy logic.  Should be removed
+    logical :: subtract1, subtract2 ! Fudge to produce same results as old version.  Effectively does old buggy logic.  Should be removed
     ! once finished with speed ups.
 
     nAnisG = size(genos,1)
@@ -209,7 +210,47 @@ contains
 	enddo
 	definition%method(i) = 3
       endif
-
+      
+      if ((definition%method(i) == 0).and.(SireGenotyped(i) == 0).and.(DamGenotyped(i) == 0)) then
+	subtract1 = .false.
+	! Same fudge as below.  Definitely should not be here
+	do aj = 1, numPassThres(i) + 1
+	  if (.not.subtract1) then
+	  j = passThres(i, aj)
+	  if ((j > i) .or. (j == 0)) then
+	    j = i
+	    subtract1 = .true.
+	  end if
+	  else
+	    j = passThres(i, aj - 1)
+	  end if
+	  if (PseudoNRM(i, j) == 1) then
+	    DumSire = j
+	    definition%partition(i, j) = 1
+	    definition%method(i) = 4
+	    exit
+	  endif
+	end do
+	subtract1 = .false.
+	do aj = 1, numPassThres(i) + 1
+	  if (.not.subtract1) then
+	    j = passThres(i, aj)
+	    if ((j > i) .or. (j == 0)) then
+	      j = i
+	      subtract1 = .true.
+	    end if
+	  else
+	    j = passThres(i, aj - 1)
+	  end if
+	  if (PseudoNRM(i, j) == 2) then
+	    DumDam = j
+	    definition%partition(i, j) = 2
+	    definition%method(i) = 4
+	    exit
+	  end if
+	end do
+      endif
+      
       if ((definition%method(i) == 0).and.(ProgCount(i) /= 0)) then
 	DumSire = 0
 	do aj = 1, numPassThres(i)
@@ -242,7 +283,6 @@ contains
 
       if (definition%method(i) > 1) then
 	subtract1 = .false.
-	!do j = 1, nAnisG
 	do aj = 1, numPassThres(i) + 1
 	  ! Fudge to get same (buggy) result as before.  Should really be just:
 	  ! j = passThres(i,aj)
@@ -255,21 +295,33 @@ contains
 	  else
 	    j = passThres(i, aj - 1)
 	  end if
-	  if (j < 0) then
-	    print *, i, numPassThres(i), subtract1, passThres(i, aj)
-	  end if
 	  CountAgreePat = 0
 	  CountAgreeMat = 0
-	  do ak = 1, numPassThres(j)
+	  subtract2 = .false.
+	  do ak = 1, numPassThres(j) + 1
+!	  do k = 1, nAnisG
+	    !More fudges!
 	    k = passThres(j, ak)
-	    if (definition%partition(i, k) == 1) then
-	      CountAgreePat = CountAgreePat + 1
-	      exit !here
-	    endif
-	    if (definition%partition(i, k) == 2) then
-	      CountAgreeMat = CountAgreeMat + 1
-	      exit !here
-	    endif
+	    if (.not.subtract2) then
+	      k = passThres(j, ak)
+	      if ((k > j) .or. (k == 0)) then
+		k = j
+		subtract2 = .true.
+	      end if
+	    else
+	      k = passThres(j, ak - 1)
+	    end if
+!	    if (definition%numoppose(j,k) == 0) then
+	      !if (i == 20) print *, j, k
+	      if (definition%partition(i, k) == 1) then
+		CountAgreePat = CountAgreePat + 1
+		exit !here
+	      endif
+	      if (definition%partition(i, k) == 2) then
+		CountAgreeMat = CountAgreeMat + 1
+		exit !here
+	      endif
+!	    endif
 	  end do
 	  if ((CountAgreePat /= 0).and.(CountAgreeMat == 0)) then
 	    definition%partition(i, j) = 1
@@ -279,7 +331,7 @@ contains
 	  end if
 	end do
       end if
-
+      
       if (definition%method(i) == 0) then
 	SurrCounter = 0
 	do j = 1, nAnisG

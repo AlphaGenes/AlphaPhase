@@ -22,7 +22,8 @@ module DataSubset
 
 contains
 
-  subroutine create(set, origGenos, origPhase, origfullyPhased, origSireGenotyped, origDamGenotyped, origHapFreq, origHapAnis, origAllHapAnis, members)
+  subroutine create(set, origGenos, origPhase, origfullyPhased, origSireGenotyped, origDamGenotyped, origHapFreq, origHapAnis, &
+      origAllHapAnis, members, startSnp, endSnp)
     implicit none
     
     class(Subset) :: set
@@ -34,12 +35,14 @@ contains
     integer, dimension(:,:), intent(in) :: origHapAnis
     integer, dimension(:,:,:), intent(in) :: origAllHapAnis
     logical, dimension(:), intent(in) :: members
+    integer, intent(in) :: startSnp, endSnp
     
-    integer :: newNumber, origNumber
+    integer :: newNumber, origNumber, nSnp
     integer :: i, c
     
     newNumber = count(members)
     origNumber = size(origGenos,1)
+    nSnp = endSnp - startSnp + 1
     
     ! I need to find a more elegant solution to this!
     if (allocated(set%genos)) then
@@ -55,8 +58,8 @@ contains
       deallocate(set%sub2full)
     end if
     
-    allocate(set%genos(newNumber,size(origGenos,2)))
-    allocate(set%phase(newNumber,size(origGenos,2),2))
+    allocate(set%genos(newNumber,nSnp))
+    allocate(set%phase(newNumber,nSnp,2))
     allocate(set%fullyPhased(newNumber,2))
     allocate(set%hapFreq(size(origHapFreq,1)))
     allocate(set%hapAnis(newNumber,size(origHapAnis,2)))
@@ -72,8 +75,8 @@ contains
     do i = 1, origNumber
       if (members(i)) then
 	c = c + 1
-	set%genos(c,:) = origGenos(i,:)
-	set%phase(c,:,:) = origPhase(i,:,:)
+	set%genos(c,:) = origGenos(i,startSnp:endSnp)
+	set%phase(c,:,:) = origPhase(i,startSnp:endSnp,:)
 	set%fullyPhased(c,:) = origFullyPhased(i,:)
 	set%hapFreq(c) = origHapFreq(i)
 	set%allHapAnis(c,:,:) = origAllHapAnis(i,:,:)

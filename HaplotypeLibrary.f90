@@ -44,6 +44,10 @@ contains
     library % store = 0
     call system_clock(nCount)
     secs = mod(nCount, int(1e6))
+    if (allocated(library%randomOrder)) then
+      deallocate(library%randomOrder)
+    end if
+    allocate(library % randomOrder(library % nSnps))
     call RandomOrder(library % randomOrder, library % nSnps, 1, -abs(secs))
   end subroutine initalise
 
@@ -222,7 +226,7 @@ contains
   
   integer :: i, j, CountError, SizeCore, ErrorAllow, Disagree, counter, counterMissing, nAnisG
   double precision :: value, Yield
-
+  
   SizeCore = (EndCoreSnp - StartCoreSnp) + 1
   ErrorAllow = int(PercGenoHaploDisagree * SizeCore)
   
@@ -403,6 +407,8 @@ subroutine MakeHapLib(library, phase, fullyPhased, startCoreSnp, endCoreSnp, cur
 
   AllHapAnis(:, 1, CurrentCore) = HapAnis(:, 1)
   AllHapAnis(:, 2, CurrentCore) = HapAnis(:, 2)
+  
+  deallocate(Shuffle)
   
 end subroutine MakeHapLib
 

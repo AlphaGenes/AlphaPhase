@@ -108,8 +108,10 @@ program Rlrplhi
   use Phasing
   implicit none
 
-  integer :: h, i, j, counter, SizeCore, nGlobalHapsOld, nCount
+  integer :: h, i, j, counter, SizeCore, nGlobalHapsOld, nCount, threshold
   double precision :: value, Yield
+  
+  logical :: readCoreAtTime
   
   type(HapLib) :: library
   type(SurrDef) :: surrogates
@@ -121,18 +123,23 @@ program Rlrplhi
   ! call system_clock(nCount)
   ! secs = mod(nCount,int(1e6))
   
+  readCoreAtTime = .false.
+  
   call Titles
-  call ReadInParameterFile
+  call ReadInParameterFile  
   call MakeDirectories
   call CountInData
-  call ParseData
+  if (.not. readCoreAtTime) then
+    call ParseData(1,nSnp)
+  end if
   call AllocateGlobalArrays
   Phase = 9
   nPruneIterations = 1
   
   allocate(members(nAnisG))
   members = .true.
-  call set%create(Genos,Phase,FullyPhased,SireGenotyped,DamGenotyped,hapFreq,hapAnis,allHapAnis,members)   
+    
+  threshold = int(GenotypeMissingErrorPercentage*CoreAndTailLength)
 
   do h = 1, nCores
     CurrentCore = h
@@ -147,25 +154,30 @@ program Rlrplhi
     StartSurrSnp = TailIndex(h, 1)
     EndSurrSnp = TailIndex(h, 2)
     
-    !call MakeStartSurrogateArray
-    !!!!!!NEED TO SORT OUT THE THRESHOLD!!!!!
-    call surrogates%calculate(set%Genos(:,StartSurrSnp:EndSurrSnp), set%SireGenotyped, set%DamGenotyped, 0)
-    call writeSurrogates(surrogates,0)
-    call Erdos(surrogates, 0, set%genos, set%phase, startCoreSnp, endCoreSnp)
-    call CheckCompatHapGeno(set%genos,set%phase,startCoreSnp,EndCoreSnp)
+    if (readCoreAtTime) then
+      call ParseData(StartSurrSnp,EndSurrSnp)
+      call set%create(Genos,Phase,FullyPhased,SireGenotyped,DamGenotyped,hapFreq,hapAnis,allHapAnis,members,1,EndSurrSnp-StartSurrSnp+1)
+    else
+      call set%create(Genos,Phase,FullyPhased,SireGenotyped,DamGenotyped,hapFreq,hapAnis,allHapAnis,members,StartSurrSnp,EndSurrSnp)
+    end if
+    
+    call surrogates%calculate(set%Genos, set%SireGenotyped, set%DamGenotyped, threshold)
+    call writeSurrogates(surrogates,threshold)
+    call Erdos(surrogates, threshold, set%genos, set%phase, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1)
+    call CheckCompatHapGeno(set%genos,set%phase, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1)
     call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)
     !! OH DEAR - hapAnis
-    call MakeHapLib(library, set%phase, set%fullyphased, startCoreSnp, endCoreSnp, currentCore, set%hapFreq, set%hapAnis, set%allHapAnis)
+    call MakeHapLib(library, set%phase, set%fullyphased, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, currentCore, set%hapFreq, set%hapAnis, set%allHapAnis)
     nGlobalHapsOld = nGlobalHaps
     print*, " "
     print*, "  ", "Haplotype library imputation step"
     do j = 1, 20
-      call ImputeFromLib(library, set%genos, set%phase, set%fullyphased, startCoreSnp, endCoreSnp, set%hapFreq, set%hapAnis)
-      call MakeHapLib(library, set%phase, set%fullyphased, startCoreSnp, endCoreSnp, currentCore, set%hapFreq, set%hapAnis, set%allHapAnis)
+      call ImputeFromLib(library, set%genos, set%phase, set%fullyphased, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, set%hapFreq, set%hapAnis)
+      call MakeHapLib(library, set%phase, set%fullyphased, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, currentCore, set%hapFreq, set%hapAnis, set%allHapAnis)
       if (nGlobalHapsOld == nGlobalHaps) exit
       nGlobalHapsOld = nGlobalHaps
     end do
-    call WriteHapLib(library, currentcore, startcoresnp, endcoresnp, set%phase, set%hapFreq)
+    call WriteHapLib(library, currentcore, startcoresnp-startSurrSnp+1, endcoresnp-startSurrSnp+1, set%phase, set%hapFreq)
     
     call HapCommonality(library)
 
@@ -704,23 +716,28 @@ end subroutine CountInData
 
 !####################################################################################################################################################################
 
-subroutine ParseData
+subroutine ParseData(startSnp, endSnp)
   use GlobalPedigree
   use Global
   implicit none
 
+  integer, intent(in) :: startSnp, endSnp
+  
   integer :: i, j, k, SumPseudoNrmS, SumPseudoNrmD, truth, counter, CountMissingGenotype, SireGen, DamGen
   real, external :: xnumrelmat
   real(kind = 4) :: value, valueS, valueD, SumNrm, SumDiag
   integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
+  integer :: nReadSnp
 
+  nReadSnp = endSnp - startSnp + 1
+  
   allocate(GenotypeId(nAnisG))
   allocate(GenoInPed(nAnisG))
   allocate(RecodeGenotypeId(nAnisG))
   allocate(PseudoNRM(nAnisG, nAnisG))
   allocate(Ped(nAnisRawPedigree, 3))
-  allocate(Genos(nAnisG, nSnp))
-  allocate(Phase(nAnisG, nSnp, 2))
+  allocate(Genos(nAnisG, nReadSnp))
+  allocate(Phase(nAnisG, nReadSnp, 2))
   allocate(WorkVec(nSnp * 2))
   allocate(ReadingVector(nSnp))
 
@@ -747,7 +764,8 @@ subroutine ParseData
     truth = 0
     if (GenotypeFileFormat == 1) then
       read (3, *) GenotypeId(i), ReadingVector(:)
-      do j = 1, nSnp
+      !do j = 1, nSnp
+      do j = startSnp, endSnp
 	if ((ReadingVector(j) /= 0).and.(ReadingVector(j) /= 1).and.(ReadingVector(j) /= 2)) ReadingVector(j) = MissingGenotypeCode
 	Genos(i, j) = ReadingVector(j)
 	if (Genos(i, j) == 0) Phase(i, j,:) = 0
@@ -755,13 +773,18 @@ subroutine ParseData
       end do
     end if
     if (GenotypeFileFormat == 2) then
-      read (3, *) GenotypeId(i), Phase(i,:, 1)
-      read (3, *) GenotypeId(i), Phase(i,:, 2)
+      !read (3, *) GenotypeId(i), Phase(i,:, 1)
+      !read (3, *) GenotypeId(i), Phase(i,:, 2)
+      read (3, *) GenotypeId(i), ReadingVector(:)
+      Phase(i,:,1) = ReadingVector(startSnp:endSnp)
+      read (3, *) GenotypeId(i), ReadingVector(:)
+      Phase(i,:,2) = ReadingVector(startSnp:endSnp)
     end if
     if (GenotypeFileFormat == 3) then
       read (3, *) GenotypeId(i), WorkVec(:)
       k = 0
-      do j = 1, nSnp * 2
+      !do j = 1, nSnp * 2
+      do j = startSnp*2-1,endSnp*2
 	if (mod(j, 2) == 0) then
 	  k = k + 1
 	  if ((WorkVec(j - 1) == 1).and.(WorkVec(j) == 1)) Genos(i, k) = 0

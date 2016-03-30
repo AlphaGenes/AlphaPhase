@@ -8,7 +8,7 @@ subroutine RandomOrder(order, n, start, idum)
 
     integer, INTENT(IN) :: n, start
     !integer, INTENT(OUT) :: order(n)
-    integer, allocatable, INTENT(OUT) :: order(:)
+    integer, allocatable, INTENT(inout) :: order(:)
     integer :: idum
     double precision ran1
 
@@ -16,7 +16,7 @@ subroutine RandomOrder(order, n, start, idum)
     integer :: i, j, k
     double precision :: wk
 
-    allocate(order(n))
+    !allocate(order(n))
 
     do i = 1, n
 	order(i) = start - 1 + i
