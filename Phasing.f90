@@ -1,7 +1,7 @@
 module Phasing
   contains
   
-  subroutine Erdos(surrogates, threshold, genos, phase, startCoreSnp, endCoreSnp)
+  subroutine Erdos(surrogates, threshold, genos, phase)
 !  use Global
   use SurrogateDefinition
   use global, only: useSurrsN
@@ -11,14 +11,13 @@ module Phasing
   integer(kind=1), dimension(:,:), intent(in) :: genos
   integer, intent(in) :: threshold
   integer(kind=1), dimension(:,:,:), intent(inout) :: phase
-  integer, intent(in) :: startCoreSnp, EndCoreSnp
     
   integer(kind = 1), allocatable, dimension (:) :: Visited
   integer, allocatable, dimension (:) :: SurrAveDiff
   integer :: AlleleCount(2)
   integer :: ErdosNumber, HighestErdos
   
-  integer :: nAnisG
+  integer :: nAnisG, nCoreSnp
   
   integer :: i, j
   !integer :: counter, IterAllele, SizeCore
@@ -28,6 +27,7 @@ module Phasing
   integer :: GetnSnpErrorThreshAnims
 
   nAnisG = size(genos,1)
+  nCoreSnp = size(genos,2)
   
   allocate(Visited(nAnisG))
   allocate(SurrAveDiff(nAnisG))
@@ -44,14 +44,14 @@ module Phasing
     SurrAveDiff(i) = int(value/counter)
   end do
 
-  Phase(:, StartCoreSnp:EndCoreSnp,:) = 9
+  Phase(:, : , :) = 9
   HighestErdos = 1
   print*, " "
   print*, " Phasing genotyped individuals for Paternal allele"
 
   do i = 1, nAnisG
     if (mod(i, 400) == 0) print*, "   Phasing done for genotyped individual --- ", i
-    do j = StartCoreSnp, EndCoreSnp
+    do j = 1, nCoreSnp
       AlleleCount = 0
       Visited = 0
       Visited(i) = 1
@@ -83,7 +83,7 @@ module Phasing
 
   do i = 1, nAnisG
     if (mod(i, 400) == 0) print*, "   Phasing done for genotyped individual --- ", i
-    do j = StartCoreSnp, EndCoreSnp
+    do j = 1, nCoreSnp
       AlleleCount = 0
       Visited = 0
       Visited(i) = 1

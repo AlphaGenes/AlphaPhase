@@ -26,7 +26,7 @@ module Global
   double precision :: GenotypeMissingErrorPercentage, PercSurrDisagree, PercGenoHaploDisagree
   double precision :: NrmThresh
 
-  integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp, nSnpErrorThresh, OutputPoint, CurrentLoop, NumSurrDisagree, CurrentCore
+  integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp, nSnpErrorThresh, CurrentLoop, NumSurrDisagree !, CurrentCore, OutputPoint
   integer, allocatable, dimension(:) :: nSnpErrorThreshAnims
 
   !integer :: ErdosNumber, HighestErdos
@@ -44,10 +44,11 @@ module Global
   character(lengan), allocatable :: GenotypeId(:)
 
   !integer(kind = 1), allocatable, dimension (:,:) :: HapLib
-  integer, allocatable, dimension (:,:,:) :: AllHapAnis
-  integer, allocatable, dimension (:,:) :: HapAnis, CoreIndex, TailIndex !, HapRel
-  logical, allocatable, dimension (:,:) :: FullyPhased
-  integer, allocatable, dimension (:) :: HapFreq
+  !integer, allocatable, dimension (:,:,:) :: AllHapAnis
+  !integer, allocatable, dimension (:,:) :: HapAnis, CoreIndex, TailIndex !, HapRel
+  integer, allocatable, dimension (:,:) :: CoreIndex, TailIndex !, HapRel
+  !logical, allocatable, dimension (:,:) :: FullyPhased
+  !integer, allocatable, dimension (:) :: HapFreq
   integer :: nHaps, nGlobalHaps, nGlobalHapsIter
   character (len = 300) :: PedigreeFile
 
@@ -106,6 +107,7 @@ program Rlrplhi
   use SurrogateDefinition
   use DataSubset
   use Phasing
+  use CoreDefinition
   implicit none
 
   integer :: h, i, j, counter, SizeCore, nGlobalHapsOld, nCount, threshold
@@ -115,7 +117,10 @@ program Rlrplhi
   
   type(HapLib) :: library
   type(SurrDef) :: surrogates
-  type(Subset) :: set
+  !type(Subset) :: set
+  type(Core) :: c
+  
+  integer, allocatable, dimension (:,:,:) :: AllHapAnis
   
   logical, dimension(:), allocatable :: members
 
@@ -129,57 +134,64 @@ program Rlrplhi
   call ReadInParameterFile  
   call MakeDirectories
   call CountInData
-  if (.not. readCoreAtTime) then
-    call ParseData(1,nSnp)
-  end if
-  call AllocateGlobalArrays
+  !if (.not. readCoreAtTime) then
+  call ParseData(1,nSnp)
+  !end if
+  !call AllocateGlobalArrays
   Phase = 9
   nPruneIterations = 1
   
   allocate(members(nAnisG))
+  allocate(AllHapAnis(nAnisG, 2, nCores))
   members = .true.
     
   threshold = int(GenotypeMissingErrorPercentage*CoreAndTailLength)
 
   do h = 1, nCores
-    CurrentCore = h
+    !CurrentCore = h
     nGlobalHaps = 0
     nGlobalHapsIter = 1
     print*, " "
     print*, " "
-    print*, " Starting Core", CurrentCore
-    OutputPoint = CurrentCore
+    print*, " Starting Core", h
+    !OutputPoint = h
     StartCoreSnp = CoreIndex(h, 1)
     EndCoreSnp = CoreIndex(h, 2)
     StartSurrSnp = TailIndex(h, 1)
     EndSurrSnp = TailIndex(h, 2)
     
-    if (readCoreAtTime) then
-      call ParseData(StartSurrSnp,EndSurrSnp)
-      call set%create(Genos,Phase,FullyPhased,SireGenotyped,DamGenotyped,hapFreq,hapAnis,allHapAnis,members,1,EndSurrSnp-StartSurrSnp+1)
-    else
-      call set%create(Genos,Phase,FullyPhased,SireGenotyped,DamGenotyped,hapFreq,hapAnis,allHapAnis,members,StartSurrSnp,EndSurrSnp)
-    end if
+    !if (readCoreAtTime) then
+    !  call ParseData(StartSurrSnp,EndSurrSnp)
+    !  call set%create(Genos,Phase,FullyPhased,SireGenotyped,DamGenotyped,hapFreq,hapAnis,allHapAnis,members,1,EndSurrSnp-StartSurrSnp+1)
+    !else
+    !  call set%create(Genos,Phase,FullyPhased,SireGenotyped,DamGenotyped,hapFreq,hapAnis,allHapAnis,members,StartSurrSnp,EndSurrSnp)
+    !end if
     
-    call surrogates%calculate(set%Genos, set%SireGenotyped, set%DamGenotyped, threshold)
-    call writeSurrogates(surrogates,threshold)
-    call Erdos(surrogates, threshold, set%genos, set%phase, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1)
-    call CheckCompatHapGeno(set%genos,set%phase, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1)
+    call c%create(Genos(:,StartSurrSnp:EndSurrSnp), startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1)
+    
+    call surrogates%calculate(c%getCoreAndTailGenos(), SireGenotyped, DamGenotyped, threshold)
+    call writeSurrogates(surrogates,threshold, h)
+    call Erdos(surrogates, threshold, c%getCoreGenos(), c%phase)
+    call CheckCompatHapGeno(c%getCoreGenos(), c%phase)
     call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)
     !! OH DEAR - hapAnis
-    call MakeHapLib(library, set%phase, set%fullyphased, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, currentCore, set%hapFreq, set%hapAnis, set%allHapAnis)
+    call MakeHapLib(library, c%phase, c%fullyphased, c%hapFreq, c%hapAnis)
     nGlobalHapsOld = nGlobalHaps
     print*, " "
     print*, "  ", "Haplotype library imputation step"
     do j = 1, 20
-      call ImputeFromLib(library, set%genos, set%phase, set%fullyphased, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, set%hapFreq, set%hapAnis)
-      call MakeHapLib(library, set%phase, set%fullyphased, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, currentCore, set%hapFreq, set%hapAnis, set%allHapAnis)
+      call ImputeFromLib(library, c%getCoreGenos(), c%phase, c%fullyphased, c%hapFreq, c%hapAnis)
+      call MakeHapLib(library, c%phase, c%fullyphased, c%hapFreq, c%hapAnis)
       if (nGlobalHapsOld == nGlobalHaps) exit
       nGlobalHapsOld = nGlobalHaps
     end do
-    call WriteHapLib(library, currentcore, startcoresnp-startSurrSnp+1, endcoresnp-startSurrSnp+1, set%phase, set%hapFreq)
+    call WriteHapLib(library, h, c%phase, c%hapFreq)
     
     call HapCommonality(library)
+    
+    Phase(:,startCoreSnp:endCoreSnp,:) = c%phase
+    AllHapAnis(:,1,h) = c%hapAnis(:,1)
+    AllHapAnis(:,2,h) = c%hapAnis(:,2)
 
     ! HIDDEN MARKOV MODEL SHOULD COME HERE
 
@@ -190,7 +202,7 @@ program Rlrplhi
 !    end if
   end do
 
-  call WriteOutResults(set%phase,set%allhapanis)
+  call WriteOutResults(Phase,AllHapAnis)
   call PrintTimerTitles
 
 end program Rlrplhi
@@ -376,20 +388,20 @@ end subroutine MakeDirectories
 
 !########################################################################################################################################################################
 
-subroutine AllocateGlobalArrays
-  use Global
-  implicit none
+!subroutine AllocateGlobalArrays
+!  use Global
+!  implicit none
 
   !allocate(Surrogates(nAnisG, nAnisG, 3))
-  allocate(FullyPhased(nAnisG, 2))
-  allocate(HapFreq(nAnisG * 2))
-  allocate(HapAnis(nAnisG, 2))
-  allocate(AllHapAnis(nAnisG, 2, nCores))
-  AllHapAnis = -99
+!  allocate(FullyPhased(nAnisG, 2))
+!  allocate(HapFreq(nAnisG * 2))
+!  allocate(HapAnis(nAnisG, 2))
+!  allocate(AllHapAnis(nAnisG, 2, nCores))
+!  AllHapAnis = -99
 
-  allocate(nSnpErrorThreshAnims(nAnisG * (nAnisG + 1)/2))
+!  allocate(nSnpErrorThreshAnims(nAnisG * (nAnisG + 1)/2))
 
-end subroutine AllocateGlobalArrays
+!end subroutine AllocateGlobalArrays
 
 
 !########################################################################################################################################################################
@@ -534,12 +546,13 @@ end subroutine Flipper
 
 !#################################################################################################################################################################
 
-subroutine HapCommonality(library)
-  use Global, only: FullFileOutput, OutputPoint, WindowsLinux
+subroutine HapCommonality(library, OutputPoint)
+  use Global, only: FullFileOutput, WindowsLinux
   use HaplotypeLibrary
   implicit none
   
   type(HapLib), intent(in) :: library
+  integer, intent(in) :: OutputPoint
 
   integer :: i, SizeCore, nHaps
   character(len = 300) :: filout
@@ -1730,9 +1743,9 @@ end subroutine PrintTimerTitles
 
 !############################################################################################################################################################################################################################
 
-subroutine WriteSurrogates(definition, threshold)
+subroutine WriteSurrogates(definition, threshold, OutputPoint)
   use SurrogateDefinition
-  use Global, only : FullFileOutput, OutputPoint, WindowsLinux, GenotypeId, nAnisG
+  use Global, only : FullFileOutput, WindowsLinux, GenotypeId, nAnisG
   
   implicit none
   
@@ -1741,6 +1754,7 @@ subroutine WriteSurrogates(definition, threshold)
   
   type(SurrDef), intent(in) :: definition
   integer, intent(in) :: threshold
+  integer, intent(in) :: OutputPoint
   
 
   if (FullFileOutput == 1) then
