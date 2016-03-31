@@ -229,6 +229,9 @@ contains
   nAnisG = size(genos,1)
   nCoreSnp = size(genos,2)
   
+  !Refactor out!
+  SizeCore = nCoreSnp
+  
    ErrorAllow = int(PercGenoHaploDisagree * nCoreSnp)
 
   do i = 1, nAnisG

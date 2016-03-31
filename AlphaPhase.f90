@@ -187,7 +187,7 @@ program Rlrplhi
     end do
     call WriteHapLib(library, h, c%phase, c%hapFreq)
     
-    call HapCommonality(library)
+    call HapCommonality(library, h)
     
     Phase(:,startCoreSnp:endCoreSnp,:) = c%phase
     AllHapAnis(:,1,h) = c%hapAnis(:,1)
