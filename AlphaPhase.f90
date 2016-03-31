@@ -94,9 +94,9 @@ module GlobalPedigree
 
   real(kind = 4), allocatable :: xnumrelmatHold(:)
   integer :: NRMmem, shell, shellmax, shellWarning
-  integer, allocatable :: seqid(:), seqsire(:), seqdam(:), RecodeGenotypeId(:), RecSire(:), RecDam(:)
-  character(lengan), allocatable :: ped(:,:), Id(:)
-
+  !integer, allocatable :: seqid(:), seqsire(:), seqdam(:), RecodeGenotypeId(:), RecSire(:), RecDam(:)
+  integer, allocatable :: seqid(:), seqsire(:), seqdam(:), RecSire(:), RecDam(:)
+  !character(lengan), allocatable :: ped(:,:), Id(:)
 end module GlobalPedigree
 
 !####################################################################################################################################################################
@@ -230,7 +230,6 @@ subroutine ReadInParameterFile
     print*, "The genotype file format is not correctly specified"
     stop
   endif
-  if (trim(PedigreeFile) /= "NoPedigree") open (unit = 2, file = trim(PedigreeFile), status = "old")
   open (unit = 3, file = trim(GenotypeFile), status = "old")
 
   print *, " Parameter file read"
@@ -700,6 +699,7 @@ subroutine CountInData
 
 
   if (trim(PedigreeFile) /= "NoPedigree") then
+    open (unit = 2, file = trim(PedigreeFile), status = "old")
     do
       read (2, *, iostat = k) dumC
       nAnisRawPedigree = nAnisRawPedigree + 1
@@ -708,7 +708,7 @@ subroutine CountInData
 	exit
       endif
     enddo
-    rewind(2)
+    close(2)
     print*, " ", nAnisRawPedigree, " individuals in the pedigree file"
   endif
 
@@ -741,6 +741,24 @@ subroutine ParseData(startSnp, endSnp)
   real(kind = 4) :: value, valueS, valueD, SumNrm, SumDiag
   integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
   integer :: nReadSnp
+  
+  ! Removing Pedigree global variable as first step to moving to seperate subroutine
+  character(lengan), allocatable :: ped(:,:)
+  character(lengan), allocatable :: Id(:)
+  
+  ! More removing but this time it appears to be NRM stuff
+  integer, dimension(:), allocatable :: RecodeGenotypeID
+  
+  interface PedigreeViewerRecode
+    subroutine PedigreeViewerRecode(nobs, nAnisPedigree, ped, id)
+      use GlobalPedigree
+      implicit none
+
+      integer :: nobs, nAnisPedigree
+      character(len = lengan), dimension(:,:), intent(in) :: ped
+      character(lengan), allocatable :: Id(:)
+    end subroutine PedigreeViewerRecode
+  end interface PedigreeViewerRecode
 
   nReadSnp = endSnp - startSnp + 1
   
@@ -757,9 +775,11 @@ subroutine ParseData(startSnp, endSnp)
   !allocate(HapLib(nAnisG * 2, nSnp))
 
   if (trim(PedigreeFile) /= "NoPedigree") then
+    open (unit = 2, file = trim(PedigreeFile), status = "old")
     do i = 1, nAnisRawPedigree
       read(2, *) ped(i,:)
     enddo
+    close(2)
   else
     do i = 1, nAnisRawPedigree
       ped(i, 2:3) = "0"
@@ -824,7 +844,7 @@ subroutine ParseData(startSnp, endSnp)
   endif
   allocate(Ped(nAnisRawPedigree, 3))
   if (trim(PedigreeFile) /= "NoPedigree") then
-    rewind(2)
+    open (unit = 2, file = trim(PedigreeFile), status = "old")
     do i = 1, nAnisRawPedigree - count(GenoInPed(:) == 1)
       read(2, *) ped(i,:)
     end do
@@ -837,6 +857,7 @@ subroutine ParseData(startSnp, endSnp)
 	ped(counter, 3) = "0"
       endif
     enddo
+    close(2)
   else
     do i = 1, nAnisG
       ped(i, 1) = GenotypeId(i)
@@ -845,19 +866,19 @@ subroutine ParseData(startSnp, endSnp)
     enddo
 
   endif
-  call PedigreeViewerRecode(nAnisRawPedigree, nAnisP)
+  call PedigreeViewerRecode(nAnisRawPedigree, nAnisP, ped, id)
   deallocate(Ped)
   deallocate(GenoInPed)
 
   do i = 1, nAnisG
     do j = 1, nAnisP
       if (Id(j) == GenotypeId(i)) then
-	RecodeGenotypeId(i) = seqid(j)
+	!RecodeGenotypeId(i) = seqid(j)
+	RecodeGenotypeId(i) = j
 	exit
       end if
     end do
   end do
-  close (2)
   close (3)
 
   allocate(RecSire(0:nAnisP))
@@ -1137,12 +1158,15 @@ end function xnumrelmat_mem
 
 !########################################################################################################################################################################
 
-subroutine PedigreeViewerRecode(nobs, nAnisPedigree)
+subroutine PedigreeViewerRecode(nobs, nAnisPedigree, ped, id)
   use GlobalPedigree
   implicit none
+  
+  integer :: nobs, nAnisPedigree
+  character(len = lengan), dimension(:,:), intent(in) :: ped
+  character(lengan), allocatable :: Id(:)
 
   integer, allocatable :: passedorder(:)
-  integer :: nobs, nAnisPedigree
   character (len = lengan), allocatable :: holdid(:), holdsireid(:), holddamid(:)
   character (len = lengan), allocatable :: Sortedid(:), Sortedsire(:), Sorteddam(:)
   character(lengan), allocatable :: sire(:), dam(:)
