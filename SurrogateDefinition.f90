@@ -14,15 +14,16 @@ module SurrogateDefinition
   end type SurrDef
 
 contains
-  subroutine calculate(definition, genos, SireGenotyped, DamGenotyped, threshold)
+  subroutine calculate(definition, genos, SireGenotyped, DamGenotyped, threshold, pseudoNRM)
     !Don't like this but for now!!
     use GlobalClustering
-    use Global, only: pseudoNRM, genotypeID
+    use Global, only: genotypeID
     
     class(SurrDef) :: definition
     integer(kind = 1), dimension (:,:), intent(in) :: genos
     integer(kind = 4), allocatable, dimension (:), intent(in) :: SireGenotyped, DamGenotyped
-    integer :: threshold
+    integer, intent(in) :: threshold
+    integer(kind = 1), dimension (:,:), intent(in) :: PseudoNRM
     
     integer, allocatable, dimension(:,:) :: passThres
     integer, allocatable, dimension(:) :: numPassThres

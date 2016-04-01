@@ -7,52 +7,37 @@
 module Global
   implicit none
 
+  !!!!! CONSTANTS !!!!!
   integer, parameter :: WindowsLinux = 0 !If 1 then compile for Windows / If 0 then compile for Linux
-
-  integer, parameter :: lengan = 20, MissingGenotypeCode = 3, NRMmemTemp = 20000
-
-  integer :: nAnisG, nAnisRawPedigree, nAnisP, nCores, Offset
-
-  integer :: nSnp
-  integer :: CoreAndTailLength
-  integer :: Jump
-  integer :: UseSurrsN
-  integer :: FullFileOutput
-  integer :: Simulation
-  integer :: Graphics
+  integer, parameter :: lengan = 20, MissingGenotypeCode = 3
+  
+  !!!!! INPUT PARAMETERS !!!!!
   integer :: GenotypeFileFormat
-  integer :: nPruneIterations
-
-  double precision :: GenotypeMissingErrorPercentage, PercSurrDisagree, PercGenoHaploDisagree
+  integer :: nSnp   ! Possibly doesn't need to be a parameter  
+  integer :: CoreAndTailLength
+  integer :: Jump, Offset
+  integer :: UseSurrsN
+  integer :: NumSurrDisagree
+  double precision :: PercGenoHaploDisagree
+  double precision :: GenotypeMissingErrorPercentage
   double precision :: NrmThresh
-
-  integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp, nSnpErrorThresh, CurrentLoop, NumSurrDisagree !, CurrentCore, OutputPoint
-  !integer, allocatable, dimension(:) :: nSnpErrorThreshAnims
-
-  !integer :: ErdosNumber, HighestErdos
-  !integer(kind = 1), allocatable, dimension (:) :: Visited
-  !integer :: AlleleCount(2)
-  !integer, allocatable, dimension (:) :: SurrAveDiff
-
+  integer :: FullFileOutput
+  integer :: Graphics
+  integer :: Simulation
+  character (len = 300) :: PedigreeFile ! Used in a really weird way that should probably be refactored
+  
+  !!!!! INPUT DATA !!!!!
   integer(kind = 4), allocatable, dimension (:) :: SireGenotyped, DamGenotyped
-  integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM, Genos
-  integer(kind = 1), allocatable, dimension (:,:,:) :: Phase
-  !integer(kind = 2), allocatable, dimension (:,:,:) :: Surrogates
-  real(kind = 4), allocatable, dimension (:,:) :: NRM
-  double precision, allocatable, dimension (:) :: AlleleFreq
-  double precision, allocatable, dimension (:,:) :: MarkerNRM
+  integer(kind = 1), allocatable, dimension (:,:) :: Genos
   character(lengan), allocatable :: GenotypeId(:)
 
-  !integer(kind = 1), allocatable, dimension (:,:) :: HapLib
-  !integer, allocatable, dimension (:,:,:) :: AllHapAnis
-  !integer, allocatable, dimension (:,:) :: HapAnis, CoreIndex, TailIndex !, HapRel
-  integer, allocatable, dimension (:,:) :: CoreIndex, TailIndex !, HapRel
-  !logical, allocatable, dimension (:,:) :: FullyPhased
-  !integer, allocatable, dimension (:) :: HapFreq
-  integer :: nHaps, nGlobalHaps, nGlobalHapsIter
-  character (len = 300) :: PedigreeFile
+  
+  !!!!! MOVE OUT? !!!!!
+  integer :: nAnisG, nAnisRawPedigree, nAnisP, nCores
 
-  integer :: secs
+  integer(kind = 1), allocatable, dimension (:,:,:) :: Phase
+  integer, allocatable, dimension (:,:) :: CoreIndex, TailIndex
+  integer :: nGlobalHapsIter
 
 end module Global
 
@@ -94,8 +79,7 @@ module GlobalPedigree
 
   real(kind = 4), allocatable :: xnumrelmatHold(:)
   integer :: NRMmem, shell, shellmax, shellWarning
-  !integer, allocatable :: seqid(:), seqsire(:), seqdam(:), RecodeGenotypeId(:), RecSire(:), RecDam(:)
-  integer, allocatable :: seqid(:), seqsire(:), seqdam(:), RecSire(:), RecDam(:)
+  integer, allocatable :: seqid(:), seqsire(:), seqdam(:), RecodeGenotypeId(:), RecSire(:), RecDam(:)
   !character(lengan), allocatable :: ped(:,:), Id(:)
 end module GlobalPedigree
 
@@ -108,6 +92,7 @@ program Rlrplhi
   use DataSubset
   use Phasing
   use CoreDefinition
+  use NRMcode
   implicit none
 
   integer :: h, i, j, counter, SizeCore, nGlobalHapsOld, nCount, threshold
@@ -121,6 +106,9 @@ program Rlrplhi
   type(Core) :: c
   
   integer, allocatable, dimension (:,:,:) :: AllHapAnis
+  integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
+  
+  integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM
   
   logical, dimension(:), allocatable :: members
 
@@ -136,10 +124,12 @@ program Rlrplhi
   call CountInData
   !if (.not. readCoreAtTime) then
   call ParseData(1,nSnp)
+  
+  allocate(PseudoNRM(nAnisG,nAnisG))
+  PseudoNRM = createNRM()
   !end if
   !call AllocateGlobalArrays
   Phase = 9
-  nPruneIterations = 1
   
   allocate(members(nAnisG))
   allocate(AllHapAnis(nAnisG, 2, nCores))
@@ -147,9 +137,9 @@ program Rlrplhi
     
   threshold = int(GenotypeMissingErrorPercentage*CoreAndTailLength)
 
-  do h = nCores, nCores
+  do h = 1, nCores
     !CurrentCore = h
-    nGlobalHaps = 0
+    !nGlobalHaps = 0
     nGlobalHapsIter = 1
     print*, " "
     print*, " "
@@ -170,21 +160,24 @@ program Rlrplhi
     ! Fudge below
     call c%create(Genos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp)), startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
     
-    call surrogates%calculate(c%getCoreAndTailGenos(), SireGenotyped, DamGenotyped, threshold)
+    call surrogates%calculate(c%getCoreAndTailGenos(), SireGenotyped, DamGenotyped, threshold, pseudoNRM)
     call writeSurrogates(surrogates,threshold, h)
     call Erdos(surrogates, threshold, c%getCoreGenos(), c%phase)
     call CheckCompatHapGeno(c%getCoreGenos(), c%phase)
     call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)
     !! OH DEAR - hapAnis
     call MakeHapLib(library, c%phase, c%fullyphased, c%hapFreq, c%hapAnis)
-    nGlobalHapsOld = nGlobalHaps
+    !nGlobalHapsOld = nGlobalHaps
+    nGlobalHapsOld = library%getSize()
     print*, " "
     print*, "  ", "Haplotype library imputation step"
     do j = 1, 20
       call ImputeFromLib(library, c%getCoreGenos(), c%phase, c%fullyphased, c%hapFreq, c%hapAnis)
       call MakeHapLib(library, c%phase, c%fullyphased, c%hapFreq, c%hapAnis)
-      if (nGlobalHapsOld == nGlobalHaps) exit
-      nGlobalHapsOld = nGlobalHaps
+      !if (nGlobalHapsOld == nGlobalHaps) exit
+      !nGlobalHapsOld = nGlobalHaps
+      if (nGlobalHapsOld == library%getSize()) exit
+      nGlobalHapsOld = library%getSize()
     end do
     call WriteHapLib(library, h, c%phase, c%hapFreq)
     
@@ -213,7 +206,8 @@ end program Rlrplhi
 subroutine ReadInParameterFile
   use Global
   implicit none
-
+  
+  double precision :: PercSurrDisagree
   integer :: i, resid
   character (len = 300) :: dumC, GenotypeFile, TruePhaseFile, FileFormat, OffsetVariable
 
@@ -273,6 +267,7 @@ subroutine ReadInParameterFile
   read (1, *) dumC, TruePhaseFile
 
   PercSurrDisagree = PercSurrDisagree/100
+  NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
   PercGenoHaploDisagree = PercGenoHaploDisagree/100
   GenotypeMissingErrorPercentage = GenotypeMissingErrorPercentage/100
 
@@ -294,10 +289,10 @@ subroutine ReadInParameterFile
   !end if
 
   if (Offset == 0) then
-    StartCoreSnp = 1
-    EndCoreSnp = CoreAndTailLength
-    nSnpErrorThresh = int(GenotypeMissingErrorPercentage * CoreAndTailLength)
-    NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
+!    StartCoreSnp = 1
+!    EndCoreSnp = CoreAndTailLength
+!    nSnpErrorThresh = int(GenotypeMissingErrorPercentage * CoreAndTailLength)
+    !NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
 
     nCores = int(nSnp)/Jump
     allocate(CoreIndex(nCores, 2))
@@ -320,8 +315,8 @@ subroutine ReadInParameterFile
   endif
 
   if (Offset == 1) then
-    nSnpErrorThresh = int(GenotypeMissingErrorPercentage * CoreAndTailLength)
-    NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
+!    nSnpErrorThresh = int(GenotypeMissingErrorPercentage * CoreAndTailLength)
+    !NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
     resid = int((CoreAndTailLength - Jump)/2)
 
     nCores = (int(nSnp)/Jump) + 1
@@ -738,7 +733,6 @@ subroutine ParseData(startSnp, endSnp)
   integer, intent(in) :: startSnp, endSnp
   
   integer :: i, j, k, SumPseudoNrmS, SumPseudoNrmD, truth, counter, CountMissingGenotype, SireGen, DamGen
-  real, external :: xnumrelmat
   real(kind = 4) :: value, valueS, valueD, SumNrm, SumDiag
   integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
   integer :: nReadSnp
@@ -746,9 +740,6 @@ subroutine ParseData(startSnp, endSnp)
   ! Removing Pedigree global variable as first step to moving to seperate subroutine
   character(lengan), allocatable :: ped(:,:)
   character(lengan), allocatable :: Id(:)
-  
-  ! More removing but this time it appears to be NRM stuff
-  integer, dimension(:), allocatable :: RecodeGenotypeID
   
   interface PedigreeViewerRecode
     subroutine PedigreeViewerRecode(nobs, nAnisPedigree, ped, id)
@@ -766,7 +757,6 @@ subroutine ParseData(startSnp, endSnp)
   allocate(GenotypeId(nAnisG))
   allocate(GenoInPed(nAnisG))
   allocate(RecodeGenotypeId(nAnisG))
-  allocate(PseudoNRM(nAnisG, nAnisG))
   allocate(Ped(nAnisRawPedigree, 3))
   allocate(Genos(nAnisG, nReadSnp))
   allocate(Phase(nAnisG, nReadSnp, 2))
@@ -891,68 +881,8 @@ subroutine ParseData(startSnp, endSnp)
     RecDam(i) = seqdam(i)
   enddo
   
-  
-  !!!!! START NRM !!!!!
-  NRMmem = NRMmemTemp
-  if (NRMmem > nAnisP) NRMmem = nAnisP
-  shellmax = 50000
-  allocate(xnumrelmatHold(-1 * NRMmem: NRMmem * (NRMmem + 1)/2))
-  xnumrelmatHold = -9.
-  xnumrelmatHold(-1 * NRMmem: 0) = 0.
+  !call createNRM
 
-  if (FullFileOutput == 1) then
-    allocate(NRM(nAnisG, nAnisG))
-    if (WindowsLinux == 1) then
-      open (unit = 8, file = ".\Miscellaneous\GenotypedNRM.txt", status = "unknown")
-      open (unit = 9, file = ".\Miscellaneous\GenotypedPseudoNRM.txt", status = "unknown")
-      open (unit = 10, file = ".\Miscellaneous\SummaryOfGenotypedNRM.txt", status = "unknown")
-      open (unit = 11, file = ".\Miscellaneous\AlleleFrequency.txt", status = "unknown")
-      open (unit = 12, file = ".\Miscellaneous\GenotypedMarkerNRM.txt", status = "unknown")
-    else
-      open (unit = 8, file = "./Miscellaneous/GenotypedNRM.txt", status = "unknown")
-      open (unit = 9, file = "./Miscellaneous/GenotypedPseudoNRM.txt", status = "unknown")
-      open (unit = 10, file = "./Miscellaneous/SummaryOfGenotypedNRM.txt", status = "unknown")
-      open (unit = 11, file = "./Miscellaneous/AlleleFrequency.txt", status = "unknown")
-      open (unit = 12, file = "./Miscellaneous/GenotypedMarkerNRM.txt", status = "unknown")
-    endif
-  end if
-
-  print*, " "
-  print*, " Making NRM"
-  PseudoNRM = 0
-  do i = 1, nAnisG
-    if (mod(i, 400) == 0) print*, "   NRM done for genotyped individual --- ", i
-    if (FullFileOutput == 1) then
-      shellwarning = 0
-      do j = i, nAnisG
-	shell = 0
-	value = xnumrelmat(RecodeGenotypeId(i), RecodeGenotypeId(j))
-	NRM(i, j) = value
-	NRM(j, i) = value
-      enddo
-    endif
-    shellwarning = 0
-    do j = i, nAnisG
-      shell = 0
-      valueS = xnumrelmat(seqsire(RecodeGenotypeId(i)), RecodeGenotypeId(j))
-      shell = 0
-      valueD = xnumrelmat(seqdam(RecodeGenotypeId(i)), RecodeGenotypeId(j))
-      if ((valueS > NrmThresh).and.(valueD <= NrmThresh)) PseudoNRM(i, j) = 1
-      if ((valueS <= NrmThresh).and.(valueD > NrmThresh)) PseudoNRM(i, j) = 2
-      PseudoNRM(j, i) = PseudoNRM(i, j)
-    enddo
-    if (FullFileOutput == 1) then
-      if (nAnisG < 20000) then
-	write (8, "(a20,20000f5.2,20000f5.2,20000f5.2,20000f5.2,20000f5.2)") GenotypeId(i), NRM(i,:)
-      else
-	write (8, *) GenotypeId(i), NRM(i,:)
-      end if
-      write (9, *) GenotypeId(i), PseudoNRM(i,:)
-    endif
-  enddo
-  
-  !!!!! END NRM
-  
   allocate(SireGenotyped(nAnisG))
   allocate(DamGenotyped(nAnisG))
 
@@ -979,10 +909,10 @@ subroutine ParseData(startSnp, endSnp)
     if (truth == 0) DamGenotyped(i) = 0
   enddo
 
-  deallocate(xnumrelmatHold)
+  !deallocate(xnumrelmatHold)
   deallocate(seqid)
-  deallocate(seqsire)
-  deallocate(seqdam)
+  !deallocate(seqsire)
+  !deallocate(seqdam)
   
   !!!!! START NRM !!!!
 !  if (FullFileOutput == 1) then
@@ -1030,64 +960,64 @@ end subroutine ParseData
 
 !########################################################################################################################################################################################################
 
-subroutine MarkerNRMMaker
-  use Global
-  use GlobalPedigree
-  implicit none
-
-  integer :: i, j, k, nMissing
-  double precision :: Sumpq
-  double precision, allocatable, dimension (:,:) :: GenosR, tpose
-
-  allocate(GenosR(nAnisG, nSnp))
-  !allocate(tpose(nSnp,nAnisG))
-  allocate(AlleleFreq(nSnp))
-  allocate(MarkerNRM(nAnisG, nAnisG))
-
-  Sumpq = 0.000001
-  allelefreq = 0.000001
-  do i = 1, nSnp
-    nMissing = 0
-    do j = 1, nAnisG
-      if (Genos(j, i) /= MissingGenotypeCode) then
-	AlleleFreq(i) = AlleleFreq(i) + Genos(j, i)
-      else
-	nMissing = nMissing + 1
-      end if
-    end do
-    AlleleFreq(i) = AlleleFreq(i)/(2 * (nAnisG - nMissing))
-    Sumpq = Sumpq + (AlleleFreq(i)*(1 - AlleleFreq(i)))
-    write (11, '(i10,f7.4)') i, AlleleFreq(i)
-  end do
-  print*, " "
-  print*, " Making marker derived NRM"
-
-  do i = 1, nAnisG
-    do j = 1, nSnp
-      !if (Genos(i,j)/=MissingGenotypeCode) then
-      !        GenosR(i,j)=float((Genos(i,j)-1))-(2.0*(AlleleFreq(j)-0.5))
-      !else
-      !        GenosR(i,j)=(AlleleFreq(j)-1.0)-(2.0*(AlleleFreq(j)-0.5))
-      !end if
-    end do
-  end do
-
-  !tpose=transpose(GenosR)
-  !MarkerNRM=matmul(GenosR,tpose)
-  deallocate(AlleleFreq)
-
-  do i = 1, nAnisG
-    do j = 1, nAnisG
-      !MarkerNRM(i,j)=MarkerNRM(i,j)/(2*Sumpq)
-    end do
-  end do
-  MarkerNRM = 0.0001
-
-  do i = 1, nAnisG
-    write (12, '(a20,20000f6.2,20000f6.2,20000f6.2,20000f6.2,20000f6.2)') GenotypeId(i), MarkerNRM(i,:)
-  end do
-
-end subroutine MarkerNRMMaker
+!subroutine MarkerNRMMaker
+!  use Global
+!  use GlobalPedigree
+!  implicit none
+!
+!  integer :: i, j, k, nMissing
+!  double precision :: Sumpq
+!  double precision, allocatable, dimension (:,:) :: GenosR, tpose
+!
+!  allocate(GenosR(nAnisG, nSnp))
+!  !allocate(tpose(nSnp,nAnisG))
+!  allocate(AlleleFreq(nSnp))
+!  !allocate(MarkerNRM(nAnisG, nAnisG))
+!
+!  Sumpq = 0.000001
+!  allelefreq = 0.000001
+!  do i = 1, nSnp
+!    nMissing = 0
+!    do j = 1, nAnisG
+!      if (Genos(j, i) /= MissingGenotypeCode) then
+!	AlleleFreq(i) = AlleleFreq(i) + Genos(j, i)
+!      else
+!	nMissing = nMissing + 1
+!      end if
+!    end do
+!    AlleleFreq(i) = AlleleFreq(i)/(2 * (nAnisG - nMissing))
+!    Sumpq = Sumpq + (AlleleFreq(i)*(1 - AlleleFreq(i)))
+!    write (11, '(i10,f7.4)') i, AlleleFreq(i)
+!  end do
+!  print*, " "
+!  print*, " Making marker derived NRM"
+!
+!  do i = 1, nAnisG
+!    do j = 1, nSnp
+!      !if (Genos(i,j)/=MissingGenotypeCode) then
+!      !        GenosR(i,j)=float((Genos(i,j)-1))-(2.0*(AlleleFreq(j)-0.5))
+!      !else
+!      !        GenosR(i,j)=(AlleleFreq(j)-1.0)-(2.0*(AlleleFreq(j)-0.5))
+!      !end if
+!    end do
+!  end do
+!
+!  !tpose=transpose(GenosR)
+!  !MarkerNRM=matmul(GenosR,tpose)
+!  deallocate(AlleleFreq)
+!
+!  do i = 1, nAnisG
+!    do j = 1, nAnisG
+!      !MarkerNRM(i,j)=MarkerNRM(i,j)/(2*Sumpq)
+!    end do
+!  end do
+!  MarkerNRM = 0.0001
+!
+!  do i = 1, nAnisG
+!    write (12, '(a20,20000f6.2,20000f6.2,20000f6.2,20000f6.2,20000f6.2)') GenotypeId(i), MarkerNRM(i,:)
+!  end do
+!
+!end subroutine MarkerNRMMaker
 
 !########################################################################################################################################################################################################
 
@@ -1126,6 +1056,7 @@ end function xnumrelmat
 RECURSIVE function xnumrelmat_mem(i, j) RESULT (xA)
   use GlobalPedigree
   use Global
+  implicit none
 
 
   INTEGER :: i, j, k
@@ -1892,4 +1823,3 @@ FUNCTION ran1(idum)
     ran1 = min(AM * iy, RNMX)
     RETURN
   END function ran1
-

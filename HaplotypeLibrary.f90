@@ -271,7 +271,7 @@ contains
 end subroutine CheckCompatHapGeno
 
 subroutine MakeHapLib(library, phase, fullyPhased, hapfreq, hapanis)
-  use Global, only: nGlobalHaps
+  !use Global, only: nGlobalHaps
   use GlobalClusteringHaps
   implicit none
 
@@ -403,7 +403,7 @@ subroutine MakeHapLib(library, phase, fullyPhased, hapfreq, hapanis)
       endif
     endif
   enddo
-  nGlobalHaps = nHaps
+  !nGlobalHaps = nHaps
 
   deallocate(Shuffle)
   
@@ -414,7 +414,8 @@ subroutine ImputeFromLib(library, genos, phase, fullyphased, hapfreq, hapanis)
   ! by matching their phased loci to haplotypes in the Haplotype Library,
   ! following strategies listed in the section Step 2e of Hickey et al 2011.
 
-  use Global, only : percgenohaplodisagree, missinggenotypecode, nglobalhapsiter, nglobalhaps
+  !use Global, only : percgenohaplodisagree, missinggenotypecode, nglobalhapsiter, nglobalhaps
+  use Global, only : percgenohaplodisagree, missinggenotypecode, nglobalhapsiter
   use GlobalClusteringHaps
   implicit none
   
@@ -470,7 +471,7 @@ subroutine ImputeFromLib(library, genos, phase, fullyphased, hapfreq, hapanis)
   ErrorCountAB = int(SizeCore * 0.09)
 
   HapLibIter = 1
-  nGlobalHaps = nHaps
+  !nGlobalHaps = nHaps
   if (nGlobalHapsIter == 1) then
     print*, "   ", "Iteration ", nGlobalHapsIter, "found ", nHaps, "haplotypes"
     nHapsOld = 0
