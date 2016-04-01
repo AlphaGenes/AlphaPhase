@@ -24,7 +24,7 @@ module Phasing
   integer :: counter, SizeCore
   double precision :: value
 
-  integer :: GetnSnpErrorThreshAnims
+  !integer :: GetnSnpErrorThreshAnims
 
   nAnisG = size(genos,1)
   nCoreSnp = size(genos,2)
@@ -134,7 +134,7 @@ function IterAllele(animal, snp, SideOn, surrogates, threshold, visited, allelec
   integer :: i, j, animal, snp, SideOn
   integer(kind = 1), allocatable, dimension(:) :: ErdosNowVec, ErdosNextVec
 
-  integer :: GetnSnpErrorThreshAnims
+  !integer :: GetnSnpErrorThreshAnims
   integer :: nAnisG
 
   nAnisG = size(genos,1)

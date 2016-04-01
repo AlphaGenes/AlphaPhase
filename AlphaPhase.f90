@@ -27,7 +27,7 @@ module Global
   double precision :: NrmThresh
 
   integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp, nSnpErrorThresh, CurrentLoop, NumSurrDisagree !, CurrentCore, OutputPoint
-  integer, allocatable, dimension(:) :: nSnpErrorThreshAnims
+  !integer, allocatable, dimension(:) :: nSnpErrorThreshAnims
 
   !integer :: ErdosNumber, HighestErdos
   !integer(kind = 1), allocatable, dimension (:) :: Visited
@@ -147,7 +147,7 @@ program Rlrplhi
     
   threshold = int(GenotypeMissingErrorPercentage*CoreAndTailLength)
 
-  do h = 1, nCores
+  do h = nCores, nCores
     !CurrentCore = h
     nGlobalHaps = 0
     nGlobalHapsIter = 1
@@ -167,7 +167,8 @@ program Rlrplhi
     !  call set%create(Genos,Phase,FullyPhased,SireGenotyped,DamGenotyped,hapFreq,hapAnis,allHapAnis,members,StartSurrSnp,EndSurrSnp)
     !end if
     
-    call c%create(Genos(:,StartSurrSnp:EndSurrSnp), startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1)
+    ! Fudge below
+    call c%create(Genos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp)), startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
     
     call surrogates%calculate(c%getCoreAndTailGenos(), SireGenotyped, DamGenotyped, threshold)
     call writeSurrogates(surrogates,threshold, h)
@@ -404,23 +405,23 @@ end subroutine MakeDirectories
 
 
 !########################################################################################################################################################################
-pure function GetnSnpErrorThreshAnims(i, j)
-  use Global
-  implicit none
-
-  integer, intent(in) :: i, j
-  integer :: k
-  integer :: GetnSnpErrorThreshAnims
-
-  if (j > i) then
-    k = (j - 1) * j/2 + i
-  else
-    k = (i - 1) * i/2 + j
-  endif
-
-  GetnSnpErrorThreshAnims = nSnpErrorThreshAnims(k)
-
-end function GetnSnpErrorThreshAnims
+!pure function GetnSnpErrorThreshAnims(i, j)
+!  use Global
+!  implicit none
+!
+!  integer, intent(in) :: i, j
+!  integer :: k
+!  integer :: GetnSnpErrorThreshAnims
+!
+!  if (j > i) then
+!    k = (j - 1) * j/2 + i
+!  else
+!    k = (i - 1) * i/2 + j
+!  endif
+!
+!  GetnSnpErrorThreshAnims = nSnpErrorThreshAnims(k)
+!
+!end function GetnSnpErrorThreshAnims
 
 !######################################################################################################################################################
 
@@ -889,6 +890,9 @@ subroutine ParseData(startSnp, endSnp)
     RecSire(i) = seqsire(i)
     RecDam(i) = seqdam(i)
   enddo
+  
+  
+  !!!!! START NRM !!!!!
   NRMmem = NRMmemTemp
   if (NRMmem > nAnisP) NRMmem = nAnisP
   shellmax = 50000
@@ -946,6 +950,9 @@ subroutine ParseData(startSnp, endSnp)
       write (9, *) GenotypeId(i), PseudoNRM(i,:)
     endif
   enddo
+  
+  !!!!! END NRM
+  
   allocate(SireGenotyped(nAnisG))
   allocate(DamGenotyped(nAnisG))
 
@@ -976,46 +983,48 @@ subroutine ParseData(startSnp, endSnp)
   deallocate(seqid)
   deallocate(seqsire)
   deallocate(seqdam)
-
-  if (FullFileOutput == 1) then
-    call MarkerNRMMaker
-    print*, "   Finished making marker derived NRM"
-    write (10, *) "Average of NRM elements amongst Genotyped Individuals"
-    SumDiag = 0
-    do i = 1, nAnisG
-      SumDiag = SumDiag + NRM(i, i)
-    enddo
-    write (10, '(f7.4)') (sum(NRM(:,:)) - SumDiag)/(nAnisG * nAnisG)
-    write (10, *) " "
-    write (10, *) "Average of NRM elements amongst each genotyped individual and all other genotyped Individuals "
-    write (10, *) "Diagonal element of NRM for each genotyped individual"
-    write (10, *) "Number of genotyped indiviudals related to sire of each genotyped indiviudal above the NRMThresh"
-    write (10, *) "Number of genotyped indiviudals related to dam of each genotyped indiviudal above the NRMThresh"
-    write (10, *) "Missing genotypes for each indiviudal"
-    write (10, *) "Sire genotyped"
-    write (10, *) "Dam genotyped"
-    do i = 1, nAnisG
-      SumNrm = 0
-      SumPseudoNrmS = 0
-      SumPseudoNrmD = 0
-      do j = 1, nAnisG
-	if (PseudoNRM(i, j) == 1) SumPseudoNrmS = SumPseudoNrmS + 1
-	if (PseudoNRM(i, j) == 2) SumPseudoNrmD = SumPseudoNrmD + 1
-	SumNrm = SumNrm + NRM(i, j)
-      end do
-      CountMissingGenotype = 0
-      do j = 1, nSnp
-	if (Genos(i, j) == MissingGenotypeCode) CountMissingGenotype = CountMissingGenotype + 1
-      end do
-      SireGen = 0
-      DamGen = 0
-      if (SireGenotyped(i) /= 0) SireGen = 1
-      if (DamGenotyped(i) /= 0) DamGen = 1
-      write (10, '(a20,3f10.4,3i10,2i4)') GenotypeId(i), (SumNrm - NRM(i, i))/(nAnisG - 1), NRM(i, i), MarkerNRM(i, i), &
-      SumPseudoNrmS, SumPseudoNrmD, CountMissingGenotype, SireGen, DamGen
-    end do
-    deallocate(MarkerNRM)
-  endif
+  
+  !!!!! START NRM !!!!
+!  if (FullFileOutput == 1) then
+!    call MarkerNRMMaker
+!    print*, "   Finished making marker derived NRM"
+!    write (10, *) "Average of NRM elements amongst Genotyped Individuals"
+!    SumDiag = 0
+!    do i = 1, nAnisG
+!      SumDiag = SumDiag + NRM(i, i)
+!    enddo
+!    write (10, '(f7.4)') (sum(NRM(:,:)) - SumDiag)/(nAnisG * nAnisG)
+!    write (10, *) " "
+!    write (10, *) "Average of NRM elements amongst each genotyped individual and all other genotyped Individuals "
+!    write (10, *) "Diagonal element of NRM for each genotyped individual"
+!    write (10, *) "Number of genotyped indiviudals related to sire of each genotyped indiviudal above the NRMThresh"
+!    write (10, *) "Number of genotyped indiviudals related to dam of each genotyped indiviudal above the NRMThresh"
+!    write (10, *) "Missing genotypes for each indiviudal"
+!    write (10, *) "Sire genotyped"
+!    write (10, *) "Dam genotyped"
+!    do i = 1, nAnisG
+!      SumNrm = 0
+!      SumPseudoNrmS = 0
+!      SumPseudoNrmD = 0
+!      do j = 1, nAnisG
+!	if (PseudoNRM(i, j) == 1) SumPseudoNrmS = SumPseudoNrmS + 1
+!	if (PseudoNRM(i, j) == 2) SumPseudoNrmD = SumPseudoNrmD + 1
+!	SumNrm = SumNrm + NRM(i, j)
+!      end do
+!      CountMissingGenotype = 0
+!      do j = 1, nSnp
+!	if (Genos(i, j) == MissingGenotypeCode) CountMissingGenotype = CountMissingGenotype + 1
+!      end do
+!      SireGen = 0
+!      DamGen = 0
+!      if (SireGenotyped(i) /= 0) SireGen = 1
+!      if (DamGenotyped(i) /= 0) DamGen = 1
+!      write (10, '(a20,3f10.4,3i10,2i4)') GenotypeId(i), (SumNrm - NRM(i, i))/(nAnisG - 1), NRM(i, i), MarkerNRM(i, i), &
+!      SumPseudoNrmS, SumPseudoNrmD, CountMissingGenotype, SireGen, DamGen
+!    end do
+!    deallocate(MarkerNRM)
+!  endif
+  !!!!! END NRM !!!!!
 
 end subroutine ParseData
 

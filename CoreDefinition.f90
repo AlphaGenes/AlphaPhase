@@ -12,6 +12,9 @@ module CoreDefinition
     integer, dimension(:,:), allocatable, public :: hapAnis
     
     integer :: startCoreSnp, endCoreSnp
+    
+    !Fudge due to oddness in old version.  Should be removed!!!!!!!
+    integer :: endSurrSnp
   contains
     private
     procedure, public :: create
@@ -21,12 +24,14 @@ module CoreDefinition
 
 contains
 
-  subroutine create(c, genos, startCoreSnp, endCoreSnp)
+  subroutine create(c, genos, startCoreSnp, endCoreSnp, endSurrSnp)
     implicit none
     
     class(Core) :: c
     integer(kind = 1), dimension(:,:), intent(in) :: genos
     integer, intent(in) :: startCoreSnp, endCoreSnp
+    
+    integer, intent(in) :: endSurrSnp
     
     integer :: nAnisG, nSnp, nCoreSnp
     
@@ -51,6 +56,7 @@ contains
     c%genos = genos
     c%startCoreSnp = startCoreSnp
     c%endCoreSnp = endCoreSnp
+    c%endSurrSnp = endSurrSnp
     c%phase = 9
     c%hapAnis = -99
   end subroutine create
@@ -61,9 +67,11 @@ contains
     class(Core) :: c
     integer(kind=1), dimension(:,:), allocatable :: ctGenos
     
-    allocate(ctGenos(size(c%genos,1),size(c%genos,2)))
+    !allocate(ctGenos(size(c%genos,1),size(c%genos,2)))
+    allocate(ctGenos(size(c%genos,1),c%endSurrSnp))
     
-    ctGenos = c%genos
+    !ctGenos = c%genos
+    ctGenos = c%genos(:,1:c%endSurrSnp)
     
     return
   end function getCoreAndTailGenos
