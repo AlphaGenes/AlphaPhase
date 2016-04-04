@@ -429,19 +429,15 @@ subroutine EvaluateMedoids
   Medoids = 0
   CountCluster = 0
   do i = 1, nClusters
-    do j = 1, SurrCounter
-      if (ClusterMember(j) == i) then
-	do k = 1, SurrCounter
-	  if (ClusterMember(k) == i) then
-	    do l = 1, SurrCounter
-	      Medoids(i, l) = Medoids(i, l) + TempSurrArray(k, l)
-	    end do
-	  end if
+    do k = 1, SurrCounter
+      if (ClusterMember(k) == i) then
+	do l = 1, SurrCounter
+	  Medoids(i, l) = Medoids(i, l) + TempSurrArray(k, l)
 	end do
 	CountCluster(i) = CountCluster(i) + 1
       end if
-    end do
-    Medoids(i,:) = Medoids(i,:)/(CountCluster(i)**2)
+    end do	
+    Medoids(i,:) = Medoids(i,:)/CountCluster(i)
   end do
 
 end subroutine EvaluateMedoids
@@ -633,19 +629,15 @@ subroutine EvaluateMedoidsHaps
   Medoids = 0
   CountCluster = 0
   do i = 1, nClusters
-    do j = 1, nHapsCluster
-      if (ClusterMember(j) == i) then
-	do k = 1, nHapsCluster
-	  if (ClusterMember(k) == i) then
-	    do l = 1, SnpInCore
-	      Medoids(i, l) = Medoids(i, l) + TempHapArray(k, l)
-	    end do
-	  end if
-	end do
-	CountCluster(i) = CountCluster(i) + 1
-      end if
-    end do
-    Medoids(i,:) = Medoids(i,:)/(CountCluster(i)**2)
+      do k = 1, nHapsCluster
+	if (ClusterMember(k) == i) then
+	  do l = 1, SnpInCore
+	    Medoids(i, l) = Medoids(i, l) + TempHapArray(k, l)
+	  end do
+	  CountCluster(i) = CountCluster(i) + 1
+	end if
+      end do	
+    Medoids(i,:) = Medoids(i,:)/CountCluster(i)
   end do
 
 end subroutine EvaluateMedoidsHaps
