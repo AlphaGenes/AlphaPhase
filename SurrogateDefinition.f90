@@ -14,7 +14,7 @@ module SurrogateDefinition
   end type SurrDef
 
 contains
-  subroutine calculate(definition, genos, SireGenotyped, DamGenotyped, threshold, pseudoNRM)
+  subroutine calculate(definition, genos, SireGenotyped, DamGenotyped, threshold, useNRM, pseudoNRM)
     !Don't like this but for now!!
     use GlobalClustering
     use Global, only: genotypeID
@@ -23,6 +23,7 @@ contains
     integer(kind = 1), dimension (:,:), intent(in) :: genos
     integer(kind = 4), allocatable, dimension (:), intent(in) :: SireGenotyped, DamGenotyped
     integer, intent(in) :: threshold
+    logical, intent(in) :: useNRM
     integer(kind = 1), dimension (:,:), intent(in) :: PseudoNRM
     
     integer, allocatable, dimension(:,:) :: passThres
@@ -212,7 +213,7 @@ contains
 	definition%method(i) = 3
       endif
       
-      if ((definition%method(i) == 0).and.(SireGenotyped(i) == 0).and.(DamGenotyped(i) == 0)) then
+      if ((definition%method(i) == 0).and.(SireGenotyped(i) == 0).and.(DamGenotyped(i) == 0).and.useNRM) then
 	subtract1 = .false.
 	! Same fudge as below.  Definitely should not be here
 	do aj = 1, numPassThres(i) + 1

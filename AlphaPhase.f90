@@ -26,16 +26,18 @@ module Global
   integer :: Simulation
   character (len = 300) :: PedigreeFile ! Used in a really weird way that should probably be refactored
   
+  logical :: readCoreAtTime
+  
   !!!!! INPUT DATA !!!!!
   integer(kind = 4), allocatable, dimension (:) :: SireGenotyped, DamGenotyped
-  integer(kind = 1), allocatable, dimension (:,:) :: Genos
+  !integer(kind = 1), allocatable, dimension (:,:) :: Genos
   character(lengan), allocatable :: GenotypeId(:)
 
   
   !!!!! MOVE OUT? !!!!!
   integer :: nAnisG, nAnisRawPedigree, nAnisP, nCores
 
-  integer(kind = 1), allocatable, dimension (:,:,:) :: Phase
+  !integer(kind = 1), allocatable, dimension (:,:,:) :: Phase
   integer, allocatable, dimension (:,:) :: CoreIndex, TailIndex
   integer :: nGlobalHapsIter
 
@@ -93,12 +95,11 @@ program Rlrplhi
   use Phasing
   use CoreDefinition
   use NRMcode
+  use InputOutput
   implicit none
 
   integer :: h, i, j, counter, SizeCore, nGlobalHapsOld, nCount, threshold
   double precision :: value, Yield
-  
-  logical :: readCoreAtTime
   
   type(HapLib) :: library
   type(SurrDef) :: surrogates
@@ -106,6 +107,8 @@ program Rlrplhi
   type(Core) :: c
   
   integer, allocatable, dimension (:,:,:) :: AllHapAnis
+  integer(kind=1), allocatable, dimension(:,:,:) :: AllPhase
+  integer(kind=1), allocatable, dimension(:,:) :: AllGenos, Genos
   integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
   
   integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM
@@ -119,21 +122,27 @@ program Rlrplhi
   readCoreAtTime = .false.
   
   call Titles
-  call ReadInParameterFile  
+  call ReadInParameterFile
   call MakeDirectories
   call CountInData
-  !if (.not. readCoreAtTime) then
-  call ParseData(1,nSnp)
+  call ParsePedigreeData
+  if (.not. readCoreAtTime) then
+    allocate(AllGenos(nAnisG,nSnp))
+    AllGenos = ParseGenotypeData(1,nSnp)
   
-  allocate(PseudoNRM(nAnisG,nAnisG))
-  PseudoNRM = createNRM()
-  !end if
+    allocate(PseudoNRM(nAnisG,nAnisG))
+    PseudoNRM = createNRM()
+  end if
   !call AllocateGlobalArrays
-  Phase = 9
+  !Phase = 9
   
-  allocate(members(nAnisG))
-  allocate(AllHapAnis(nAnisG, 2, nCores))
-  members = .true.
+  !allocate(members(nAnisG))
+  !members = .true.
+  
+  if (.not. readCoreAtTime) then
+    allocate(AllHapAnis(nAnisG, 2, nCores))
+    allocate(AllPhase(nAnisG, nSnp, 2))
+  end if
     
   threshold = int(GenotypeMissingErrorPercentage*CoreAndTailLength)
 
@@ -150,17 +159,16 @@ program Rlrplhi
     StartSurrSnp = TailIndex(h, 1)
     EndSurrSnp = TailIndex(h, 2)
     
-    !if (readCoreAtTime) then
-    !  call ParseData(StartSurrSnp,EndSurrSnp)
-    !  call set%create(Genos,Phase,FullyPhased,SireGenotyped,DamGenotyped,hapFreq,hapAnis,allHapAnis,members,1,EndSurrSnp-StartSurrSnp+1)
-    !else
-    !  call set%create(Genos,Phase,FullyPhased,SireGenotyped,DamGenotyped,hapFreq,hapAnis,allHapAnis,members,StartSurrSnp,EndSurrSnp)
-    !end if
-    
+    if (readCoreAtTime) then
+      Genos = ParseGenotypeData(StartSurrSnp,max(EndSurrSnp,EndCoreSnp))
+    else
+      allocate(Genos(nAnisG, max(EndSurrSnp,EndCoreSnp)-startSurrSnp+1))
+      Genos = AllGenos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp))
+    end if
     ! Fudge below
-    call c%create(Genos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp)), startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
+    call c%create(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
     
-    call surrogates%calculate(c%getCoreAndTailGenos(), SireGenotyped, DamGenotyped, threshold, pseudoNRM)
+    call surrogates%calculate(c%getCoreAndTailGenos(), SireGenotyped, DamGenotyped, threshold, .not. readCoreAtTime, pseudoNRM)
     call writeSurrogates(surrogates,threshold, h)
     call Erdos(surrogates, threshold, c%getCoreGenos(), c%phase)
     call CheckCompatHapGeno(c%getCoreGenos(), c%phase)
@@ -183,20 +191,32 @@ program Rlrplhi
     
     call HapCommonality(library, h)
     
-    Phase(:,startCoreSnp:endCoreSnp,:) = c%phase
+    if (readCoreAtTime) then
+      call WriteOutCore(c%phase,c%hapAnis, h)
+    else
+      deallocate(Genos)
+    end if
+    
+    AllPhase(:,startCoreSnp:endCoreSnp,:) = c%phase
     AllHapAnis(:,1,h) = c%hapAnis(:,1)
     AllHapAnis(:,2,h) = c%hapAnis(:,2)
 
     ! HIDDEN MARKOV MODEL SHOULD COME HERE
 
     !call RationaliseLibrary
-!    if (Simulation == 1) then
-!      call Flipper
-!      call Checker
-!    end if
+    !if (Simulation == 1) then
+    !  call Flipper
+    !  call Checker
+    !end if
   end do
-
-  call WriteOutResults(Phase,AllHapAnis)
+  
+  if (readCoreAtTime) then
+    call CombineResults(nAnisG)
+    deallocate(PseudoNRM)
+    deallocate(Genos)
+  else
+    call WriteOutResults(AllPhase,AllHapAnis)
+  end if
   call PrintTimerTitles
 
 end program Rlrplhi
@@ -716,239 +736,6 @@ subroutine CountInData
 end subroutine CountInData
 
 !####################################################################################################################################################################
-
-subroutine ParseData(startSnp, endSnp)
-  use GlobalPedigree
-  use Global
-  implicit none
-
-  integer, intent(in) :: startSnp, endSnp
-  
-  integer :: i, j, k, SumPseudoNrmS, SumPseudoNrmD, truth, counter, CountMissingGenotype, SireGen, DamGen
-  real(kind = 4) :: value, valueS, valueD, SumNrm, SumDiag
-  integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
-  integer :: nReadSnp
-  
-  ! Removing Pedigree global variable as first step to moving to seperate subroutine
-  character(lengan), allocatable :: ped(:,:)
-  character(lengan), allocatable :: Id(:)
-  
-  interface PedigreeViewerRecode
-    subroutine PedigreeViewerRecode(nobs, nAnisPedigree, ped, id)
-      use GlobalPedigree
-      implicit none
-
-      integer :: nobs, nAnisPedigree
-      character(len = lengan), dimension(:,:), intent(in) :: ped
-      character(lengan), allocatable :: Id(:)
-    end subroutine PedigreeViewerRecode
-  end interface PedigreeViewerRecode
-
-  nReadSnp = endSnp - startSnp + 1
-  
-  allocate(GenotypeId(nAnisG))
-  allocate(GenoInPed(nAnisG))
-  allocate(RecodeGenotypeId(nAnisG))
-  allocate(Ped(nAnisRawPedigree, 3))
-  allocate(Genos(nAnisG, nReadSnp))
-  allocate(Phase(nAnisG, nReadSnp, 2))
-  allocate(WorkVec(nSnp * 2))
-  allocate(ReadingVector(nSnp))
-
-  !allocate(HapLib(nAnisG * 2, nSnp))
-
-  if (trim(PedigreeFile) /= "NoPedigree") then
-    open (unit = 2, file = trim(PedigreeFile), status = "old")
-    do i = 1, nAnisRawPedigree
-      read(2, *) ped(i,:)
-    enddo
-    close(2)
-  else
-    do i = 1, nAnisRawPedigree
-      ped(i, 2:3) = "0"
-      read (3, *) ped(i, 1)
-    enddo
-    rewind (3)
-  endif
-
-  GenoInPed = 0
-
-  Phase = 9
-
-  Genos = MissingGenotypeCode
-  do i = 1, nAnisG
-    truth = 0
-    if (GenotypeFileFormat == 1) then
-      read (3, *) GenotypeId(i), ReadingVector(:)
-      !do j = 1, nSnp
-      do j = startSnp, endSnp
-	if ((ReadingVector(j) /= 0).and.(ReadingVector(j) /= 1).and.(ReadingVector(j) /= 2)) ReadingVector(j) = MissingGenotypeCode
-	Genos(i, j) = ReadingVector(j)
-	if (Genos(i, j) == 0) Phase(i, j,:) = 0
-	if (Genos(i, j) == 2) Phase(i, j,:) = 1
-      end do
-    end if
-    if (GenotypeFileFormat == 2) then
-      !read (3, *) GenotypeId(i), Phase(i,:, 1)
-      !read (3, *) GenotypeId(i), Phase(i,:, 2)
-      read (3, *) GenotypeId(i), ReadingVector(:)
-      Phase(i,:,1) = ReadingVector(startSnp:endSnp)
-      read (3, *) GenotypeId(i), ReadingVector(:)
-      Phase(i,:,2) = ReadingVector(startSnp:endSnp)
-    end if
-    if (GenotypeFileFormat == 3) then
-      read (3, *) GenotypeId(i), WorkVec(:)
-      k = 0
-      !do j = 1, nSnp * 2
-      do j = startSnp*2-1,endSnp*2
-	if (mod(j, 2) == 0) then
-	  k = k + 1
-	  if ((WorkVec(j - 1) == 1).and.(WorkVec(j) == 1)) Genos(i, k) = 0
-	  if ((WorkVec(j - 1) == 1).and.(WorkVec(j) == 2)) Genos(i, k) = 1
-	  if ((WorkVec(j - 1) == 2).and.(WorkVec(j) == 1)) Genos(i, k) = 1
-	  if ((WorkVec(j - 1) == 2).and.(WorkVec(j) == 2)) Genos(i, k) = 2
-	endif
-      end do
-    endif
-    do j = 1, nAnisRawPedigree
-      if (GenotypeId(i) == ped(j, 1)) then
-	truth = 1
-	exit
-      endif
-    enddo
-    if (truth == 0) GenoInPed(i) = 1
-  enddo
-  deallocate(Ped)
-
-  if (trim(PedigreeFile) /= "NoPedigree") then
-    nAnisRawPedigree = nAnisRawPedigree + count(GenoInPed(:) == 1)
-  else
-    nAnisRawPedigree = nAnisG
-  endif
-  allocate(Ped(nAnisRawPedigree, 3))
-  if (trim(PedigreeFile) /= "NoPedigree") then
-    open (unit = 2, file = trim(PedigreeFile), status = "old")
-    do i = 1, nAnisRawPedigree - count(GenoInPed(:) == 1)
-      read(2, *) ped(i,:)
-    end do
-    counter = nAnisRawPedigree - count(GenoInPed(:) == 1)
-    do i = 1, nAnisG
-      if (GenoInPed(i) == 1) then
-	counter = counter + 1
-	ped(counter, 1) = GenotypeId(i)
-	ped(counter, 2) = "0"
-	ped(counter, 3) = "0"
-      endif
-    enddo
-    close(2)
-  else
-    do i = 1, nAnisG
-      ped(i, 1) = GenotypeId(i)
-      ped(i, 2) = "0"
-      ped(i, 3) = "0"
-    enddo
-
-  endif
-  call PedigreeViewerRecode(nAnisRawPedigree, nAnisP, ped, id)
-  deallocate(Ped)
-  deallocate(GenoInPed)
-
-  do i = 1, nAnisG
-    do j = 1, nAnisP
-      if (Id(j) == GenotypeId(i)) then
-	!RecodeGenotypeId(i) = seqid(j)
-	RecodeGenotypeId(i) = j
-	exit
-      end if
-    end do
-  end do
-  close (3)
-
-  allocate(RecSire(0:nAnisP))
-  allocate(RecDam(0:nAnisP))
-  RecSire(0) = 0
-  RecDam(0) = 0
-  do i = 1, nAnisP
-    RecSire(i) = seqsire(i)
-    RecDam(i) = seqdam(i)
-  enddo
-  
-  !call createNRM
-
-  allocate(SireGenotyped(nAnisG))
-  allocate(DamGenotyped(nAnisG))
-
-  do i = 1, nAnisG
-    SireGenotyped(i) = seqsire(RecodeGenotypeId(i))
-    DamGenotyped(i) = seqdam(RecodeGenotypeId(i))
-    truth = 0
-    do j = 1, nAnisG
-      if (SireGenotyped(i) == RecodeGenotypeId(j)) then
-	truth = 1
-	SireGenotyped(i) = j
-	exit
-      endif
-    enddo
-    if (truth == 0) SireGenotyped(i) = 0
-    truth = 0
-    do j = 1, nAnisG
-      if (DamGenotyped(i) == RecodeGenotypeId(j)) then
-	truth = 1
-	DamGenotyped(i) = j
-	exit
-      endif
-    enddo
-    if (truth == 0) DamGenotyped(i) = 0
-  enddo
-
-  !deallocate(xnumrelmatHold)
-  deallocate(seqid)
-  !deallocate(seqsire)
-  !deallocate(seqdam)
-  
-  !!!!! START NRM !!!!
-!  if (FullFileOutput == 1) then
-!    call MarkerNRMMaker
-!    print*, "   Finished making marker derived NRM"
-!    write (10, *) "Average of NRM elements amongst Genotyped Individuals"
-!    SumDiag = 0
-!    do i = 1, nAnisG
-!      SumDiag = SumDiag + NRM(i, i)
-!    enddo
-!    write (10, '(f7.4)') (sum(NRM(:,:)) - SumDiag)/(nAnisG * nAnisG)
-!    write (10, *) " "
-!    write (10, *) "Average of NRM elements amongst each genotyped individual and all other genotyped Individuals "
-!    write (10, *) "Diagonal element of NRM for each genotyped individual"
-!    write (10, *) "Number of genotyped indiviudals related to sire of each genotyped indiviudal above the NRMThresh"
-!    write (10, *) "Number of genotyped indiviudals related to dam of each genotyped indiviudal above the NRMThresh"
-!    write (10, *) "Missing genotypes for each indiviudal"
-!    write (10, *) "Sire genotyped"
-!    write (10, *) "Dam genotyped"
-!    do i = 1, nAnisG
-!      SumNrm = 0
-!      SumPseudoNrmS = 0
-!      SumPseudoNrmD = 0
-!      do j = 1, nAnisG
-!	if (PseudoNRM(i, j) == 1) SumPseudoNrmS = SumPseudoNrmS + 1
-!	if (PseudoNRM(i, j) == 2) SumPseudoNrmD = SumPseudoNrmD + 1
-!	SumNrm = SumNrm + NRM(i, j)
-!      end do
-!      CountMissingGenotype = 0
-!      do j = 1, nSnp
-!	if (Genos(i, j) == MissingGenotypeCode) CountMissingGenotype = CountMissingGenotype + 1
-!      end do
-!      SireGen = 0
-!      DamGen = 0
-!      if (SireGenotyped(i) /= 0) SireGen = 1
-!      if (DamGenotyped(i) /= 0) DamGen = 1
-!      write (10, '(a20,3f10.4,3i10,2i4)') GenotypeId(i), (SumNrm - NRM(i, i))/(nAnisG - 1), NRM(i, i), MarkerNRM(i, i), &
-!      SumPseudoNrmS, SumPseudoNrmD, CountMissingGenotype, SireGen, DamGen
-!    end do
-!    deallocate(MarkerNRM)
-!  endif
-  !!!!! END NRM !!!!!
-
-end subroutine ParseData
 
 !########################################################################################################################################################################################################
 
