@@ -1499,7 +1499,6 @@ subroutine WriteSurrogates(definition, threshold, OutputPoint)
   integer, intent(in) :: threshold
   integer, intent(in) :: OutputPoint
   
-
   if (FullFileOutput == 1) then
     if (WindowsLinux == 1) then
       write (filout, '(".\Miscellaneous\Surrogates",i0,".txt")') OutputPoint
@@ -1520,7 +1519,7 @@ subroutine WriteSurrogates(definition, threshold, OutputPoint)
       else
 	write (13, *) GenotypeId(i), definition%partition(i,:)
       end if
-      do j = i, nAnisG
+      do j = 1, nAnisG
 	if (definition%numOppose(i, j) <= threshold) nSurrogates = nSurrogates + 1
       enddo
       write (19, '(a20,20000i6,20000i6,20000i6,20000i6)') &
