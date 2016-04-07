@@ -12,6 +12,7 @@ module Global
   integer, parameter :: lengan = 20, MissingGenotypeCode = 3
   
   !!!!! INPUT PARAMETERS !!!!!
+  character(len=300) GenotypeFile
   integer :: GenotypeFileFormat
   integer :: nSnp   ! Possibly doesn't need to be a parameter  
   integer :: CoreAndTailLength
@@ -91,7 +92,7 @@ program Rlrplhi
   use Global
   use HaplotypeLibrary
   use SurrogateDefinition
-  use DataSubset
+  !use DataSubset
   use Phasing
   use CoreDefinition
   use NRMcode
@@ -103,8 +104,8 @@ program Rlrplhi
   
   type(HapLib) :: library
   type(SurrDef) :: surrogates
-  !type(Subset) :: set
   type(Core) :: c
+  !type(CoreSubset) :: cs
   
   integer, allocatable, dimension (:,:,:) :: AllHapAnis
   integer(kind=1), allocatable, dimension(:,:,:) :: AllPhase
@@ -133,11 +134,9 @@ program Rlrplhi
     allocate(PseudoNRM(nAnisG,nAnisG))
     PseudoNRM = createNRM()
   end if
-  !call AllocateGlobalArrays
-  !Phase = 9
   
-  !allocate(members(nAnisG))
-  !members = .true.
+  allocate(members(nAnisG))
+  members = .true.
   
   if (.not. readCoreAtTime) then
     allocate(AllHapAnis(nAnisG, 2, nCores))
@@ -159,43 +158,45 @@ program Rlrplhi
     StartSurrSnp = TailIndex(h, 1)
     EndSurrSnp = TailIndex(h, 2)
     
+    allocate(Genos(nAnisG, max(EndSurrSnp,EndCoreSnp)-startSurrSnp+1))
     if (readCoreAtTime) then
       Genos = ParseGenotypeData(StartSurrSnp,max(EndSurrSnp,EndCoreSnp))
     else
-      allocate(Genos(nAnisG, max(EndSurrSnp,EndCoreSnp)-startSurrSnp+1))
       Genos = AllGenos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp))
     end if
     ! Fudge below
     call c%create(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
     
+    !call s%create(c, SireGenotpyed, DamGenotyped, members)
+    
     call surrogates%calculate(c%getCoreAndTailGenos(), SireGenotyped, DamGenotyped, threshold, .not. readCoreAtTime, pseudoNRM)
     call writeSurrogates(surrogates,threshold, h)
-    call Erdos(surrogates, threshold, c%getCoreGenos(), c%phase)
-    call CheckCompatHapGeno(c%getCoreGenos(), c%phase)
+    call Erdos(surrogates, threshold, c)
+    call CheckCompatHapGeno(c)
     call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)
     !! OH DEAR - hapAnis
-    call MakeHapLib(library, c%phase, c%fullyphased, c%hapFreq, c%hapAnis)
+    call MakeHapLib(library, c)
     !nGlobalHapsOld = nGlobalHaps
     nGlobalHapsOld = library%getSize()
     print*, " "
     print*, "  ", "Haplotype library imputation step"
     do j = 1, 20
-      call ImputeFromLib(library, c%getCoreGenos(), c%phase, c%fullyphased, c%hapFreq, c%hapAnis)
-      call MakeHapLib(library, c%phase, c%fullyphased, c%hapFreq, c%hapAnis)
+      call ImputeFromLib(library, c%getCoreGenos(), c)
+      call MakeHapLib(library, c)
       !if (nGlobalHapsOld == nGlobalHaps) exit
       !nGlobalHapsOld = nGlobalHaps
       if (nGlobalHapsOld == library%getSize()) exit
       nGlobalHapsOld = library%getSize()
     end do
-    call WriteHapLib(library, h, c%phase, c%hapFreq)
+    call WriteHapLib(library, h, c)
     
     call HapCommonality(library, h)
     
     if (readCoreAtTime) then
       call WriteOutCore(c%phase,c%hapAnis, h)
-    else
-      deallocate(Genos)
     end if
+    
+    deallocate(Genos)
     
     AllPhase(:,startCoreSnp:endCoreSnp,:) = c%phase
     AllHapAnis(:,1,h) = c%hapAnis(:,1)
@@ -212,10 +213,9 @@ program Rlrplhi
   
   if (readCoreAtTime) then
     call CombineResults(nAnisG)
-    deallocate(PseudoNRM)
-    deallocate(Genos)
   else
     call WriteOutResults(AllPhase,AllHapAnis)
+    deallocate(PseudoNRM)
   end if
   call PrintTimerTitles
 
@@ -229,7 +229,7 @@ subroutine ReadInParameterFile
   
   double precision :: PercSurrDisagree
   integer :: i, resid
-  character (len = 300) :: dumC, GenotypeFile, TruePhaseFile, FileFormat, OffsetVariable
+  character (len = 300) :: dumC, TruePhaseFile, FileFormat, OffsetVariable
 
   open (unit = 1, file = "AlphaPhaseSpec.txt", status = "old")
 
@@ -245,7 +245,6 @@ subroutine ReadInParameterFile
     print*, "The genotype file format is not correctly specified"
     stop
   endif
-  open (unit = 3, file = trim(GenotypeFile), status = "old")
 
   print *, " Parameter file read"
   print *, " "
@@ -719,7 +718,8 @@ subroutine CountInData
     close(2)
     print*, " ", nAnisRawPedigree, " individuals in the pedigree file"
   endif
-
+  
+  open (unit = 3, file = trim(GenotypeFile), status = "old")
   do
     read (3, *, iostat = k) dumC
     nAnisG = nAnisG + 1
@@ -728,7 +728,7 @@ subroutine CountInData
       exit
     endif
   enddo
-  rewind(3)
+  close(3)
   print*, " ", nAnisG, " individuals in the genotype file"
 
   if (trim(PedigreeFile) == "NoPedigree") nAnisRawPedigree = nAnisG

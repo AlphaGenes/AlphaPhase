@@ -1,16 +1,19 @@
 module Phasing
   contains
   
-  subroutine Erdos(surrogates, threshold, genos, phase)
+  !subroutine Erdos(surrogates, threshold, genos, phase)
+  subroutine Erdos(surrogates, threshold, c)
 !  use Global
   use SurrogateDefinition
+  use CoreDefinition
   use global, only: useSurrsN
   implicit none
 
   type(SurrDef), intent(in) :: surrogates
-  integer(kind=1), dimension(:,:), intent(in) :: genos
+  type(Core) :: c
+  integer(kind=1), dimension(:,:), allocatable :: genos
   integer, intent(in) :: threshold
-  integer(kind=1), dimension(:,:,:), intent(inout) :: phase
+  !integer(kind=1), dimension(:,:,:), intent(inout) :: phase
     
   integer(kind = 1), allocatable, dimension (:) :: Visited
   integer, allocatable, dimension (:) :: SurrAveDiff
@@ -26,11 +29,14 @@ module Phasing
 
   !integer :: GetnSnpErrorThreshAnims
 
-  nAnisG = size(genos,1)
-  nCoreSnp = size(genos,2)
+  nAnisG = c%getNAnisG()!size(genos,1)
+  nCoreSnp = c%getNCoreSnp() !size(genos,2)
   
   allocate(Visited(nAnisG))
   allocate(SurrAveDiff(nAnisG))
+  allocate(Genos(nAnisG, nCoreSnp))
+  
+  genos = c%getCoreGenos()
 
   do i = 1, nAnisG
     value = 0
@@ -44,7 +50,7 @@ module Phasing
     SurrAveDiff(i) = int(value/counter)
   end do
 
-  Phase(:, : , :) = 9
+  !Phase(:, : , :) = 9
   HighestErdos = 1
   print*, " "
   print*, " Phasing genotyped individuals for Paternal allele"
@@ -62,12 +68,15 @@ module Phasing
       endif
       if (sum(AlleleCount(:)) == UseSurrsN) then
 	if (Genos(i, j) == 0) then
-	  Phase(i, j, 1) = 0
+	  !Phase(i, j, 1) = 0
+	  call c%setPhase(i, j, 1, 0)
 	elseif (Genos(i, j) == 2) then
-	  Phase(i, j, 1) = 1
+	  !Phase(i, j, 1) = 1
+	  call c%setPhase(i, j, 1, 1)
 	endif
       else
-	Phase(i, j, 1) = IterAllele(i, j, 1, surrogates, threshold, visited, allelecount, erdosnumber, genos, surravediff)
+	!Phase(i, j, 1) = IterAllele(i, j, 1, surrogates, threshold, visited, allelecount, erdosnumber, genos, surravediff)
+	call c%setPhase(i, j, 1, IterAllele(i, j, 1, surrogates, threshold, visited, allelecount, erdosnumber, genos, surravediff))
 	if (ErdosNumber > HighestErdos) HighestErdos = ErdosNumber
       end if
     end do
@@ -94,12 +103,15 @@ module Phasing
       endif
       if (sum(AlleleCount(:)) == UseSurrsN) then
 	if (Genos(i, j) == 0) then
-	  Phase(i, j, 2) = 0
+	  !Phase(i, j, 2) = 0
+	  call c%setPhase(i, j, 2, 0)
 	elseif (Genos(i, j) == 2) then
-	  Phase(i, j, 2) = 1
+	  !Phase(i, j, 2) = 1
+	  call c%setPhase(i, j, 2, 1)
 	endif
       else
-	Phase(i, j, 2) = IterAllele(i, j, 2, surrogates, threshold, visited, allelecount, erdosnumber, genos, surravediff)
+	!Phase(i, j, 2) = IterAllele(i, j, 2, surrogates, threshold, visited, allelecount, erdosnumber, genos, surravediff)
+	call c%setPhase(i, j, 2, IterAllele(i, j, 2, surrogates, threshold, visited, allelecount, erdosnumber, genos, surravediff))
 	if (ErdosNumber > HighestErdos) HighestErdos = ErdosNumber
       end if
     end do

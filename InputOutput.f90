@@ -354,6 +354,8 @@ contains
     allocate(Ped(nAnisRawPedigree, 3))
     allocate(WorkVec(nSnp * 2))
     allocate(ReadingVector(nSnp))
+    
+    open (unit = 3, file = trim(GenotypeFile), status = "old")
 
     !allocate(HapLib(nAnisG * 2, nSnp))
 
@@ -490,6 +492,8 @@ contains
     integer, allocatable, dimension (:) :: WorkVec, ReadingVector
     integer :: nReadSnp
     character(lengan) :: dummy
+    
+    open (unit = 3, file = trim(GenotypeFile), status = "old")
 
     nReadSnp = endSnp - startSnp + 1
 
@@ -511,7 +515,7 @@ contains
 	!do j = 1, nSnp
 	do j = startSnp, endSnp
 	  if ((ReadingVector(j) /= 0).and.(ReadingVector(j) /= 1).and.(ReadingVector(j) /= 2)) ReadingVector(j) = MissingGenotypeCode
-	  Genos(i, j) = ReadingVector(j)
+	  Genos(i, j - startSnp + 1) = ReadingVector(j)
 !	  if (Genos(i, j) == 0) Phase(i, j,:) = 0
 !	  if (Genos(i, j) == 2) Phase(i, j,:) = 1
 	end do
