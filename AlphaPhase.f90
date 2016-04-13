@@ -28,6 +28,11 @@ module Global
   character (len = 300) :: PedigreeFile ! Used in a really weird way that should probably be refactored
   
   logical :: readCoreAtTime
+  character (len = 300) :: itterateType
+  integer :: itterateNumber
+  integer :: numIter
+  
+  logical :: consistent
   
   !!!!! INPUT DATA !!!!!
   integer(kind = 4), allocatable, dimension (:) :: SireGenotyped, DamGenotyped
@@ -92,11 +97,12 @@ program Rlrplhi
   use Global
   use HaplotypeLibrary
   use SurrogateDefinition
-  !use DataSubset
+  use CoreSubsetDefinition
   use Phasing
   use CoreDefinition
   use NRMcode
   use InputOutput
+  use MemberManagerDefinition
   implicit none
 
   integer :: h, i, j, counter, SizeCore, nGlobalHapsOld, nCount, threshold
@@ -105,7 +111,7 @@ program Rlrplhi
   type(HapLib) :: library
   type(SurrDef) :: surrogates
   type(Core) :: c
-  !type(CoreSubset) :: cs
+  type(CoreSubset) :: cs
   
   integer, allocatable, dimension (:,:,:) :: AllHapAnis
   integer(kind=1), allocatable, dimension(:,:,:) :: AllPhase
@@ -114,8 +120,8 @@ program Rlrplhi
   
   integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM
   
-  logical, dimension(:), allocatable :: members
-
+  type(MemberManager) :: manager
+  
   ! Create a seed for RNG
   ! call system_clock(nCount)
   ! secs = mod(nCount,int(1e6))
@@ -130,13 +136,13 @@ program Rlrplhi
   if (.not. readCoreAtTime) then
     allocate(AllGenos(nAnisG,nSnp))
     AllGenos = ParseGenotypeData(1,nSnp)
+  end if
   
+  if (consistent) then
     allocate(PseudoNRM(nAnisG,nAnisG))
     PseudoNRM = createNRM()
   end if
-  
-  allocate(members(nAnisG))
-  members = .true.
+
   
   if (.not. readCoreAtTime) then
     allocate(AllHapAnis(nAnisG, 2, nCores))
@@ -165,29 +171,36 @@ program Rlrplhi
       Genos = AllGenos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp))
     end if
     ! Fudge below
-    call c%create(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
+    call c%create(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)    
+    !call manager%createInputOrder(c, 200)
+    call manager%create(c)
     
-    !call s%create(c, SireGenotpyed, DamGenotyped, members)
+    do while (manager%hasNext())
+      nGlobalHapsIter = 1
+      call cs%create(c, SireGenotyped, DamGenotyped, manager%getNext())
     
-    call surrogates%calculate(c%getCoreAndTailGenos(), SireGenotyped, DamGenotyped, threshold, .not. readCoreAtTime, pseudoNRM)
-    call writeSurrogates(surrogates,threshold, h)
-    call Erdos(surrogates, threshold, c)
-    call CheckCompatHapGeno(c)
-    call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)
-    !! OH DEAR - hapAnis
-    call MakeHapLib(library, c)
-    !nGlobalHapsOld = nGlobalHaps
-    nGlobalHapsOld = library%getSize()
-    print*, " "
-    print*, "  ", "Haplotype library imputation step"
-    do j = 1, 20
-      call ImputeFromLib(library, c%getCoreGenos(), c)
+      call surrogates%calculate(cs, threshold, consistent, pseudoNRM)
+      call writeSurrogates(surrogates,threshold, h)
+      call Erdos(surrogates, threshold, cs)
+      call CheckCompatHapGeno(cs)
+      call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)
+      !! OH DEAR - hapAnis
       call MakeHapLib(library, c)
-      !if (nGlobalHapsOld == nGlobalHaps) exit
       !nGlobalHapsOld = nGlobalHaps
-      if (nGlobalHapsOld == library%getSize()) exit
       nGlobalHapsOld = library%getSize()
-    end do
+      print*, " "
+      print*, "  ", "Haplotype library imputation step"
+      do j = 1, 20
+	call ImputeFromLib(library, c)
+	call MakeHapLib(library, c)
+	!if (nGlobalHapsOld == nGlobalHaps) exit
+	!nGlobalHapsOld = nGlobalHaps
+	if (nGlobalHapsOld == library%getSize()) exit
+	nGlobalHapsOld = library%getSize()
+      end do
+      
+    end do  
+      
     call WriteHapLib(library, h, c)
     
     call HapCommonality(library, h)
@@ -228,8 +241,11 @@ subroutine ReadInParameterFile
   implicit none
   
   double precision :: PercSurrDisagree
-  integer :: i, resid
+  integer :: i, resid, TempInt
   character (len = 300) :: dumC, TruePhaseFile, FileFormat, OffsetVariable
+  
+  double precision :: corelength
+  integer :: left, ltail, rtail
 
   open (unit = 1, file = "AlphaPhaseSpec.txt", status = "old")
 
@@ -263,6 +279,11 @@ subroutine ReadInParameterFile
     print*, "GeneralCoreLength is too long"
     stop
   endif
+  
+  if (CoreAndTailLength < Jump) then
+    print *, "GeneralCoreAndTailLength is shorted than GenralCoreLength"
+    stop
+  end if
 
   if (OffsetVariable == "Offset") then
     Offset = 1
@@ -284,7 +305,16 @@ subroutine ReadInParameterFile
   read (1, *) dumC, Graphics
   read (1, *) dumC, Simulation
   read (1, *) dumC, TruePhaseFile
-
+  
+  read (1, *) dumC, tempInt
+  readCoreAtTime = (tempInt==1)
+  
+  read (1, *) dumC, itterateType
+  consistent = ((itterateType .eq. "Off") .and. (.not. readCoreAtTime))
+  
+  read (1, *) dumC, itterateNumber
+  read (1, *) dumC, numIter
+  
   PercSurrDisagree = PercSurrDisagree/100
   NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
   PercGenoHaploDisagree = PercGenoHaploDisagree/100
@@ -307,58 +337,106 @@ subroutine ReadInParameterFile
   !        stop
   !end if
 
-  if (Offset == 0) then
-!    StartCoreSnp = 1
-!    EndCoreSnp = CoreAndTailLength
-!    nSnpErrorThresh = int(GenotypeMissingErrorPercentage * CoreAndTailLength)
-    !NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
+  if (consistent) then
+    if (Offset == 0) then
+  !    StartCoreSnp = 1
+  !    EndCoreSnp = CoreAndTailLength
+  !    nSnpErrorThresh = int(GenotypeMissingErrorPercentage * CoreAndTailLength)
+      !NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
 
-    nCores = int(nSnp)/Jump
-    allocate(CoreIndex(nCores, 2))
-    allocate(TailIndex(nCores, 2))
+      nCores = int(nSnp)/Jump
+      allocate(CoreIndex(nCores, 2))
+      allocate(TailIndex(nCores, 2))
 
-    resid = int((CoreAndTailLength - Jump)/2)
-    CoreIndex(1, 1) = 1
-    CoreIndex(1, 2) = 1 + Jump - 1
-    TailIndex(1, 1) = 1
-    TailIndex(1, 2) = 1 + CoreAndTailLength - 1
+      resid = int((CoreAndTailLength - Jump)/2)
+      CoreIndex(1, 1) = 1
+      CoreIndex(1, 2) = 1 + Jump - 1
+      TailIndex(1, 1) = 1
+      TailIndex(1, 2) = 1 + CoreAndTailLength - 1
+      do i = 2, nCores
+	CoreIndex(i, 1) = CoreIndex(i - 1, 1) + Jump
+	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + Jump
+	TailIndex(i, 1) = CoreIndex(i, 1) - resid
+	TailIndex(i, 2) = CoreIndex(i, 2) + resid
+	if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
+	if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
+      end do
+      CoreIndex(nCores, 2) = nSnp
+    endif
+
+    if (Offset == 1) then
+  !    nSnpErrorThresh = int(GenotypeMissingErrorPercentage * CoreAndTailLength)
+      !NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
+      resid = int((CoreAndTailLength - Jump)/2)
+
+      nCores = (int(nSnp)/Jump) + 1
+      allocate(CoreIndex(nCores, 2))
+      allocate(TailIndex(nCores, 2))
+
+      CoreIndex(1, 1) = 1
+      CoreIndex(1, 2) = int(Jump/2)
+      TailIndex(1, 1) = 1
+      TailIndex(1, 2) = nSnp
+      do i = 2, nCores
+	CoreIndex(i, 1) = CoreIndex(i - 1, 2) + 1
+	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + Jump
+	TailIndex(i, 1) = CoreIndex(i, 1) - resid
+	TailIndex(i, 2) = CoreIndex(i, 2) + resid
+	if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
+	if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
+      end do
+      CoreIndex(nCores, 2) = nSnp
+      TailIndex(nCores, 1) = 1   
+      TailIndex(nCores, 2) = nSnp
+    endif
+  else
+    nCores = nSnp / Jump
+    corelength = nSnp / nCores
+    left = nSnp - nCores * corelength
+    ltail = floor(dble(CoreAndTailLength - Jump) / 2.0)
+    rtail = ceiling(dble(CoreAndTailLength - Jump) / 2.0)
+    
+    if (Offset == 0) then
+      allocate(CoreIndex(nCores, 2))
+      allocate(TailIndex(nCores, 2))
+      CoreIndex(1, 1) = 1
+      if (left /= 0) then
+	CoreIndex(1, 2) = 1 + corelength
+      else
+	CoreIndex(1, 2) = corelength
+      end if
+    else
+      nCores = nCores + 1
+      allocate(CoreIndex(nCores, 2))
+      allocate(TailIndex(nCores, 2))
+      CoreIndex(1, 1) = 1
+      if (left /= 0) then
+	CoreIndex(1, 2) = 1 + floor(dble(corelength) / 2.0)
+      else
+	CoreIndex(1, 2) = floor(dble(corelength) / 2.0)
+      end if
+    end if
+      
     do i = 2, nCores
-      CoreIndex(i, 1) = CoreIndex(i - 1, 1) + Jump
-      CoreIndex(i, 2) = CoreIndex(i - 1, 2) + Jump
-      TailIndex(i, 1) = CoreIndex(i, 1) - resid
-      TailIndex(i, 2) = CoreIndex(i, 2) + resid
-      if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
-      if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
+      CoreIndex(i,1) = CoreIndex(i - 1, 2) + 1
+      if (i < left) then
+	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + corelength + 1
+      else
+	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + corelength
+      end if
     end do
-    CoreIndex(nCores, 2) = nSnp
-  endif
-
-  if (Offset == 1) then
-!    nSnpErrorThresh = int(GenotypeMissingErrorPercentage * CoreAndTailLength)
-    !NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
-    resid = int((CoreAndTailLength - Jump)/2)
-
-    nCores = (int(nSnp)/Jump) + 1
-    allocate(CoreIndex(nCores, 2))
-    allocate(TailIndex(nCores, 2))
-
-    CoreIndex(1, 1) = 1
-    CoreIndex(1, 2) = int(Jump/2)
-    TailIndex(1, 1) = 1
-    TailIndex(1, 2) = nSnp
-    do i = 2, nCores
-      CoreIndex(i, 1) = CoreIndex(i - 1, 2) + 1
-      CoreIndex(i, 2) = CoreIndex(i - 1, 2) + Jump
-      TailIndex(i, 1) = CoreIndex(i, 1) - resid
-      TailIndex(i, 2) = CoreIndex(i, 2) + resid
-      if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
-      if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
+    
+    if (Offset /= 0) then
+      CoreIndex(nCores,2) = nSnp
+    end if
+    
+    do i = 1, nCores
+      TailIndex(i,1) = max(1,CoreIndex(i,1) - ltail)
+      TailIndex(i,2) = min(nSnp,CoreIndex(i,2) + rtail)
     end do
-    CoreIndex(nCores, 2) = nSnp
-    TailIndex(nCores, 1) = 1
-    TailIndex(nCores, 2) = nSnp
-  endif
 
+  endif
+    
 end subroutine ReadInParameterFile
 
 !########################################################################################################################################################################################################
@@ -1488,7 +1566,7 @@ end subroutine PrintTimerTitles
 
 subroutine WriteSurrogates(definition, threshold, OutputPoint)
   use SurrogateDefinition
-  use Global, only : FullFileOutput, WindowsLinux, GenotypeId, nAnisG
+  use Global, only : FullFileOutput, WindowsLinux, GenotypeId
   
   implicit none
   
@@ -1498,6 +1576,10 @@ subroutine WriteSurrogates(definition, threshold, OutputPoint)
   type(SurrDef), intent(in) :: definition
   integer, intent(in) :: threshold
   integer, intent(in) :: OutputPoint
+  
+  integer :: nAnisG
+  
+  nAnisG = size(definition%numOppose,1)
   
   if (FullFileOutput == 1) then
     if (WindowsLinux == 1) then

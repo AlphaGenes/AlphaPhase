@@ -14,17 +14,21 @@ module SurrogateDefinition
   end type SurrDef
 
 contains
-  subroutine calculate(definition, genos, SireGenotyped, DamGenotyped, threshold, useNRM, pseudoNRM)
+  subroutine calculate(definition, cs, threshold, useNRM, pseudoNRM)
     !Don't like this but for now!!
     use GlobalClustering
+    use CoreSubSetDefinition
     use Global, only: genotypeID
     
     class(SurrDef) :: definition
-    integer(kind = 1), dimension (:,:), intent(in) :: genos
-    integer(kind = 4), allocatable, dimension (:), intent(in) :: SireGenotyped, DamGenotyped
+    class(CoreSubSet) :: cs
+    
     integer, intent(in) :: threshold
     logical, intent(in) :: useNRM
     integer(kind = 1), dimension (:,:), intent(in) :: PseudoNRM
+    
+    !integer(kind = 1), dimension (:,:), allocatable :: genos
+    integer(kind = 1), dimension (:,:), pointer :: genos
     
     integer, allocatable, dimension(:,:) :: passThres
     integer, allocatable, dimension(:) :: numPassThres
@@ -57,8 +61,12 @@ contains
     logical :: subtract1, subtract2 ! Fudge to produce same results as old version.  Effectively does old buggy logic.  Should be removed
     ! once finished with speed ups.
 
-    nAnisG = size(genos,1)
-    nSnp = size(genos,2)
+    !nAnisG = size(genos,1)
+    !nSnp = size(genos,2)
+    nAnisG = cs%getNAnisG()
+    nSnp = cs%getNSnp()
+    !allocate(genos(nAnisG,nSNp))
+    genos => cs%getCoreAndTailGenos()
 
     allocate(SurrogateList(nAnisG))
     allocate(ProgCount(nAnisG))
@@ -153,11 +161,11 @@ contains
     
     ProgCount = 0
     do i = 1, nAnisG
-      if (SireGenotyped(i) /= 0) then
-	ProgCount(SireGenotyped(i)) = ProgCount(SireGenotyped(i)) + 1
+      if (cs%getSire(i) /= 0) then
+	ProgCount(cs%getSire(i)) = ProgCount(cs%getSire(i)) + 1
       end if
-      if (DamGenotyped(i) /= 0) then
-	ProgCount(DamGenotyped(i)) = ProgCount(DamGenotyped(i)) + 1
+      if (cs%getDam(i) /= 0) then
+	ProgCount(cs%getDam(i)) = ProgCount(cs%getDam(i)) + 1
       end if
     end do
 
@@ -168,52 +176,52 @@ contains
       DumSire = 0
       DumDam = 0
 
-      if ((SireGenotyped(i) /= 0).and.(DamGenotyped(i) /= 0)) then
+      if ((cs%getSire(i) /= 0).and.(cs%getDam(i) /= 0)) then
 	!do j = 1, nAnisG
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
 	  truth = 0
-	  if ((definition%numoppose((SireGenotyped(i)), j) <=  threshold) &
-	    .and.(definition%numoppose((DamGenotyped(i)), j) > threshold)) then
+	  if ((definition%numoppose((cs%getSire(i)), j) <=  threshold) &
+	    .and.(definition%numoppose((cs%getDam(i)), j) > threshold)) then
 	    definition%partition(i, j) = 1
 	  endif
-	  if ((definition%numoppose((DamGenotyped(i)), j) <= threshold)&
-	    .and.(definition%numoppose((SireGenotyped(i)), j) > threshold)) then
+	  if ((definition%numoppose((cs%getDam(i)), j) <= threshold)&
+	    .and.(definition%numoppose((cs%getSire(i)), j) > threshold)) then
 	    definition%partition(i, j) = 2
 	  endif
 	end do
-	if (definition%numoppose(i, SireGenotyped(i)) <= threshold) then
-	  definition%partition(i, SireGenotyped(i)) = 1
+	if (definition%numoppose(i, cs%getSire(i)) <= threshold) then
+	  definition%partition(i, cs%getSire(i)) = 1
 	end if
-	if (definition%numoppose(i, DamGenotyped(i)) <= threshold) then
-	  definition%partition(i, DamGenotyped(i)) = 2
+	if (definition%numoppose(i, cs%getDam(i)) <= threshold) then
+	  definition%partition(i, cs%getDam(i)) = 2
 	end if
 	definition%method(i) = 1
       end if
 
-      if ((definition%method(i) == 0).and.(SireGenotyped(i) /= 0)) then
-	definition%partition(i, SireGenotyped(i)) = 1
+      if ((definition%method(i) == 0).and.(cs%getSire(i) /= 0)) then
+	definition%partition(i, cs%getSire(i)) = 1
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
-	  if (definition%numoppose(SireGenotyped(i), j) <= threshold) then
+	  if (definition%numoppose(cs%getSire(i), j) <= threshold) then
 	    definition%partition(i, j) = 1
 	  endif
 	enddo
 	definition%method(i) = 2
       endif
 
-      if ((definition%method(i) == 0).and.(DamGenotyped(i) /= 0)) then
-	definition%partition(i, DamGenotyped(i)) = 2
+      if ((definition%method(i) == 0).and.(cs%getDam(i) /= 0)) then
+	definition%partition(i, cs%getDam(i)) = 2
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
-	  if (definition%numoppose(DamGenotyped(i), j) <= threshold) then
+	  if (definition%numoppose(cs%getDam(i), j) <= threshold) then
 	    definition%partition(i, j) = 2
 	  endif
 	enddo
 	definition%method(i) = 3
       endif
       
-      if ((definition%method(i) == 0).and.(SireGenotyped(i) == 0).and.(DamGenotyped(i) == 0).and.useNRM) then
+      if ((definition%method(i) == 0).and.(cs%getSire(i) == 0).and.(cs%getDam(i) == 0).and.useNRM) then
 	subtract1 = .false.
 	! Same fudge as below.  Definitely should not be here
 	do aj = 1, numPassThres(i) + 1
@@ -257,11 +265,11 @@ contains
 	DumSire = 0
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
-	  if (i == DamGenotyped(j)) then
+	  if (i == cs%getDam(j)) then
 	    DumSire = j
 	    exit
 	  endif
-	  if (i == SireGenotyped(j)) then
+	  if (i == cs%getSire(j)) then
 	    DumSire = j
 	    exit
 	  endif
@@ -271,7 +279,7 @@ contains
 	  truth = 0
 	  do aj = 1, numPassThres(i)
 	    j = passThres(i, aj)
-	    if ((i == SireGenotyped(j)).or.(i == DamGenotyped(j))) then
+	    if ((i == cs%getSire(j)).or.(i == cs%getDam(j))) then
 	      if (definition%numoppose(j, DumSire) > threshold) then
 		definition%partition(i, j) = 2
 		truth = 1

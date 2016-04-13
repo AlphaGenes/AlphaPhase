@@ -5,13 +5,14 @@ module Phasing
   subroutine Erdos(surrogates, threshold, c)
 !  use Global
   use SurrogateDefinition
-  use CoreDefinition
-  use global, only: useSurrsN
+  use CoreSubsetDefinition
+  use global, only: useSurrsN, consistent
   implicit none
 
   type(SurrDef), intent(in) :: surrogates
-  type(Core) :: c
-  integer(kind=1), dimension(:,:), allocatable :: genos
+  type(CoreSubSet) :: c
+  !integer(kind=1), dimension(:,:), allocatable :: genos
+  integer(kind=1), dimension(:,:), pointer :: genos
   integer, intent(in) :: threshold
   !integer(kind=1), dimension(:,:,:), intent(inout) :: phase
     
@@ -34,9 +35,9 @@ module Phasing
   
   allocate(Visited(nAnisG))
   allocate(SurrAveDiff(nAnisG))
-  allocate(Genos(nAnisG, nCoreSnp))
+  !allocate(Genos(nAnisG, nCoreSnp))
   
-  genos = c%getCoreGenos()
+  genos => c%getCoreGenos()
 
   do i = 1, nAnisG
     value = 0
@@ -116,6 +117,29 @@ module Phasing
       end if
     end do
   end do
+  
+  if (.not. consistent) then
+    do i = 1, nAnisG
+      do j = 1, nCoreSnp
+	if (genos(i,j) == 0) then
+	  call c%setPhase(i,j,1,0)
+	  call c%setPhase(i,j,2,0)
+	end if
+	if (genos(i,j) == 2) then
+	  call c%setPhase(i,j,1,1)
+	  call c%setPhase(i,j,2,1)
+	end if
+      end do
+    end do
+  end if
+  
+  !do i = 1, nAnisG
+  !  do j = 1, nCoreSnp
+  !    if (((genos(i,j) == 0) .or. (genos(i,j) == 2)) .and. (c%getPhase(i,j,1) == 9)) then
+  !	print *, i, j
+  !    end if
+  !  end do
+  !end do
 
   print*, " "
   print*, " ", HighestErdos, " was the highest Erdos used on Maternal Side"

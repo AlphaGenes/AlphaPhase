@@ -5,6 +5,7 @@ module CoreDefinition
   type, public :: Core
     private
     !Almost definitely shouldn't be public but for now...
+    !integer(kind = 1), allocatable, dimension(:,:) :: genos
     integer(kind = 1), allocatable, dimension(:,:) :: genos
     integer(kind = 1), allocatable, dimension(:,:,:), public :: phase
     logical, allocatable, dimension(:,:) :: fullyPhased
@@ -37,6 +38,7 @@ module CoreDefinition
     procedure, public :: getFullyPhased
     procedure, public :: resetHapAnis
     procedure, public :: setHapAnis
+    procedure, public :: getBothFullyPhased
   end type Core
 
 contains
@@ -72,6 +74,7 @@ contains
     c%startCoreSnp = startCoreSnp
     c%endCoreSnp = endCoreSnp
     c%endSurrSnp = endSurrSnp
+    c%fullyPhased = .false.
     c%phase = 9
     c%hapAnis = -99
   end subroutine create
@@ -79,8 +82,8 @@ contains
   function getCoreAndTailGenos(c) result (ctGenos)
     implicit none
     
-    class(Core) :: c
-    integer(kind=1), dimension(:,:), allocatable :: ctGenos
+    class(Core), target :: c
+    integer(kind=1), dimension(:,:), pointer :: ctGenos
     
     !allocate(ctGenos(size(c%genos,1),size(c%genos,2)))
     allocate(ctGenos(size(c%genos,1),c%endSurrSnp))
@@ -94,12 +97,14 @@ contains
   function getCoreGenos(c) result(cGenos)
     implicit none
     
-    class(Core) :: c
-    integer(kind=1), dimension(:,:), allocatable :: cGenos
+    class(Core), target :: c
+    !integer(kind=1), dimension(:,:), allocatable :: cGenos
+    integer(kind=1), dimension(:,:), pointer :: cGenos
     
     allocate(cGenos(size(c%genos,1),c%endCoreSnp - c%startCoreSnp+1))
     
-    cGenos = c%genos(:,c%startCoreSnp:c%endCoreSnp)
+    !cGenos = c%genos(:,c%startCoreSnp:c%endCoreSnp)
+    cGenos => c%genos(:,c%startCoreSnp:c%endCoreSnp)
     
     return
   end function getCoreGenos
@@ -107,15 +112,15 @@ contains
   function getSingleCoreAndTailGenos(c,i) result (ctGenos)
     implicit none
     
-    class(Core) :: c
+    class(Core), target :: c
     integer, intent(in) :: i
-    integer(kind=1), dimension(:), allocatable :: ctGenos
+    integer(kind=1), dimension(:), pointer :: ctGenos
     
     !allocate(ctGenos(size(c%genos,1),size(c%genos,2)))
-    allocate(ctGenos(c%endSurrSnp))
+    !allocate(ctGenos(c%endSurrSnp))
     
     !ctGenos = c%genos
-    ctGenos = c%genos(i,1:c%endSurrSnp)
+    ctGenos => c%genos(i,1:c%endSurrSnp)
     
     return
   end function getSingleCoreAndTailGenos
@@ -123,13 +128,13 @@ contains
   function getSingleCoreGenos(c, i) result (cGenos)
     implicit none
     
-    class(Core) :: c
+    class(Core), target :: c
     integer, intent(in) :: i
-    integer(kind=1), dimension(:), allocatable :: cGenos
+    integer(kind=1), dimension(:), pointer :: cGenos
     
-    allocate(cGenos(c%endCoreSnp - c%startCoreSnp+1))
+    !allocate(cGenos(c%endCoreSnp - c%startCoreSnp+1))
     
-    cGenos = c%genos(i,c%startCoreSnp:c%endCoreSnp)
+    cGenos => c%genos(i,c%startCoreSnp:c%endCoreSnp)
     
     return
   end function getSingleCoreGenos
@@ -258,7 +263,18 @@ contains
     logical :: fully
     
     fully = c%fullyPhased(animal,phase)
+    !fully = all(c%phase(animal,:,phase) /= 9)
   end function getFullyPhased
+  
+  function getBothFullyPhased(c,animal) result(fully)
+    implicit none
+    class(Core) :: c
+    integer, intent(in) :: animal
+    logical :: fully
+    
+    fully = c%fullyPhased(animal,1) .and. c%fullyPhased(animal,2)
+    !fully = all(c%phase(animal,:,phase) /= 9)
+  end function getBothFullyPhased
     
   
   subroutine resetHapAnis(c)
