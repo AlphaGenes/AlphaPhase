@@ -541,7 +541,7 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
   
   integer, allocatable, dimension (:,:) :: TempHapArray
   integer, allocatable, dimension (:) :: TempHapVector, ClusterMember
-  integer :: nHapsCluster
+  integer :: nHapsCluster, rounds
   
   INTERFACE
     subroutine RandomOrder(order, n, start, idum)
@@ -1346,7 +1346,9 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 !		if (Change == 0) exit
 !	      enddo
 !	      if (rounds <= nMaxRounds) then
-	      if (cluster(TempHapArray, ClusterMember, 2, nMaxRounds, .false.)) then
+	      rounds = clusterA(TempHapArray, ClusterMember, 2, nMaxRounds, .false.)
+	      if (rounds <= nMaxRounds) then
+	      !if (cluster(TempHapArray, ClusterMember, 2, nMaxRounds, .false.)) then
 		if (count(ClusterMember(:) == 2) == 1) then
 		  HapM = 0
 		  do j = 1, nHapsCluster
