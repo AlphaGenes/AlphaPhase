@@ -337,7 +337,7 @@ end subroutine CheckCompatHapGeno
 !subroutine MakeHapLib(library, phase, fullyPhased, hapfreq, hapanis, c)
 subroutine MakeHapLib(library, c)
   !use Global, only: nGlobalHaps
-  use GlobalClusteringHaps
+  !use GlobalClusteringHaps
   use CoreDefinition
   implicit none
 
@@ -502,19 +502,21 @@ subroutine MakeHapLib(library, c)
 end subroutine MakeHapLib
 
 !subroutine ImputeFromLib(library, genos, phase, fullyphased, hapfreq, hapanis)
-subroutine ImputeFromLib(library, c)
+subroutine ImputeFromLib(library, c, nGlobalHapsIter)
   ! Impute the phase for gametes that are not completely phased by LRP 
   ! by matching their phased loci to haplotypes in the Haplotype Library,
   ! following strategies listed in the section Step 2e of Hickey et al 2011.
 
   !use Global, only : percgenohaplodisagree, missinggenotypecode, nglobalhapsiter, nglobalhaps
-  use Global, only : percgenohaplodisagree, missinggenotypecode, nglobalhapsiter, consistent
-  use GlobalClusteringHaps
+  use Global, only : percgenohaplodisagree, missinggenotypecode, consistent, nMaxRounds
+  !use GlobalClusteringHaps
   use CoreDefinition
+  use Clustering
   implicit none
   
   type(HapLib), intent(in) :: library
   type(Core) :: c
+  integer, intent(inout) :: nGlobalHapsIter
   !integer(kind=1), dimension(:,:,:), intent(inout) :: phase
   !logical, dimension(:,:) :: fullyphased
   !integer, dimension(:), intent(inout) :: hapfreq
@@ -536,6 +538,10 @@ subroutine ImputeFromLib(library, c)
   
   integer, allocatable, dimension(:) :: compatHaps
   integer :: numCompatHaps
+  
+  integer, allocatable, dimension (:,:) :: TempHapArray
+  integer, allocatable, dimension (:) :: TempHapVector, ClusterMember
+  integer :: nHapsCluster
   
   INTERFACE
     subroutine RandomOrder(order, n, start, idum)
@@ -570,7 +576,7 @@ subroutine ImputeFromLib(library, c)
 
   SizeCore = nSnp
   ErrorAllow = int(PercGenoHaploDisagree * SizeCore)
-  SnpInCore = SizeCore
+!  SnpInCore = SizeCore
   ErrorCountAB = int(SizeCore * 0.09)
 
   HapLibIter = 1
@@ -962,7 +968,7 @@ subroutine ImputeFromLib(library, c)
 	    end do
 	  end if
 
-	  ! If only one paternal candidate haplotype and many maternal candidate haplotypes 
+	  ! If only one paternal candidate haplotype and one / many maternal candidate haplotypes 
 	  if ((nCandPat == 1).and.(nCand - nCandPat > 0)) then
 	    truth1 = 0
 	    do k = nCandPat + 1, nCand
@@ -981,7 +987,9 @@ subroutine ImputeFromLib(library, c)
 	      endif
 	    enddo
 	    ! Really not sure about this next if.  Seems to me to be saying that if we've found one compatible hap but then find
-	    ! one that isn't we set HapM to none - despite so far only having one match...
+	    ! one that isn't we set HapM to none - despite so far only having one match...  Also why the difference from above?
+	    ! Think this is here so that if we only have one candidate for maternal it's compatible but think it has undesirable
+	    ! side effects
 	    if (truth == 0) HapM = 0
 	    if (truth == 1) then
 	      truth1 = truth1 + 1
@@ -1307,17 +1315,18 @@ subroutine ImputeFromLib(library, c)
 	      nHapsCluster = 0
 
 	      ! Clusterize with k-medoids
+	      ! I think this is actually k-means!
 	      do k = 1, nAnisG * 2
 		if (WorkVec(k) == 1) then
 		  nHapsCluster = nHapsCluster + 1
 		  TempHapVector(nHapsCluster) = k
-		  TempHapArray(nHapsCluster, 1:SnpInCore) = &
+		  TempHapArray(nHapsCluster, 1:c%getNCoreSnp()) = &
 		  library%getHap(k)
 		end if
 	      end do
-	      allocate(Medoids(nClusters, SnpInCore))
+!	      allocate(Medoids(nClusters, SnpInCore))
 	      allocate(ClusterMember(nHapsCluster))
-	      allocate(MinClust(nHapsCluster))
+!	      allocate(MinClust(nHapsCluster))
 	      do j = 1, nHapsCluster
 		if (mod(j, 2) == 0) then
 		  ClusterMember(j) = 1
@@ -1325,18 +1334,19 @@ subroutine ImputeFromLib(library, c)
 		  ClusterMember(j) = 2
 		endif
 	      end do
-	      call EvaluateMedoidsHaps
-	      Change = 0
-	      MinClust = 1
-	      rounds = 1
-	      call RePartitionHaps
-	      do j = 1, nMaxRounds
-		call EvaluateMedoidsHaps
-		Change = 0
-		call RePartitionHaps
-		if (Change == 0) exit
-	      enddo
-	      if (rounds <= nMaxRounds) then
+!	      call EvaluateMedoidsHaps
+!	      Change = 0
+!	      MinClust = 1
+!	      rounds = 1
+!	      call RePartitionHaps
+!	      do j = 1, nMaxRounds
+!		call EvaluateMedoidsHaps
+!		Change = 0
+!		call RePartitionHaps
+!		if (Change == 0) exit
+!	      enddo
+!	      if (rounds <= nMaxRounds) then
+	      if (cluster(TempHapArray, ClusterMember, 2, nMaxRounds, .false.)) then
 		if (count(ClusterMember(:) == 2) == 1) then
 		  HapM = 0
 		  do j = 1, nHapsCluster
@@ -1428,8 +1438,8 @@ subroutine ImputeFromLib(library, c)
 		endif
 	      end if
 	      deallocate(ClusterMember)
-	      deallocate(MinClust)
-	      deallocate(Medoids)
+!	      deallocate(MinClust)
+!	      deallocate(Medoids)
 	      deallocate(TempHapArray)
 	      deallocate(TempHapVector)
 	    endif
@@ -1470,30 +1480,30 @@ do i = 1, nAnisG
       endif
     end if
   end do
-  if ((CountA > ErrorCountAB) .or. (CountB > ErrorCountAB)) then
-    !Phase(i, :, :) = 9
-    call c%setHaplotypeToUnphased(i,1)
-    call c%setHaplotypeToUnphased(i,2)
-    do j = 1, nSnpCore
-      !if (Genos(i, j) == 0) Phase(i, j,:) = 0
-      !if (Genos(i, j) == 2) Phase(i, j,:) = 1
-      if (Genos(i, j) == 0) then
-	call c%setPhase(i, j, 1, 0)
-	call c%setPhase(i, j, 2, 0)
-      end if
-      if (Genos(i, j) == 2) then
-	call c%setPhase(i, j,1, 1)
-	call c%setPhase(i, j,1, 2)
-      end if
-    enddo
-  endif
-!  if (CountB > ErrorCountAB) then
-!    Phase(i, : ,:) = 9
+!  if ((CountA > ErrorCountAB) .or. (CountB > ErrorCountAB)) then
+!    !Phase(i, :, :) = 9
+!    call c%setHaplotypeToUnphased(i,1)
+!    call c%setHaplotypeToUnphased(i,2)
 !    do j = 1, nSnpCore
-!      if (Genos(i, j) == 0) Phase(i, j,:) = 0
-!      if (Genos(i, j) == 2) Phase(i, j,:) = 1
+!      !if (Genos(i, j) == 0) Phase(i, j,:) = 0
+!      !if (Genos(i, j) == 2) Phase(i, j,:) = 1
+!      if (Genos(i, j) == 0) then
+!	call c%setPhase(i, j, 1, 0)
+!	call c%setPhase(i, j, 2, 0)
+!      end if
+!      if (Genos(i, j) == 2) then
+!	call c%setPhase(i, j,1, 1)
+!	call c%setPhase(i, j,1, 2)
+!      end if
 !    enddo
 !  endif
+!!  if (CountB > ErrorCountAB) then
+!!    Phase(i, : ,:) = 9
+!!    do j = 1, nSnpCore
+!!      if (Genos(i, j) == 0) Phase(i, j,:) = 0
+!!      if (Genos(i, j) == 2) Phase(i, j,:) = 1
+!!    enddo
+!!  endif
 end do
 
 do i = 1, nAnisG

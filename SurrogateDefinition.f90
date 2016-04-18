@@ -17,6 +17,7 @@ contains
   subroutine calculate(definition, cs, threshold, useNRM, pseudoNRM)
     !Don't like this but for now!!
     use GlobalClustering
+    use Clustering
     use CoreSubSetDefinition
     use Global, only: genotypeID
     
@@ -55,6 +56,12 @@ contains
     integer(kind = 8), allocatable, dimension(:,:) :: homo, additional
 
     integer :: thres, pass
+    
+    
+    integer, allocatable, dimension (:,:) :: TempSurrArray
+    integer, allocatable, dimension (:) :: TempSurrVector
+    integer :: rounds, SurrCounter
+    integer, allocatable, dimension (:) :: ClusterMember
 
     ! integer,allocatable,dimension(:,:) :: nSnpErrorThreshAnims
 
@@ -115,11 +122,11 @@ contains
 	end if
       end do
     end do
-
-    if (nClusters /= 2) then
-      print*, "nClusters must equal 2"
-      stop
-    end if
+!
+!    if (nClusters /= 2) then
+!      print*, "nClusters must equal 2"
+!      stop
+!    end if
 
     print*, " "
     print*, " Identifying surrogates"
@@ -369,9 +376,9 @@ contains
 	    TempSurrArray(j, j) = 1
 	  end do
 
-	  allocate(Medoids(nClusters, SurrCounter))
+!	  allocate(Medoids(2, SurrCounter))
 	  allocate(ClusterMember(SurrCounter))
-	  allocate(MinClust(SurrCounter))
+	  !allocate(MinClust(SurrCounter))
 	  ClusterMember(1) = 1
 	  do j = 1, SurrCounter
 	    if (TempSurrArray(1, j) == 0) then
@@ -380,27 +387,29 @@ contains
 	      ClusterMember(j) = 1
 	    endif
 	  end do
-	  call EvaluateMedoids
-	  Change = 0
-	  MinClust = 1
-	  rounds = 1
-	  call RePartition
-	  do j = 1, SurrCounter
-	    call EvaluateMedoids
-	    Change = 0
-	    call RePartition
-	    if (Change == 0) exit
-	  enddo
+!	  call EvaluateMedoids
+!	  Change = 0
+!	  MinClust = 1
+!	  rounds = 1
+!	  call RePartition
+!	  do j = 1, SurrCounter
+!	    call EvaluateMedoids
+!	    Change = 0
+!	    call RePartition
+!	    if (Change == 0) exit
+!	  enddo
+	  rounds = clusterA(TempSurrArray, ClusterMember, 2, SurrCounter, .true.)
 	  if (rounds <= SurrCounter) then
+!	  if (cluster(TempSurrArray, ClusterMember, 2, SurrCounter, .true.)) then
 	    do j = 1, SurrCounter
 	      definition%partition(i, TempSurrVector(j)) = ClusterMember(j)
 	    enddo
 	    definition%method(i) = 7
 	  end if
 
-	  deallocate(Medoids)
+!	  deallocate(Medoids)
 	  deallocate(ClusterMember)
-	  deallocate(MinClust)
+!	  deallocate(MinClust)
 	  deallocate(TempSurrArray)
 	  deallocate(TempSurrVector)
 	endif

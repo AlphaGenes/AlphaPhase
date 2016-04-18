@@ -31,6 +31,7 @@ module Global
   character (len = 300) :: itterateType
   integer :: itterateNumber
   integer :: numIter
+  character (len = 10) :: startCoreChar, endCoreChar
   
   logical :: consistent
   
@@ -41,43 +42,47 @@ module Global
 
   
   !!!!! MOVE OUT? !!!!!
-  integer :: nAnisG, nAnisRawPedigree, nAnisP, nCores
+  !integer :: nAnisG, nAnisRawPedigree, nAnisP, nCores
+  integer :: nAnisG, nAnisP 
 
   !integer(kind = 1), allocatable, dimension (:,:,:) :: Phase
-  integer, allocatable, dimension (:,:) :: CoreIndex, TailIndex
-  integer :: nGlobalHapsIter
+  !integer, allocatable, dimension (:,:) :: CoreIndex, TailIndex
+  !integer :: nGlobalHapsIter
 
 end module Global
 
 !####################################################################################################################################################################
 
-module GlobalClustering
-  implicit none
+!module GlobalClustering
+!  implicit none
 
-  integer, parameter :: nCLusters = 2, nMaxRounds = 100
-  integer :: Change, rounds, SurrCounter
-  double precision :: CountCluster(nClusters), Dist(nClusters)
-  integer, allocatable, dimension (:,:) :: TempSurrArray
-  integer, allocatable, dimension (:) :: TempSurrVector, ClusterMember
-  double precision, allocatable, dimension (:,:) :: Medoids
-  double precision, allocatable, dimension (:) :: MinClust
+!  integer, parameter :: nCLusters = 2, nMaxRounds = 100
+!  integer, parameter :: nMaxRounds = 100
+!  integer :: Change, rounds, SurrCounter
+!  integer :: Change
+!  double precision :: CountCluster(nClusters), Dist(nClusters)
+!  integer, allocatable, dimension (:,:) :: TempSurrArray
+!  integer, allocatable, dimension (:) :: TempSurrVector, ClusterMember
+!  integer, allocatable, dimension (:) :: ClusterMember
+!  double precision, allocatable, dimension (:,:) :: Medoids
+!  double precision, allocatable, dimension (:) :: MinClust
 
-end module GlobalClustering
+!end module GlobalClustering
 
 !####################################################################################################################################################################
 
-module GlobalClusteringHaps
-  implicit none
-
-  integer, parameter :: nCLusters = 2, nMaxRounds = 100
-  integer :: Change, rounds, SurrCounter, nHapsCluster, SnpInCore
-  double precision :: CountCluster(nClusters), Dist(nClusters)
-  integer, allocatable, dimension (:,:) :: TempHapArray
-  integer, allocatable, dimension (:) :: TempHapVector, ClusterMember
-  double precision, allocatable, dimension (:,:) :: Medoids
-  double precision, allocatable, dimension (:) :: MinClust
-
-end module GlobalClusteringHaps
+!module GlobalClusteringHaps
+!  implicit none
+!
+!  integer, parameter :: nCLusters = 2, nMaxRounds = 100
+!  integer :: Change, rounds, SurrCounter, nHapsCluster, SnpInCore
+!  double precision :: CountCluster(nClusters), Dist(nClusters)
+!  integer, allocatable, dimension (:,:) :: TempHapArray
+!  integer, allocatable, dimension (:) :: TempHapVector, ClusterMember
+!  double precision, allocatable, dimension (:,:) :: Medoids
+!  double precision, allocatable, dimension (:) :: MinClust
+!
+!end module GlobalClusteringHaps
 
 !####################################################################################################################################################################
 
@@ -85,9 +90,11 @@ module GlobalPedigree
   use Global
   implicit none
 
-  real(kind = 4), allocatable :: xnumrelmatHold(:)
-  integer :: NRMmem, shell, shellmax, shellWarning
-  integer, allocatable :: seqid(:), seqsire(:), seqdam(:), RecodeGenotypeId(:), RecSire(:), RecDam(:)
+  !real(kind = 4), allocatable :: xnumrelmatHold(:)
+  !integer :: NRMmem, shell, shellmax, shellWarning
+  !integer :: NRMmem, shell
+  !integer, allocatable :: seqid(:), seqsire(:), seqdam(:), RecodeGenotypeId(:), RecSire(:), RecDam(:)
+  integer, allocatable :: seqsire(:), seqdam(:), RecodeGenotypeId(:)!, RecSire(:), RecDam(:)
   !character(lengan), allocatable :: ped(:,:), Id(:)
 end module GlobalPedigree
 
@@ -117,10 +124,25 @@ program Rlrplhi
   integer(kind=1), allocatable, dimension(:,:,:) :: AllPhase
   integer(kind=1), allocatable, dimension(:,:) :: AllGenos, Genos
   integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
+  integer, allocatable, dimension (:,:) :: CoreIndex, TailIndex
+  integer :: nCores
+  integer :: nGlobalHapsIter
   
   integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM
   
+  integer :: startCore, endCore
+  logical :: combine
+  
   type(MemberManager) :: manager
+  
+  interface calculateCores
+    subroutine calculateCores(CoreIndex, TailIndex)
+      use Global
+      implicit none
+
+      integer, dimension(:,:), allocatable :: CoreIndex, TailIndex
+    end subroutine calculateCores
+  end interface calculateCores
   
   ! Create a seed for RNG
   ! call system_clock(nCount)
@@ -131,8 +153,9 @@ program Rlrplhi
   call Titles
   call ReadInParameterFile
   call MakeDirectories
-  call CountInData
   call ParsePedigreeData
+  call CalculateCores(CoreIndex, TailIndex)
+  nCores = size(CoreIndex,1)
   if (.not. readCoreAtTime) then
     allocate(AllGenos(nAnisG,nSnp))
     AllGenos = ParseGenotypeData(1,nSnp)
@@ -142,7 +165,6 @@ program Rlrplhi
     allocate(PseudoNRM(nAnisG,nAnisG))
     PseudoNRM = createNRM()
   end if
-
   
   if (.not. readCoreAtTime) then
     allocate(AllHapAnis(nAnisG, 2, nCores))
@@ -150,11 +172,28 @@ program Rlrplhi
   end if
     
   threshold = int(GenotypeMissingErrorPercentage*CoreAndTailLength)
+  
+  if (startCoreChar .eq. "Combine") then
+    startCore = nCores
+    combine = .true.
+  else
+    read(startCoreChar, '(i10)') startCore
+    combine = .false.
+  end if
+  
+  if (endCoreChar .eq. "Combine") then
+    endCore = nCores
+    combine = .true.
+  else
+    read(endCoreChar, '(i10)') endCore
+    combine = .false.
+  end if
+    
 
-  do h = 1, nCores
+  !do h = 1, nCores
+  do h = startCore, endCore
     !CurrentCore = h
     !nGlobalHaps = 0
-    nGlobalHapsIter = 1
     print*, " "
     print*, " "
     print*, " Starting Core", h
@@ -176,22 +215,22 @@ program Rlrplhi
     call manager%create(c)
     
     do while (manager%hasNext())
-      nGlobalHapsIter = 1
       call cs%create(c, SireGenotyped, DamGenotyped, manager%getNext())
     
       call surrogates%calculate(cs, threshold, consistent, pseudoNRM)
       call writeSurrogates(surrogates,threshold, h)
       call Erdos(surrogates, threshold, cs)
-      call CheckCompatHapGeno(cs)
-      call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)
-      !! OH DEAR - hapAnis
+      call CheckCompatHapGeno(cs)      
+      
+      call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)      
+      nGlobalHapsIter = 1
       call MakeHapLib(library, c)
       !nGlobalHapsOld = nGlobalHaps
       nGlobalHapsOld = library%getSize()
       print*, " "
       print*, "  ", "Haplotype library imputation step"
       do j = 1, 20
-	call ImputeFromLib(library, c)
+	call ImputeFromLib(library, c, nGlobalHapsIter)
 	call MakeHapLib(library, c)
 	!if (nGlobalHapsOld == nGlobalHaps) exit
 	!nGlobalHapsOld = nGlobalHaps
@@ -206,7 +245,7 @@ program Rlrplhi
     call HapCommonality(library, h)
     
     if (readCoreAtTime) then
-      call WriteOutCore(c%phase,c%hapAnis, h)
+      call WriteOutCore(c%phase,c%hapAnis, h, CoreIndex(h,1))
     end if
     
     deallocate(Genos)
@@ -224,10 +263,12 @@ program Rlrplhi
     !end if
   end do
   
-  if (readCoreAtTime) then
-    call CombineResults(nAnisG)
+  if (readCoreAtTime .and. combine) then
+    call CombineResults(nAnisG,CoreIndex)
   else
-    call WriteOutResults(AllPhase,AllHapAnis)
+    call WriteOutResults(AllPhase,AllHapAnis,CoreIndex)
+  end if
+  if (consistent) then
     deallocate(PseudoNRM)
   end if
   call PrintTimerTitles
@@ -241,12 +282,9 @@ subroutine ReadInParameterFile
   implicit none
   
   double precision :: PercSurrDisagree
-  integer :: i, resid, TempInt
+  integer :: i, TempInt
   character (len = 300) :: dumC, TruePhaseFile, FileFormat, OffsetVariable
   
-  double precision :: corelength
-  integer :: left, ltail, rtail
-
   open (unit = 1, file = "AlphaPhaseSpec.txt", status = "old")
 
   read (1, *) dumC, PedigreeFile
@@ -315,6 +353,8 @@ subroutine ReadInParameterFile
   read (1, *) dumC, itterateNumber
   read (1, *) dumC, numIter
   
+  read (1, *) dumC, startCoreChar, endCoreChar
+  
   PercSurrDisagree = PercSurrDisagree/100
   NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
   PercGenoHaploDisagree = PercGenoHaploDisagree/100
@@ -336,7 +376,20 @@ subroutine ReadInParameterFile
   !        print*, "Kind=2 is not sufficient for this number of SNP.... Contact John Hickey because there is a simple solution!"
   !        stop
   !end if
+    
+end subroutine ReadInParameterFile
 
+subroutine calculateCores(CoreIndex, TailIndex)
+  use Global
+  implicit none
+  
+  integer, dimension(:,:), allocatable :: CoreIndex, TailIndex
+  
+  integer :: resid
+  double precision :: corelength
+  integer :: left, ltail, rtail, nCores
+  integer :: i
+  
   if (consistent) then
     if (Offset == 0) then
   !    StartCoreSnp = 1
@@ -436,8 +489,7 @@ subroutine ReadInParameterFile
     end do
 
   endif
-    
-end subroutine ReadInParameterFile
+end subroutine CalculateCores
 
 !########################################################################################################################################################################################################
 
@@ -516,59 +568,6 @@ end subroutine MakeDirectories
 !end function GetnSnpErrorThreshAnims
 
 !######################################################################################################################################################
-
-subroutine EvaluateMedoids
-  use GlobalClustering
-  implicit none
-
-  integer :: i, j, k, l
-
-  Medoids = 0
-  CountCluster = 0
-  do i = 1, nClusters
-    do k = 1, SurrCounter
-      if (ClusterMember(k) == i) then
-	do l = 1, SurrCounter
-	  Medoids(i, l) = Medoids(i, l) + TempSurrArray(k, l)
-	end do
-	CountCluster(i) = CountCluster(i) + 1
-      end if
-    end do	
-    Medoids(i,:) = Medoids(i,:)/CountCluster(i)
-  end do
-
-end subroutine EvaluateMedoids
-
-!######################################################################################################################################################
-
-subroutine RePartition
-  use GlobalClustering
-  implicit none
-
-  integer :: i, j, k, l
-
-  do i = 1, SurrCounter
-    Dist = 0
-    do j = 1, SurrCounter
-      do k = 1, nClusters
-	Dist(k) = Dist(k) + abs(TempSurrArray(i, j) - Medoids(k, j))
-      end do
-    end do
-    Dist = Dist/SurrCounter
-    MinClust(i) = Dist(ClusterMember(i))
-    do k = 1, nClusters
-      if ((Dist(k) <= MinClust(i)).and.(ClusterMember(i) /= k)) then
-	MinClust(i) = Dist(k)
-	ClusterMember(i) = k
-	Change = 1
-	!goto 10    !here
-      end if
-    end do
-  end do
-
-  10 rounds = rounds + 1
-
-end subroutine RePartition
 
 !#################################################################################################################################################################
 
@@ -717,72 +716,81 @@ end subroutine HapCommonality
 
 !######################################################################################################################################################
 
-subroutine EvaluateMedoidsHaps
-  use GlobalClusteringHaps
-  implicit none
-
-  integer :: i, j, k, l
-
-  Medoids = 0
-  CountCluster = 0
-  do i = 1, nClusters
-      do k = 1, nHapsCluster
-	if (ClusterMember(k) == i) then
-	  do l = 1, SnpInCore
-	    Medoids(i, l) = Medoids(i, l) + TempHapArray(k, l)
-	  end do
-	  CountCluster(i) = CountCluster(i) + 1
-	end if
-      end do	
-    Medoids(i,:) = Medoids(i,:)/CountCluster(i)
-  end do
-
-end subroutine EvaluateMedoidsHaps
+!subroutine EvaluateMedoidsHaps
+!  use GlobalClusteringHaps
+!  implicit none
+!
+!  integer :: i, j, k, l
+!  
+!  ! Calculates the middle of each mediod (average allele?)
+!
+!  Medoids = 0
+!  CountCluster = 0
+!  do i = 1, nClusters
+!      do k = 1, nHapsCluster
+!	if (ClusterMember(k) == i) then
+!	  do l = 1, SnpInCore
+!	    Medoids(i, l) = Medoids(i, l) + TempHapArray(k, l)
+!	  end do
+!	  CountCluster(i) = CountCluster(i) + 1
+!	end if
+!      end do	
+!    Medoids(i,:) = Medoids(i,:)/CountCluster(i)
+!  end do
+!
+!end subroutine EvaluateMedoidsHaps
 
 !######################################################################################################################################################
 
-subroutine RePartitionHaps
-  use GlobalClusteringHaps
-  implicit none
-
-  integer :: i, j, k, l
-
-  do i = 1, nHapsCluster
-    Dist = 0
-    do j = 1, SnpInCore
-      do k = 1, nClusters
-	Dist(k) = Dist(k) + abs(TempHapArray(i, j) - Medoids(k, j))
-      end do
-    end do
-    Dist = Dist/SnpInCore
-    MinClust(i) = Dist(ClusterMember(i))
-    do k = 1, nClusters
-      if ((Dist(k) <= MinClust(i)).and.(ClusterMember(i) /= k)) then
-	MinClust(i) = Dist(k)
-	ClusterMember(i) = k
-	Change = 1
-	goto 11
-      end if
-    end do
-  end do
-
-  11 rounds = rounds + 1
-
-end subroutine RePartitionHaps
+!subroutine RePartitionHaps
+!  use GlobalClusteringHaps
+!  implicit none
+!
+!  integer :: i, j, k, l
+!
+!  do i = 1, nHapsCluster
+!    Dist = 0
+!    do j = 1, SnpInCore
+!      do k = 1, nClusters
+!	Dist(k) = Dist(k) + abs(TempHapArray(i, j) - Medoids(k, j))
+!      end do
+!    end do
+!    Dist = Dist/SnpInCore
+!    ! Distance is average distance to each mediod for i
+!    MinClust(i) = Dist(ClusterMember(i))
+!    ! Minclust is the distance to it's current mediod for i
+!    do k = 1, nClusters
+!      ! if distance to another mediod is less or equal than the distance to the current mediod then swap hap to that mediod and stop
+!      ! repartitioning
+!      if ((Dist(k) <= MinClust(i)).and.(ClusterMember(i) /= k)) then
+!	MinClust(i) = Dist(k)
+!	ClusterMember(i) = k
+!	!print *, "Swapped ", i, "to", k
+!	Change = 1
+!	goto 11
+!      end if
+!    end do
+!  end do
+!
+!  11 rounds = rounds + 1
+!
+!end subroutine RePartitionHaps
 
 !########################################################################################################################################################################
 
 
 !########################################################################################################################################################################
 
-subroutine CountInData
-  use Global
+subroutine CountInData(nAnisRawPedigree, nAnisG)
+  use Global, only: PedigreeFile, GenotypeFile
   implicit none
 
+  integer, intent(out) :: nAnisRawPedigree, nAnisG
+  
   integer :: k
   character (len = 300) :: dumC
 
-
+  nAnisRawPedigree = 0
   if (trim(PedigreeFile) /= "NoPedigree") then
     open (unit = 2, file = trim(PedigreeFile), status = "old")
     do
@@ -878,80 +886,7 @@ end subroutine CountInData
 
 !########################################################################################################################################################################################################
 
-recursive function xnumrelmat(i, j) result (xA)
-  use GlobalPedigree
-  use Global
-  implicit none
 
-  real, external :: xnumrelmat_mem
-  integer :: i, j
-  real :: xA
-
-  shell = shell + 1
-  if (i .eq. 0 .or. j .eq. 0 .or. shell > shellmax) then
-    xA = 0.0
-    if (shell > shellmax) shellWarning = shellWarning + 1
-    return
-  endif
-
-  If (i .le. NRMmem .And. j .le. NRMmem) Then
-    xA = xnumrelmat_mem(i, j)
-  else
-    IF (i .eq. j)then
-    xA = 1 + .5 * xnumrelmat(RecSire(i), RecDam(i))
-  elseIF (i .lt. j)then
-    xA = .5 * (xnumrelmat(i, RecSire(j)) + xnumrelmat(i, RecDam(j)))
-  elseIF (j .lt. i)then
-    xA = .5 * (xnumrelmat(j, RecSire(i)) + xnumrelmat(j, RecDam(i)))
-    endif
-  endif
-
-end function xnumrelmat
-
-!########################################################################################################################################################################################################
-
-RECURSIVE function xnumrelmat_mem(i, j) RESULT (xA)
-  use GlobalPedigree
-  use Global
-  implicit none
-
-
-  INTEGER :: i, j, k
-  REAL :: xA
-
-  ! Addressing vector xnumrelmatHold:  k=(i-1)*(float(NRMmem)-float(i)/2)+j
-  shell = shell + 1
-  !IF (shell>4000 .AND. MOD(shell,1000).eq.0 )   PRINT*, shell
-  if (i .eq. 0 .or. j .eq. 0 .or. shell > shellmax) then
-    xA = 0.0
-    if (shell > shellmax) shellWarning = shellWarning + 1
-    return
-  endif
-
-  if (i .le. j) then
-    k = (i - 1) * (float(NRMmem) - float(i) / 2) + j
-  else
-    k = (j - 1) * (float(NRMmem) - float(j) / 2) + i
-  endif
-
-  if (xnumrelmatHold(k) > -1) then
-    xA = xnumrelmatHold(k)
-    return
-  endif
-
-
-  IF (i .eq. j)then
-    xA = 1 + .5 * xnumrelmat_mem(RecSire(i), RecDam(i))
-  elseIF (i .lt. j)then
-    xA = .5 * (xnumrelmat_mem(i, RecSire(j)) + xnumrelmat_mem(i, RecDam(j)))
-  elseIF (j .lt. i)then
-    xA = .5 * (xnumrelmat_mem(j, RecSire(i)) + xnumrelmat_mem(j, RecDam(i)))
-  endif
-
-  xnumrelmatHold(k) = xA
-
-
-end function xnumrelmat_mem
 
 !########################################################################################################################################################################
 
@@ -977,7 +912,8 @@ subroutine PedigreeViewerRecode(nobs, nAnisPedigree, ped, id)
   integer :: Noffset, Limit, Switch, ihold, ipoint
 
   mode = 1
-  allocate(id(0:nobs), sire(nobs), dam(nobs), seqid(nobs), seqsire(nobs), seqdam(nobs))
+!  allocate(id(0:nobs), sire(nobs), dam(nobs), seqid(nobs), seqsire(nobs), seqdam(nobs))
+  allocate(id(0:nobs), sire(nobs), dam(nobs), seqsire(nobs), seqdam(nobs))
 
   do i = 1, nobs
     id(i) = ped(i, 1)
@@ -1357,8 +1293,8 @@ subroutine PedigreeViewerRecode(nobs, nAnisPedigree, ped, id)
     allocate(seqdam(nobs + iextra))
     seqdam(1 + iextra:nobs + iextra) = SortedIdIndex(1:nobs)
 
-    deallocate (seqid)
-    allocate(seqid(nobs + iextra))
+!    deallocate (seqid)
+!    allocate(seqid(nobs + iextra))
 
   endif
 
@@ -1487,7 +1423,7 @@ subroutine PedigreeViewerRecode(nobs, nAnisPedigree, ped, id)
   deallocate ( OldN, NewN, holdid, holdsire, holddam)
 
   8012 do i = 1, nobs
-  seqid(i) = i
+!  seqid(i) = i
 enddo
 nAnisPedigree = nobs
 

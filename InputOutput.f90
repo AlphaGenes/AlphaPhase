@@ -2,19 +2,21 @@ module InputOutput
   
 contains
 
-  subroutine WriteOutResults(phase, allHapAnis)
-    use Global, only: CoreIndex, WindowsLinux, nCores, GenotypeID
+  subroutine WriteOutResults(phase, allHapAnis, coreIndex)
+    use Global, only: WindowsLinux, GenotypeID
     implicit none
 
     integer(kind=1), dimension(:,:,:), intent(in) :: phase
     integer, dimension(:,:,:), intent(in) :: allHapAnis
+    integer, dimension(:,:) :: coreIndex
 
-    integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp
+    integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp, nCores
     integer, allocatable, dimension(:) :: WorkOut
     double precision, allocatable, dimension(:) :: CoreCount
 
     nAnisG = size(phase,1)
     nSnp = size(phase,2)
+    nCores = size(allHapAnis,3)
 
     allocate(WorkOut(nCores * 2))
     allocate(CoreCount(nCores * 2))
@@ -89,13 +91,14 @@ contains
 
   end subroutine WriteOutResults
 
-  subroutine writeOutCore(phase, hapAnis, coreID)
-    use Global, only: CoreIndex, WindowsLinux, nCores, GenotypeID
+  subroutine writeOutCore(phase, hapAnis, coreID, coreStart)
+    use Global, only: WindowsLinux, GenotypeID
     implicit none
     
     integer(kind=1), dimension(:,:,:), intent(in) :: phase
     integer, dimension(:,:), intent(in) :: hapAnis
     integer, intent(in) :: coreID
+    integer, intent(in) :: coreStart
   
     integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp
     integer, allocatable, dimension(:) :: WorkOut
@@ -136,7 +139,7 @@ contains
         if ((Phase(j, i, 1) == 0).or.(Phase(j, i, 1) == 1)) counter = counter + 1
         if ((Phase(j, i, 2) == 0).or.(Phase(j, i, 2) == 1)) counter = counter + 1
       end do
-      write (28, '(i10,f7.2)') i + CoreIndex(coreID,1) - 1, (100 * (float(counter)/(2 * nAnisG)))
+      write (28, '(i10,f7.2)') i + CoreStart - 1, (100 * (float(counter)/(2 * nAnisG)))
     end do
   
     do i = 1, nAnisG
@@ -171,11 +174,13 @@ contains
     res = trim(tmp)
   end function
   
-  subroutine CombineResults(nAnisG)
-    use Global, only: CoreIndex, WindowsLinux, nCores, GenotypeID
+  subroutine CombineResults(nAnisG, CoreIndex)
+    use Global, only: WindowsLinux, GenotypeID
     implicit none    
         
     integer, intent(in) :: nAnisG
+    integer, dimension(:,:), intent(inout) :: CoreIndex
+    integer :: nCores
     
     integer, dimension(:), allocatable :: inUnits
     integer :: i, j, coreLength, inUnit
@@ -185,6 +190,8 @@ contains
     double precision, dimension(2) :: tempIndivPhase
     double precision :: tempSnpPhase
     character(len=20) :: id
+    
+    nCores = size(CoreIndex,1)
 
     if (WindowsLinux == 1) then
       open (unit = 15, file = ".\PhasingResults\FinalPhase.txt", status = "unknown")
@@ -333,6 +340,8 @@ contains
     real(kind = 4) :: value, valueS, valueD, SumNrm, SumDiag
     integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
 
+    integer :: nAnisRawPedigree
+    
     ! Removing Pedigree global variable as first step to moving to seperate subroutine
     character(lengan), allocatable :: ped(:,:)
     character(lengan), allocatable :: Id(:)
@@ -347,6 +356,8 @@ contains
 	character(lengan), allocatable :: Id(:)
       end subroutine PedigreeViewerRecode
     end interface PedigreeViewerRecode
+    
+    call CountInData(nAnisRawPedigree, nAnisG)
 
     allocate(GenotypeId(nAnisG))
     allocate(GenoInPed(nAnisG))
@@ -442,15 +453,6 @@ contains
     end do
     rewind (3)
 
-    allocate(RecSire(0:nAnisP))
-    allocate(RecDam(0:nAnisP))
-    RecSire(0) = 0
-    RecDam(0) = 0
-    do i = 1, nAnisP
-      RecSire(i) = seqsire(i)
-      RecDam(i) = seqdam(i)
-    enddo
-
     allocate(SireGenotyped(nAnisG))
     allocate(DamGenotyped(nAnisG))
 
@@ -477,7 +479,7 @@ contains
       if (truth == 0) DamGenotyped(i) = 0
     enddo
 
-    deallocate(seqid)
+!    deallocate(seqid)
   end subroutine ParsePedigreeData
   
   function ParseGenotypeData(startSnp, endSnp) result(Genos)
