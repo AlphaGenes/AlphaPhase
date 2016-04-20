@@ -1,6 +1,6 @@
 module MemberManagerDefinition
   use CoreDefinition
-  use Global, only: itterateType, itterateNumber, numIter
+  use Parameters, only: itterateType, itterateNumber, numIter
   
   implicit none
   private

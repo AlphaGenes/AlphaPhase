@@ -257,7 +257,8 @@ contains
   !MESSY! SHOULDN'T BE HERE!!!!
   !subroutine CheckCompatHapGeno(genos, phase)
   subroutine CheckCompatHapGeno(c)
-  use Global, only: MissingGenotypeCode, PercGenoHaploDisagree
+  use Parameters, only: PercGenoHaploDisagree
+  use Constants
   use CoreSubsetDefinition
   implicit none
 
@@ -336,9 +337,8 @@ end subroutine CheckCompatHapGeno
 
 !subroutine MakeHapLib(library, phase, fullyPhased, hapfreq, hapanis, c)
 subroutine MakeHapLib(library, c)
-  !use Global, only: nGlobalHaps
-  !use GlobalClusteringHaps
   use CoreDefinition
+  use Random
   implicit none
 
   type(HapLib), intent(in) :: library
@@ -354,16 +354,6 @@ subroutine MakeHapLib(library, c)
   integer :: nHaps
   integer :: secs
 
-
-  INTERFACE
-    subroutine RandomOrder(order, n, start, idum)
-      !     Generate a random ordering of the integers 1 ... n.
-
-      integer, INTENT(IN) :: n, start
-      integer, allocatable, INTENT(OUT) :: order(:)
-    end subroutine RandomOrder
-  END INTERFACE
-  
   nAnisG = c%getNAnisG() !size(phase,1)
 
   nHaps = 0
@@ -507,11 +497,11 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
   ! by matching their phased loci to haplotypes in the Haplotype Library,
   ! following strategies listed in the section Step 2e of Hickey et al 2011.
 
-  !use Global, only : percgenohaplodisagree, missinggenotypecode, nglobalhapsiter, nglobalhaps
-  use Global, only : percgenohaplodisagree, missinggenotypecode, consistent, nMaxRounds
-  !use GlobalClusteringHaps
+  use Parameters, only : percgenohaplodisagree, consistent
+  use Constants
   use CoreDefinition
   use Clustering
+  use Random
   implicit none
   
   type(HapLib), intent(in) :: library
@@ -542,15 +532,6 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
   integer, allocatable, dimension (:,:) :: TempHapArray
   integer, allocatable, dimension (:) :: TempHapVector, ClusterMember
   integer :: nHapsCluster, rounds
-  
-  INTERFACE
-    subroutine RandomOrder(order, n, start, idum)
-      !     Generate a random ordering of the integers 1 ... n.
-
-      integer, INTENT(IN) :: n, start
-      integer, allocatable, INTENT(OUT) :: order(:)
-    end subroutine RandomOrder
-  END INTERFACE
   
   nAnisG = c%getNAnisG()
   nSnp = c%getNCoreSnp()
@@ -1346,7 +1327,7 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 !		if (Change == 0) exit
 !	      enddo
 !	      if (rounds <= nMaxRounds) then
-	      rounds = clusterA(TempHapArray, ClusterMember, 2, nMaxRounds, .false.)
+	      rounds = cluster(TempHapArray, ClusterMember, 2, nMaxRounds, .false.)
 	      if (rounds <= nMaxRounds) then
 	      !if (cluster(TempHapArray, ClusterMember, 2, nMaxRounds, .false.)) then
 		if (count(ClusterMember(:) == 2) == 1) then
@@ -1549,7 +1530,8 @@ end subroutine ImputeFromLib
 
 !subroutine WriteHapLib(library, currentcore, phase)
 subroutine WriteHapLib(library, currentcore, c)
-  use Global, only: fullfileoutput, windowslinux
+  use Parameters, only: fullfileoutput
+  use Constants
   use CoreDefinition
   implicit none
   
@@ -1597,6 +1579,11 @@ subroutine WriteHapLib(library, currentcore, c)
     write (34) library%getHap(i)
   end do
 
+  if (FullFileOutput == 1) then
+    close(24)
+  end if
+  close(34)
+  
   print*, "   ", "Final iteration found ", nHaps, "haplotypes"
 
   ! This needs to go elsewhere!!!!!!!!!!!
@@ -1613,8 +1600,16 @@ subroutine WriteHapLib(library, currentcore, c)
   !write (*, '(a4,a30,f5.2,a1)') "   ", "Final yield for this core was ", 100 * (float(counter)/(2 * nAnisG * SizeCore)), "%"
   write (*, '(a4,a30,f5.2,a1)') "   ", "Final yield for this core was ", c%getTotalYield(), "%"
 
+  if (WindowsLinux == 1) then
+    open (unit = 29, file = ".\PhasingResults\PhasingYield.txt", status = "unknown", position = "append")
+  else
+    open (unit = 29, file = "./PhasingResults/PhasingYield.txt", status = "unknown", position = "append")
+  endif
+  
   !write (29, '(i10,f7.2)') CurrentCore, 100 * (float(counter)/(2 * nAnisG * SizeCore))
   write (29, '(i10,f7.2)') CurrentCore, c%getTotalYield()
+  
+  close(29)
 
 end subroutine WriteHapLib
 

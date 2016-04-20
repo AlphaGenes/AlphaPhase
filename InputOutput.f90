@@ -2,13 +2,15 @@ module InputOutput
   
 contains
 
-  subroutine WriteOutResults(phase, allHapAnis, coreIndex)
-    use Global, only: WindowsLinux, GenotypeID
+  subroutine WriteOutResults(phase, allHapAnis, coreIndex, p)
+    use Constants
+    use PedigreeDefinition
     implicit none
 
     integer(kind=1), dimension(:,:,:), intent(in) :: phase
     integer, dimension(:,:,:), intent(in) :: allHapAnis
     integer, dimension(:,:) :: coreIndex
+    type(Pedigree) :: p
 
     integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp, nCores
     integer, allocatable, dimension(:) :: WorkOut
@@ -36,9 +38,9 @@ contains
     end if
 
     do i = 1, nAnisG
-      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') GenotypeId(i), &
+      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getId(i), &
       Phase(i,:, 1)
-      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') GenotypeId(i), &
+      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getId(i), &
       Phase(i,:, 2)
     end do
 
@@ -91,14 +93,16 @@ contains
 
   end subroutine WriteOutResults
 
-  subroutine writeOutCore(phase, hapAnis, coreID, coreStart)
-    use Global, only: WindowsLinux, GenotypeID
+  subroutine writeOutCore(phase, hapAnis, coreID, coreStart, p)
+    use Constants
+    use PedigreeDefinition
     implicit none
     
     integer(kind=1), dimension(:,:,:), intent(in) :: phase
     integer, dimension(:,:), intent(in) :: hapAnis
     integer, intent(in) :: coreID
     integer, intent(in) :: coreStart
+    type(Pedigree), intent(in) :: p
   
     integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp
     integer, allocatable, dimension(:) :: WorkOut
@@ -127,9 +131,9 @@ contains
     end if
   
     do i = 1, nAnisG
-      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') GenotypeId(i), &
+      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getID(i), &
       Phase(i,:, 1)
-      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') GenotypeId(i), &
+      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getID(i), &
       Phase(i,:, 2)
     end do
   
@@ -174,12 +178,15 @@ contains
     res = trim(tmp)
   end function
   
-  subroutine CombineResults(nAnisG, CoreIndex)
-    use Global, only: WindowsLinux, GenotypeID
+  subroutine CombineResults(nAnisG, CoreIndex, p)
+    use Constants
+    use PedigreeDefinition
     implicit none    
         
     integer, intent(in) :: nAnisG
-    integer, dimension(:,:), intent(inout) :: CoreIndex
+    integer, dimension(:,:), intent(in) :: CoreIndex
+    type(Pedigree) :: p
+    
     integer :: nCores
     
     integer, dimension(:), allocatable :: inUnits
@@ -216,7 +223,7 @@ contains
     do i = 1, nCores
       coreIDtxt = itoa(i)
       if (WindowsLinux == 1) then
-	open (unit = 33, file = ".\PhasingResults\FinalPhase" // coreIDtxt // ".txt", status = "unknown")
+	open (newunit = inUnits(i), file = ".\PhasingResults\FinalPhase" // coreIDtxt // ".txt", status = "unknown")
       else
 	open (newunit = inUnits(i), file = "./PhasingResults/FinalPhase" // coreIDtxt // ".txt", status = "old")
       end if      
@@ -250,7 +257,7 @@ contains
     do i = 1, nCores
       coreIDtxt = itoa(i)
       if (WindowsLinux == 1) then
-	open (unit = 33, file = ".\PhasingResults\FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
+	open (newunit = inUnits(i), file = ".\PhasingResults\FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
       else
 	open (newunit = inUnits(i), file = "./PhasingResults/FinalHapIndCarry" // coreIDtxt // ".txt", status = "old")
       end if      
@@ -281,7 +288,7 @@ contains
     do i = 1, nCores
       coreIDtxt = itoa(i)
       if (WindowsLinux == 1) then
-	open (unit = 33, file = ".\PhasingResults\IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
+	open (newunit = inUnits(i), file = ".\PhasingResults\IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       else
 	open (newunit = inUnits(i), file = "./PhasingResults/IndivPhaseRate" // coreIDtxt // ".txt", status = "old")
       end if      
@@ -312,7 +319,7 @@ contains
       coreLength  = CoreIndex(i,2) - CoreIndex(i,1) + 1
       coreIDtxt = itoa(i)
       if (WindowsLinux == 1) then
-	open (unit = 33, file = ".\PhasingResults\SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
+	open (newunit = inUnit, file = ".\PhasingResults\SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       else
 	open (newunit = inUnit, file = "./PhasingResults/SnpPhaseRate" // coreIDtxt // ".txt", status = "old")
       end if
@@ -331,43 +338,39 @@ contains
 
   end subroutine CombineResults
   
-  subroutine ParsePedigreeData
-    use GlobalPedigree
-    use Global
+  function ParsePedigreeData() result(p)
+    use Parameters, only : PedigreeFile, GenotypeFile, nSnp, GenotypeFileFormat
+    use Constants
+    use PedigreeDefinition
+    use NRMCode
     implicit none
+    
+    type(Pedigree) :: p
 
-    integer :: i, j, k, SumPseudoNrmS, SumPseudoNrmD, truth, counter, CountMissingGenotype, SireGen, DamGen
+    integer :: i, j, k, SumPseudoNrmS, SumPseudoNrmD, truth, counter, CountMissingGenotype, SireGen, DamGen, nAnisG
     real(kind = 4) :: value, valueS, valueD, SumNrm, SumDiag
     integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
+    
+    integer, allocatable, dimension (:) :: DanRecode !, DanDamGenotyped, DanSireGenotyped
 
     integer :: nAnisRawPedigree
     
     ! Removing Pedigree global variable as first step to moving to seperate subroutine
     character(lengan), allocatable :: ped(:,:)
-    character(lengan), allocatable :: Id(:)
-
-    interface PedigreeViewerRecode
-      subroutine PedigreeViewerRecode(nobs, nAnisPedigree, ped, id)
-	use GlobalPedigree
-	implicit none
-
-	integer :: nobs, nAnisPedigree
-	character(len = lengan), dimension(:,:), intent(in) :: ped
-	character(lengan), allocatable :: Id(:)
-      end subroutine PedigreeViewerRecode
-    end interface PedigreeViewerRecode
+    !character(lengan), allocatable :: Id(:)
+    
+    integer(kind = 4), allocatable, dimension (:), target :: SireGenotyped, DamGenotyped
+    character(lengan), dimension(:), allocatable :: GenotypeId
     
     call CountInData(nAnisRawPedigree, nAnisG)
 
     allocate(GenotypeId(nAnisG))
     allocate(GenoInPed(nAnisG))
-    allocate(RecodeGenotypeId(nAnisG))
+!    allocate(RecodeGenotypeId(nAnisG))
     allocate(Ped(nAnisRawPedigree, 3))
     allocate(WorkVec(nSnp * 2))
     allocate(ReadingVector(nSnp))
     
-    open (unit = 3, file = trim(GenotypeFile), status = "old")
-
     !allocate(HapLib(nAnisG * 2, nSnp))
 
     if (trim(PedigreeFile) /= "NoPedigree") then
@@ -377,15 +380,18 @@ contains
       enddo
       close(2)
     else
+      open (unit = 3, file = trim(GenotypeFile), status = "old")
       do i = 1, nAnisRawPedigree
 	ped(i, 2:3) = "0"
 	read (3, *) ped(i, 1)
       enddo
-      rewind (3)
+      close (3)
     endif
 
     GenoInPed = 0
 
+    open (unit = 3, file = trim(GenotypeFile), status = "old")
+    
     do i = 1, nAnisG
       truth = 0
       if (GenotypeFileFormat == 1) then
@@ -409,6 +415,8 @@ contains
       if (truth == 0) GenoInPed(i) = 1
     enddo
     deallocate(Ped)
+    
+    close(3)
 
     if (trim(PedigreeFile) /= "NoPedigree") then
       nAnisRawPedigree = nAnisRawPedigree + count(GenoInPed(:) == 1)
@@ -439,55 +447,53 @@ contains
       enddo
 
     endif
-    call PedigreeViewerRecode(nAnisRawPedigree, nAnisP, ped, id)
-    deallocate(Ped)
-    deallocate(GenoInPed)
 
+    allocate(DanRecode(size(ped,1)))
+    DanRecode = 0
     do i = 1, nAnisG
-      do j = 1, nAnisP
-	if (Id(j) == GenotypeId(i)) then
-	  RecodeGenotypeId(i) = j
+      do j = 1, size(ped,1)
+	if (ped(j,1) == GenotypeId(i)) then
+	  DanRecode(j) = i
 	  exit
 	end if
       end do
     end do
-    rewind (3)
-
+    
     allocate(SireGenotyped(nAnisG))
     allocate(DamGenotyped(nAnisG))
+    
+    SireGenotyped = 0
+    DamGenotyped = 0
+    do i = 1, size(ped,1)
+      if (DanRecode(i) /= 0) then
+	do j = 1, nAnisG
+	  if (GenotypeID(j) .eq. ped(i,2)) then
+	    SireGenotyped(DanRecode(i)) = j
+	  end if
+	  if (GenotypeID(j) .eq. ped(i,3)) then
+	    DamGenotyped(DanRecode(i)) = j
+	  end if
+	end do
+      end if
+    end do
 
-    do i = 1, nAnisG
-      SireGenotyped(i) = seqsire(RecodeGenotypeId(i))
-      DamGenotyped(i) = seqdam(RecodeGenotypeId(i))
-      truth = 0
-      do j = 1, nAnisG
-	if (SireGenotyped(i) == RecodeGenotypeId(j)) then
-	  truth = 1
-	  SireGenotyped(i) = j
-	  exit
-	endif
-      enddo
-      if (truth == 0) SireGenotyped(i) = 0
-      truth = 0
-      do j = 1, nAnisG
-	if (DamGenotyped(i) == RecodeGenotypeId(j)) then
-	  truth = 1
-	  DamGenotyped(i) = j
-	  exit
-	endif
-      enddo
-      if (truth == 0) DamGenotyped(i) = 0
-    enddo
+    deallocate(DanRecode)
 
-!    deallocate(seqid)
-  end subroutine ParsePedigreeData
+    allocate (nrmped(size(ped,1),size(ped,2)))
+    nrmped = ped
+    
+    call p%create(sireGenotyped, damGenotyped, genotypeId)
+    
+    deallocate(sireGenotyped, damGenotyped, genotypeID)
+  end function ParsePedigreeData
   
-  function ParseGenotypeData(startSnp, endSnp) result(Genos)
-    use GlobalPedigree
-    use Global
+  function ParseGenotypeData(startSnp, endSnp, nAnisG) result(Genos)
+    use Parameters, only: GenotypeFile, nSnp, GenotypeFileFormat
+    use Constants
     implicit none
 
     integer, intent(in) :: startSnp, endSnp
+    integer, intent(in) :: nAnisG
     integer(kind=1), allocatable, dimension(:,:) :: Genos
 
     integer :: i, j, k
@@ -549,5 +555,298 @@ contains
     close(3)
   end function ParseGenotypeData
 
+  subroutine ReadInParameterFile
+    use Parameters
+    implicit none
+
+    double precision :: PercSurrDisagree
+    integer :: i, TempInt, Graphics
+    character (len = 300) :: dumC, FileFormat, OffsetVariable
+
+    open (unit = 1, file = "AlphaPhaseSpec.txt", status = "old")
+
+    read (1, *) dumC, PedigreeFile
+    read (1, *) dumC, GenotypeFile, FileFormat
+    if (trim(FileFormat) == 'GenotypeFormat') then
+      GenotypeFileFormat = 1
+    elseif (trim(FileFormat) == 'PhaseFormat') then
+      GenotypeFileFormat = 2
+    elseif (trim(FileFormat) == 'UnorderedFormat') then
+      GenotypeFileFormat = 3
+    else
+      print*, "The genotype file format is not correctly specified"
+      stop
+    endif
+
+    print *, " Parameter file read"
+    print *, " "
+    print *, " Using ", trim(PedigreeFile), " as the pedigree file"
+    print *, " Using ", trim(GenotypeFile), " as the genotype file"
+    print *, " "
+
+    read (1, *) dumC, nSnp
+    read (1, *) dumC, CoreAndTailLength
+    if (CoreAndTailLength > nSnp) then
+      print*, "GeneralCoreAndTailLength is too long"
+      stop
+    endif
+    read (1, *) dumC, Jump, OffsetVariable
+    if (Jump > nSnp) then
+      print*, "GeneralCoreLength is too long"
+      stop
+    endif
+
+    if (CoreAndTailLength < Jump) then
+      print *, "GeneralCoreAndTailLength is shorted than GenralCoreLength"
+      stop
+    end if
+
+    if (OffsetVariable == "Offset") then
+      Offset = 1
+    endif
+    if (OffsetVariable == "NotOffset") then
+      Offset = 0
+    endif
+
+    if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
+      print*, "Offset variable is not properly parameterised"
+      stop
+    endif
+    read (1, *) dumC, UseSurrsN
+    read (1, *) dumC, PercSurrDisagree
+    read (1, *) dumC, PercGenoHaploDisagree
+    read (1, *) dumC, GenotypeMissingErrorPercentage
+    read (1, *) dumC, NrmThresh
+    read (1, *) dumC, FullFileOutput
+    read (1, *) dumC, Graphics
+    read (1, *) dumC, Simulation
+    read (1, *) dumC, TruePhaseFile
+
+    read (1, *) dumC, tempInt
+    readCoreAtTime = (tempInt==1)
+
+    read (1, *) dumC, itterateType
+    consistent = ((itterateType .eq. "Off") .and. (.not. readCoreAtTime))
+
+    read (1, *) dumC, itterateNumber
+    read (1, *) dumC, numIter
+
+    read (1, *) dumC, startCoreChar, endCoreChar
+
+    PercSurrDisagree = PercSurrDisagree/100
+    NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
+    PercGenoHaploDisagree = PercGenoHaploDisagree/100
+    GenotypeMissingErrorPercentage = GenotypeMissingErrorPercentage/100
+
+    close (1)
+
+    if (Graphics == 1) then
+      print*, "Graphics option is not yet functional"
+      stop
+    end if
+
+    !if (nSnp>32767) then
+    !        print*, "Kind=2 is not sufficient for this number of SNP.... Contact John Hickey because there is a simple solution!"
+    !        stop
+    !end if
+
+  end subroutine ReadInParameterFile
+
+  subroutine HapCommonality(library, OutputPoint)
+    use Parameters, only: FullFileOutput
+    use Constants
+    use HaplotypeLibrary
+    implicit none
+
+    type(HapLib), intent(in) :: library
+    integer, intent(in) :: OutputPoint
+
+    integer :: i, SizeCore, nHaps
+    character(len = 300) :: filout
+
+    integer, allocatable, dimension (:,:) :: HapRel
+
+    SizeCore = library%getNumSnps()
+    nHaps = library%getSize()
+
+    if (FullFileOutput == 1) then
+      if (WindowsLinux == 1) then
+	write (filout, '(".\PhasingResults\HaplotypeLibrary\Extras\HapCommonality",i0,".txt")') OutputPoint
+	open (unit = 27, FILE = filout, status = 'unknown')
+
+      else
+	write (filout, '("./PhasingResults/HaplotypeLibrary/Extras/HapCommonality",i0,".txt")') OutputPoint
+	open (unit = 27, FILE = filout, status = 'unknown')
+
+      endif
+    endif
+
+    HapRel = library%getHapRel()
+
+    if (FullFileOutput == 1) then
+      do i = 1, nHaps
+	write (27, '(i10,20000F5.2,20000F5.2,20000F5.2,20000F5.2)') i, float(HapRel(i,:))/SizeCore
+      enddo
+    endif
+
+    close(27)
+
+  end subroutine HapCommonality
+
+  !########################################################################################################################################################################
+
+  subroutine WriteSurrogates(definition, threshold, OutputPoint, p)
+    use SurrogateDefinition
+    use PedigreeDefinition
+    use Parameters, only : FullFileOutput
+    use Constants
+
+    implicit none
+
+    character(len = 300) :: filout
+    integer :: i, j, nSurrogates
+
+    type(SurrDef), intent(in) :: definition
+    integer, intent(in) :: threshold
+    integer, intent(in) :: OutputPoint
+    type(Pedigree), intent(in) :: p
+
+    integer :: nAnisG
+
+    nAnisG = size(definition%numOppose,1)
+
+    if (FullFileOutput == 1) then
+      if (WindowsLinux == 1) then
+	write (filout, '(".\Miscellaneous\Surrogates",i0,".txt")') OutputPoint
+	open (unit = 13, FILE = filout, status = 'unknown')
+	write (filout, '(".\Miscellaneous\SurrogatesSummary",i0,".txt")') OutputPoint
+	open (unit = 19, FILE = filout, status = 'unknown')
+
+      else
+	write (filout, '("./Miscellaneous/Surrogates",i0,".txt")') OutputPoint
+	open (unit = 13, FILE = filout, status = 'unknown')
+	write (filout, '("./Miscellaneous/SurrogatesSummary",i0,".txt")') OutputPoint
+	open (unit = 19, FILE = filout, status = 'unknown')
+      endif
+      do i = 1, nAnisG
+	nSurrogates = 0
+	if (nAnisG < 20000) then
+	  write (13, '(a20,20000i6,20000i6,20000i6,20000i6)') p%getID(i), definition%partition(i,:)
+	else
+	  write (13, *) p%getID(i), definition%partition(i,:)
+	end if
+	do j = 1, nAnisG
+	  if (definition%numOppose(i, j) <= threshold) nSurrogates = nSurrogates + 1
+	enddo
+	write (19, '(a20,20000i6,20000i6,20000i6,20000i6)') &
+	p%getID(i), count(definition%partition(i,:) == 1), count(definition%partition(i,:) == 2)&
+	, count(definition%partition(i,:) == 3), nSurrogates, definition%method(i)
+      enddo
+      close(13)
+      close(19)
+    end if
+
+  end subroutine WriteSurrogates
+
+!#################################################################################################################################################################
+
+  subroutine CountInData(nAnisRawPedigree, nAnisG)
+    use Parameters, only: PedigreeFile, GenotypeFile
+    implicit none
+
+    integer, intent(out) :: nAnisRawPedigree, nAnisG
+
+    integer :: k
+    character (len = 300) :: dumC
+
+    nAnisRawPedigree = 0
+    if (trim(PedigreeFile) /= "NoPedigree") then
+      open (unit = 2, file = trim(PedigreeFile), status = "old")
+      do
+	read (2, *, iostat = k) dumC
+	nAnisRawPedigree = nAnisRawPedigree + 1
+	if (k /= 0) then
+	  nAnisRawPedigree = nAnisRawPedigree - 1
+	  exit
+	endif
+      enddo
+      close(2)
+      print*, " ", nAnisRawPedigree, " individuals in the pedigree file"
+    endif
+
+    nAnisG = 0
+    open (unit = 3, file = trim(GenotypeFile), status = "old")
+    do
+      read (3, *, iostat = k) dumC
+      nAnisG = nAnisG + 1
+      if (k /= 0) then
+	nAnisG = nAnisG - 1
+	exit
+      endif
+    enddo
+    close(3)
+    print*, " ", nAnisG, " individuals in the genotype file"
+
+    if (trim(PedigreeFile) == "NoPedigree") nAnisRawPedigree = nAnisG
+
+  end subroutine CountInData
+
+!########################################################################################################################################################################################################
+
+  subroutine MakeDirectories
+    use Parameters, only: FullFileOutput, Simulation
+    use Constants
+    implicit none
+
+    print*, ""
+    if (WindowsLinux == 1) then
+      call system("rmdir /s /q Miscellaneous")
+      call system("rmdir /s /q PhasingResults")
+    else
+      call system("rm -r Miscellaneous")
+      call system("rm -r PhasingResults")
+    endif
+
+    call system("mkdir PhasingResults")
+    if (WindowsLinux == 1) then
+      call system("mkdir PhasingResults\HaplotypeLibrary")
+      if (FullFileOutput == 1) call system("mkdir PhasingResults\HaplotypeLibrary\Extras")
+      !open (unit = 29, file = ".\PhasingResults\PhasingYield.txt", status = "unknown")
+    else
+      call system("mkdir PhasingResults/HaplotypeLibrary")
+      if (FullFileOutput == 1) call system("mkdir PhasingResults/HaplotypeLibrary/Extras")
+      !open (unit = 29, file = "./PhasingResults/PhasingYield.txt", status = "unknown")
+    endif
+
+
+    if (WindowsLinux == 1) then
+      if (FullFileOutput == 1) then
+	call system("mkdir Miscellaneous")
+      endif
+    else
+      if (FullFileOutput == 1) then
+      call system("mkdir Miscellaneous")
+      endif
+    endif
     
+    if (Simulation == 1) then
+      if (WindowsLinux==1) then
+	call system("rmdir /s /q Simulation")
+      else
+	call system("rm -r Simulation")
+      endif
+
+      if (WindowsLinux==1) then
+	if (FullFileOutput==1) then
+	  call system("mkdir Simulation")
+	endif
+      else
+	if (FullFileOutput==1) then
+	  call system("mkdir Simulation")
+	endif
+      endif
+    end if
+
+  end subroutine MakeDirectories  
+  
 end module InputOutput

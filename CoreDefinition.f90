@@ -39,6 +39,7 @@ module CoreDefinition
     procedure, public :: resetHapAnis
     procedure, public :: setHapAnis
     procedure, public :: getBothFullyPhased
+    procedure, public :: getGeno
   end type Core
 
 contains
@@ -291,6 +292,14 @@ contains
     
     c%hapAnis(animal,phase) = id
   end subroutine setHapAnis
+  
+  function getGeno(c,animal,snp) result(geno)
+    class(Core) :: c
+    integer, intent(in) :: animal,snp
+    integer(kind = 1) :: geno
+    
+    geno = c%genos(animal,snp)
+  end function getGeno
     
 end module CoreDefinition
 

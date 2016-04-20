@@ -3,10 +3,9 @@ module Phasing
   
   !subroutine Erdos(surrogates, threshold, genos, phase)
   subroutine Erdos(surrogates, threshold, c)
-!  use Global
   use SurrogateDefinition
   use CoreSubsetDefinition
-  use global, only: useSurrsN, consistent
+  use Parameters, only: useSurrsN, consistent
   implicit none
 
   type(SurrDef), intent(in) :: surrogates
@@ -152,9 +151,9 @@ end subroutine Erdos
 !#################################################################################################################################################################
 
 function IterAllele(animal, snp, SideOn, surrogates, threshold, visited, allelecount, erdosnumber, genos, surravediff) result (iAllele)
-  !use Global
   use SurrogateDefinition
-  use Global, only: MissingGenotypeCode, UseSurrsN, NumSurrDisagree
+  use Parameters, only: UseSurrsN, NumSurrDisagree
+  use Constants
   implicit none
   
   type(SurrDef), intent(in) :: surrogates

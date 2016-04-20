@@ -8,6 +8,7 @@ module SurrogateDefinition
     integer(kind = 2), allocatable, dimension(:,:), public :: numOppose
     integer(kind = 1), allocatable, dimension(:,:), public :: partition
     integer(kind = 1), allocatable, dimension(:), public :: method
+    integer, public :: threshold
   contains
     private
     procedure, public :: calculate
@@ -16,10 +17,8 @@ module SurrogateDefinition
 contains
   subroutine calculate(definition, cs, threshold, useNRM, pseudoNRM)
     !Don't like this but for now!!
-    use GlobalClustering
     use Clustering
     use CoreSubSetDefinition
-    use Global, only: genotypeID
     
     class(SurrDef) :: definition
     class(CoreSubSet) :: cs
@@ -68,6 +67,8 @@ contains
     logical :: subtract1, subtract2 ! Fudge to produce same results as old version.  Effectively does old buggy logic.  Should be removed
     ! once finished with speed ups.
 
+    
+    definition%threshold = threshold
     !nAnisG = size(genos,1)
     !nSnp = size(genos,2)
     nAnisG = cs%getNAnisG()
@@ -398,7 +399,7 @@ contains
 !	    call RePartition
 !	    if (Change == 0) exit
 !	  enddo
-	  rounds = clusterA(TempSurrArray, ClusterMember, 2, SurrCounter, .true.)
+	  rounds = cluster(TempSurrArray, ClusterMember, 2, SurrCounter, .true.)
 	  if (rounds <= SurrCounter) then
 !	  if (cluster(TempSurrArray, ClusterMember, 2, SurrCounter, .true.)) then
 	    do j = 1, SurrCounter

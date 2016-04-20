@@ -1,5 +1,6 @@
 module CoreSubsetDefinition
   use CoreDefinition
+  use PedigreeDefinition
   
   implicit none
   private
@@ -7,9 +8,8 @@ module CoreSubsetDefinition
   type, public :: CoreSubset
     private
     !Almost definitely shouldn't be public but for now...
-    type(Core), pointer :: parent
-    integer(kind = 4), pointer, dimension(:), public :: sireGenotyped
-    integer(kind = 4), pointer, dimension(:), public :: damGenotyped
+    type(Core), pointer :: parentCore
+    type(Pedigree), pointer :: parentPedigree
     integer(kind = 4), allocatable, dimension(:), public :: full2sub
     integer(kind = 4), allocatable, dimension(:), public :: sub2full
     integer :: nAnisG
@@ -33,21 +33,19 @@ module CoreSubsetDefinition
 
 contains
 
-  subroutine create(set, parent, sireGenotyped, damGenotyped, members)
+  subroutine create(set, parentCore, parentPedigree, members)
     implicit none
     
     class(CoreSubset) :: set
-    type(Core), target :: parent
-    integer(kind = 4), dimension(:), intent(in), target :: sireGenotyped, damGenotyped
-    !logical, dimension(:), intent(in) :: members
+    type(Core), target :: parentCore
+    type(Pedigree), target :: parentPedigree
     integer, dimension(:), intent(in) :: members
     
     !integer :: newNumber, origNumber, nSnp
     integer :: i
     
-    set%parent => parent
-    set%sireGenotyped => sireGenotyped
-    set%damGenotyped => damGenotyped
+    set%parentCore => parentCore
+    set%parentPedigree => parentPedigree
     
     !set%nAnisG = count(members)
     set%nAnisG = size(members,1)
@@ -58,7 +56,7 @@ contains
       deallocate(set%sub2full)
     end if
 
-    allocate(set%full2sub(0:set%parent%getNAnisG()))
+    allocate(set%full2sub(0:set%parentCore%getNAnisG()))
     allocate(set%sub2full(set%nAnisG))
     
     set%full2sub = 0
@@ -85,14 +83,14 @@ contains
     class(CoreSubSet) :: set
     integer :: num
     
-    num = set%parent%getNSnp()
+    num = set%parentCore%getNSnp()
   end function getNSnp
   
   function getNCoreSnp(set) result(num)
     class(CoreSubSet) :: set
     integer :: num
     
-    num = set%parent%getNCoreSnp()
+    num = set%parentCore%getNCoreSnp()
   end function getNCoreSnp
   
   subroutine setPhase(set, animal, snp, phase, val)
@@ -102,7 +100,7 @@ contains
     integer, intent(in) :: animal, snp, phase
     integer(kind=1) :: val
     
-    call set%parent%setPhase(set%sub2full(animal),snp,phase,val)
+    call set%parentCore%setPhase(set%sub2full(animal),snp,phase,val)
   end subroutine setPhase
   
   function getPhase(set,animal,snp,phase) result(p)
@@ -111,7 +109,7 @@ contains
     integer, intent(in) :: animal, snp, phase
     integer(kind=1) :: p
     
-    p = set%parent%getPhase(set%sub2full(animal),snp,phase)
+    p = set%parentCore%getPhase(set%sub2full(animal),snp,phase)
   end function getPhase
   
   function getSingleCoreAndTailGenos(set,i) result (ctGenos)
@@ -121,7 +119,7 @@ contains
     integer, intent(in) :: i
     integer(kind=1), dimension(:), pointer :: ctGenos
     
-    ctGenos => set%parent%getSingleCoreAndTailGenos(set%sub2full(i))
+    ctGenos => set%parentCore%getSingleCoreAndTailGenos(set%sub2full(i))
     
     return
   end function getSingleCoreAndTailGenos
@@ -133,7 +131,7 @@ contains
     integer, intent(in) :: i
     integer(kind=1), dimension(:), pointer :: cGenos
     
-    cGenos => set%parent%getSingleCoreGenos(set%sub2full(i))
+    cGenos => set%parentCore%getSingleCoreGenos(set%sub2full(i))
     
     return
   end function getSingleCoreGenos
@@ -144,7 +142,7 @@ contains
     integer, intent(in) :: animal, snp
     integer(kind=1) :: p
     
-    p = set%parent%getPhaseGeno(set%sub2full(animal),snp)
+    p = set%parentCore%getPhaseGeno(set%sub2full(animal),snp)
   end function getPhaseGeno
   
   function getCoreAndTailGenos(set) result (ctGenos)
@@ -154,10 +152,10 @@ contains
     integer(kind=1), dimension(:,:), pointer :: ctGenos
     integer :: i
 
-    allocate(ctGenos(set%nAnisG,set%parent%getNSnp()))
+    allocate(ctGenos(set%nAnisG,set%parentCore%getNSnp()))
     
     do i = 1, set%nAnisG
-      ctGenos(i,:) = set%parent%getSingleCoreAndTailGenos(set%sub2full(i))
+      ctGenos(i,:) = set%parentCore%getSingleCoreAndTailGenos(set%sub2full(i))
     end do
     
     return
@@ -170,10 +168,10 @@ contains
     integer(kind=1), dimension(:,:), pointer :: cGenos
     integer :: i
 
-    allocate(cGenos(set%nAnisG,set%parent%getNCoreSnp()))
+    allocate(cGenos(set%nAnisG,set%parentCore%getNCoreSnp()))
     
     do i = 1, set%nAnisG
-      cGenos(i,:) = set%parent%getSingleCoreGenos(set%sub2full(i))
+      cGenos(i,:) = set%parentCore%getSingleCoreGenos(set%sub2full(i))
     end do
     
     return
@@ -182,9 +180,12 @@ contains
   function getSire(set,animal) result(sire)
     class(CoreSubSet) :: set
     integer, intent(in) :: animal
-    integer :: sire
-    
-    sire = set%full2sub(set%SireGenotyped(set%sub2full(animal)))
+    integer :: sire, s, p
+
+    s = set%sub2full(animal)
+    p = set%parentPedigree%getSire(s)
+    sire = set%full2sub(p)
+    !sire = set%full2sub(set%parentPedigree%getSire(set%sub2full(animal)))
   end function getSire
   
   function getDam(set,animal) result(dam)
@@ -192,7 +193,7 @@ contains
     integer, intent(in) :: animal
     integer :: dam
     
-    dam = set%full2sub(set%DamGenotyped(set%sub2full(animal)))
+    dam = set%full2sub(set%parentPedigree%getDam(set%sub2full(animal)))
   end function getDam
   
   function getYield(set,phase) result (yield)
@@ -205,9 +206,9 @@ contains
     counter = 0
     
     do i = 1, set%nAnisG
-      counter = count(set%parent%getHaplotype(set%sub2full(i),phase) == 0) + counter
-      counter = count(set%parent%getHaplotype(set%sub2full(i),phase) == 1) + counter      
+      counter = count(set%parentCore%getHaplotype(set%sub2full(i),phase) == 0) + counter
+      counter = count(set%parentCore%getHaplotype(set%sub2full(i),phase) == 1) + counter      
     end do
-    yield = (float(counter)/(set%nAnisG * set%parent%getNCoreSnp())) * 100
+    yield = (float(counter)/(set%nAnisG * set%parentCore%getNCoreSnp())) * 100
   end function getYield
 end module CoreSubsetDefinition

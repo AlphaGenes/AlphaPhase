@@ -2,7 +2,7 @@ module Clustering
   implicit none
 
 contains
-  function clusterA(input, assign, numClusters, maxIter, multi) result (rounds)
+  function cluster(input, assign, numClusters, maxIter, multi) result (rounds)
     
     integer, dimension(:,:), intent(in) :: input
     integer, dimension(:), intent(inout) :: assign
@@ -22,7 +22,7 @@ contains
       if ((.not. change) .and. (j /= 1)) exit
     enddo
 
-  end function clusterA
+  end function cluster
   
   function RePartition(numClusters, input, assign, multi) result(change)
     implicit none
