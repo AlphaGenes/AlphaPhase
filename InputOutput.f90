@@ -560,7 +560,7 @@ contains
     implicit none
 
     double precision :: PercSurrDisagree
-    integer :: i, TempInt, Graphics
+    integer :: i, TempInt, Graphics, status
     character (len = 300) :: dumC, FileFormat, OffsetVariable
 
     open (unit = 1, file = "AlphaPhaseSpec.txt", status = "old")
@@ -622,16 +622,35 @@ contains
     read (1, *) dumC, Simulation
     read (1, *) dumC, TruePhaseFile
 
-    read (1, *) dumC, tempInt
-    readCoreAtTime = (tempInt==1)
+    read (1, *, iostat=status) dumC, tempInt
+    if (status == 0) then
+      readCoreAtTime = (tempInt==1)
+    else
+      readCoreAtTime = .false.
+    end if
 
-    read (1, *) dumC, itterateType
-    consistent = ((itterateType .eq. "Off") .and. (.not. readCoreAtTime))
+    read (1, *, iostat=status) dumC, itterateType
+    if (status == 0) then
+      consistent = ((itterateType .eq. "Off") .and. (.not. readCoreAtTime))
+    else
+      consistent = .true.
+      itterateType = "Off"
+    end if
 
-    read (1, *) dumC, itterateNumber
-    read (1, *) dumC, numIter
+    read (1, *, iostat=status) dumC, itterateNumber
+    if (status /= 0) then
+      itterateNumber = 200
+    end if
+    read (1, *, iostat=status) dumC, numIter
+    if (status /= 0) then
+      numIter = 2
+    end if
 
-    read (1, *) dumC, startCoreChar, endCoreChar
+    read (1, *, iostat=status) dumC, startCoreChar, endCoreChar
+    if (status /= 0) then
+      startCoreChar = "1"
+      endCoreChar = "Combine"
+    end if
 
     PercSurrDisagree = PercSurrDisagree/100
     NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
