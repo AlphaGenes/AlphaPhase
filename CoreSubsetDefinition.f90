@@ -24,6 +24,7 @@ module CoreSubsetDefinition
     procedure, public :: getNAnisG
     procedure, public :: getNSnp
     procedure, public :: getNCoreSnp
+    procedure, public :: getNCoreTailSnp
     procedure, public :: getPhase
     procedure, public :: getPhaseGeno
     procedure, public :: getSire
@@ -93,6 +94,13 @@ contains
     num = set%parentCore%getNCoreSnp()
   end function getNCoreSnp
   
+  function getNCoreTailSnp(set) result(num)
+    class(CoreSubSet) :: set
+    integer :: num
+    
+    num = set%parentCore%getNCoreTailSnp()
+  end function getNCoreTailSnp
+  
   subroutine setPhase(set, animal, snp, phase, val)
     implicit none
     
@@ -152,7 +160,7 @@ contains
     integer(kind=1), dimension(:,:), pointer :: ctGenos
     integer :: i
 
-    allocate(ctGenos(set%nAnisG,set%parentCore%getNSnp()))
+    allocate(ctGenos(set%nAnisG,set%parentCore%getNCoreTailSnp()))
     
     do i = 1, set%nAnisG
       ctGenos(i,:) = set%parentCore%getSingleCoreAndTailGenos(set%sub2full(i))

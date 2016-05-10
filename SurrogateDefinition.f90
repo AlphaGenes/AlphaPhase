@@ -72,7 +72,7 @@ contains
     !nAnisG = size(genos,1)
     !nSnp = size(genos,2)
     nAnisG = cs%getNAnisG()
-    nSnp = cs%getNSnp()
+    nSnp = cs%getNCoreTailSnp()
     !allocate(genos(nAnisG,nSNp))
     genos => cs%getCoreAndTailGenos()
 

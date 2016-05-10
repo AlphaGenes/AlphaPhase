@@ -26,6 +26,7 @@ module CoreDefinition
     procedure, public :: getNAnisG
     procedure, public :: getNSnp
     procedure, public :: getNCoreSnp
+    procedure, public :: getNCoreTailSnp
     procedure, public :: getPhase
     procedure, public :: getPhaseGeno
     procedure, public :: getYield
@@ -173,6 +174,14 @@ contains
     
     num = c%endCoreSnp-c%startCoreSnp + 1
   end function getNCoreSnp
+  
+  function getNCoreTailSnp(c) result(num)
+    implicit none
+    class(Core) :: c
+    integer :: num
+    
+    num = c%endSurrSnp
+  end function getNCoreTailSnp
   
   function getPhase(c,animal,snp,phase) result(p)
     implicit none
