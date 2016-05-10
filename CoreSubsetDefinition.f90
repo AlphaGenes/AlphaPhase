@@ -10,8 +10,8 @@ module CoreSubsetDefinition
     !Almost definitely shouldn't be public but for now...
     type(Core), pointer :: parentCore
     type(Pedigree), pointer :: parentPedigree
-    integer(kind = 4), allocatable, dimension(:), public :: full2sub
-    integer(kind = 4), allocatable, dimension(:), public :: sub2full
+    integer(kind = 4), allocatable, dimension(:) :: full2sub
+    integer(kind = 4), allocatable, dimension(:) :: sub2full
     integer :: nAnisG
   contains
     private

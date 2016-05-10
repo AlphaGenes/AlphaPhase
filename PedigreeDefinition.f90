@@ -1,5 +1,3 @@
-!!! CUURENTLY UNUSED... BUT WILL BE AT SOME POINT !!!
-
 module PedigreeDefinition
   use Constants
   implicit none
