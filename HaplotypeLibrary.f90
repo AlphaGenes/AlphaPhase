@@ -1463,23 +1463,23 @@ do i = 1, nAnisG
       endif
     end if
   end do
-!  if ((CountA > ErrorCountAB) .or. (CountB > ErrorCountAB)) then
-!    !Phase(i, :, :) = 9
-!    call c%setHaplotypeToUnphased(i,1)
-!    call c%setHaplotypeToUnphased(i,2)
-!    do j = 1, nSnpCore
-!      !if (Genos(i, j) == 0) Phase(i, j,:) = 0
-!      !if (Genos(i, j) == 2) Phase(i, j,:) = 1
-!      if (Genos(i, j) == 0) then
-!	call c%setPhase(i, j, 1, 0)
-!	call c%setPhase(i, j, 2, 0)
-!      end if
-!      if (Genos(i, j) == 2) then
-!	call c%setPhase(i, j,1, 1)
-!	call c%setPhase(i, j,1, 2)
-!      end if
-!    enddo
-!  endif
+  if ((CountA > ErrorCountAB) .or. (CountB > ErrorCountAB)) then
+    !Phase(i, :, :) = 9
+    call c%setHaplotypeToUnphased(i,1)
+    call c%setHaplotypeToUnphased(i,2)
+    do j = 1, nSnpCore
+      !if (Genos(i, j) == 0) Phase(i, j,:) = 0
+      !if (Genos(i, j) == 2) Phase(i, j,:) = 1
+      if (Genos(i, j) == 0) then
+	call c%setPhase(i, j, 1, 0)
+	call c%setPhase(i, j, 2, 0)
+      end if
+      if (Genos(i, j) == 2) then
+	call c%setPhase(i, j,1, 1)
+	call c%setPhase(i, j,1, 1)
+      end if
+    enddo
+  endif
 !!  if (CountB > ErrorCountAB) then
 !!    Phase(i, : ,:) = 9
 !!    do j = 1, nSnpCore
