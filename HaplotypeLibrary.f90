@@ -1035,7 +1035,7 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 	    truth = 1
 	    id = CandPairs(1, 2)
 	    do k = 2, CompatPairs
-	      if (CandPairs(k, 2) /= value) truth = 0
+	      if (CandPairs(k, 2) /= id) truth = 0
 	    end do
 
 	    ! If there is only one maternal haplotype in all the candidate pairs
