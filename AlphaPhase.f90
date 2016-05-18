@@ -112,8 +112,7 @@ program Rlrplhi
     
       call surrogates%calculate(cs, threshold, consistent, pseudoNRM)
       call writeSurrogates(surrogates,threshold, h, p)
-!      call Erdos(surrogates, threshold, cs)
-      call NewErdos(surrogates, threshold, cs)
+      call Erdos(surrogates, threshold, cs)
       call CheckCompatHapGeno(cs)      
       
       call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)      
