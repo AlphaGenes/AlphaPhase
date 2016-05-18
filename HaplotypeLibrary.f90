@@ -341,6 +341,7 @@ end subroutine CheckCompatHapGeno
 subroutine MakeHapLib(library, c)
   use CoreDefinition
   use Random
+  use Parameters
   implicit none
 
   type(HapLib), intent(in) :: library
@@ -395,9 +396,12 @@ subroutine MakeHapLib(library, c)
       endif
     enddo
     if (truth == 0) then
+      !FUDGE FOR CONSISTENCY.  There should be no if statement here
+      if (.not. consistent .or. (library%getSize() > 0)) then
+	call c%setFullyPhased(i,2)
+      end if
       id = library%matchAddHap(c%getHaplotype(i,2))
       call c%setHapAnis(i,2,id)
-      call c%setFullyPhased(i,2)
     endif
   enddo
 
