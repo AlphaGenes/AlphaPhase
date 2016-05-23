@@ -7,7 +7,6 @@ module CoreSubsetDefinition
 
   type, public :: CoreSubset
     private
-    !Almost definitely shouldn't be public but for now...
     type(Core), pointer :: parentCore
     type(Pedigree), pointer :: parentPedigree
     integer(kind = 4), allocatable, dimension(:) :: full2sub

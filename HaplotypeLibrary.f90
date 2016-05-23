@@ -14,9 +14,11 @@ module HaplotypeLibrary
     private
     procedure, public :: initalise
     procedure, public :: hasHap
-    procedure, public :: addHap
+    procedure :: addHap
     procedure, public :: getHap
     procedure, public :: matchWithError
+    procedure, public :: limitedMatchWithError
+    procedure, public :: limitedCompatPairsWithError
     procedure, public :: getPhase
     procedure, public :: getSize
     procedure, public :: getHapRel
@@ -24,10 +26,8 @@ module HaplotypeLibrary
     procedure, public :: resetHapFreq
     procedure, public :: incrementHapFreq
     procedure, public :: getHapFreq
-    
+    procedure, public :: getCompatHaps    
     procedure, public :: matchAddHap
-    
-    procedure :: addHap2
   end type HapLib
 
 contains
@@ -86,9 +86,10 @@ contains
     end do
   end function hasHap
 
-  subroutine addHap(library, haplotype)
+  function addHap(library, haplotype) result(id)
     class(HapLib) :: library
     integer(kind = 1), dimension(:), intent(in) :: haplotype
+    integer :: id
 
     integer :: newStoreSize
     integer(kind = 1), dimension(:,:), allocatable :: tempStore
@@ -118,46 +119,21 @@ contains
 
     library % Size = library % Size + 1
     library % Store(library % Size,:) = haplotype
-  end subroutine addHap
-  
-  !!! Temporary Hack !!!
-  function addHap2(library, haplotype) result(id)
-    class(HapLib) :: library
-    integer(kind = 1), dimension(:), intent(in) :: haplotype
     
-    integer :: id
-    
-    call library%addHap(haplotype)
     library%hapfreq(library%size) = 1
     id = library%size
-  end function addHap2
+  end function addHap
   
   function matchAddHap(library, haplotype) result (id)
     class(HapLib) :: library
     integer(kind = 1), dimension(:), intent(in) :: haplotype
     integer :: id
     
-    logical :: match
-    integer :: i, j
-    
-    id = 0
-    do i = 1, library%size
-      match = .true.
-      do j = 1, library%nSnps
-	if (library%store(i, library%randomOrder(j)) /= haplotype(library%randomOrder(j))) then
-	  match = .false.
-	  exit
-	end if
-      end do
-      if (match) then
-	id = i
-	library%hapfreq(i) = library%hapfreq(i) + 1
-	exit
-      end if
-    end do
-    
+    id = library%hasHap(haplotype)
     if (id == 0) then
-      id = library%addHap2(haplotype)
+      id = library%addHap(haplotype)
+    else
+      library%hapfreq(id) = library%hapfreq(id) + 1
     end if    
   end function matchAddHap
 
@@ -165,7 +141,7 @@ contains
     class(HapLib) :: library
     integer(kind = 1), dimension(:), intent(in) :: haplotype
     integer, intent(in) :: allowedError
-    integer, dimension(:), allocatable :: matches
+    integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, j, e, num
@@ -192,13 +168,103 @@ contains
       if (match) then
 	num = num + 1
 	tempMatches(num) = i
-	exit
       end if
     end do
     allocate(matches(num))
     matches(:) = tempMatches(1:num)
     deallocate(tempMatches)
   end function matchWithError
+  
+  function limitedMatchWithError(library, haplotype, allowedError, limit) result(matches)
+    class(HapLib) :: library
+    integer(kind = 1), dimension(:), intent(in) :: haplotype
+    integer, intent(in) :: allowedError
+    integer, dimension(:), intent(in) :: limit
+    integer, dimension(:), pointer :: matches
+
+    integer, dimension(:), allocatable :: tempMatches
+    integer :: i, j, k, e, num
+    logical :: match
+
+    allocate(tempMatches(library % size))
+
+    num = 0
+
+    do k = 1, size(limit)
+      i = limit(k)
+      e = 0
+      match = .true.
+      do j = 1, library % nSnps
+	if (haplotype(library % RandomOrder(j)) /= 9) then
+	  if (library % store(i, library % RandomOrder(j)) /= haplotype(library % RandomOrder(j))) then
+	    e = e + 1
+	    if (e > allowedError) then
+	      match = .false.
+	      exit
+	    endif
+	  end if
+	end if
+      end do
+      if (match) then
+	num = num + 1
+	tempMatches(num) = i
+      end if
+    end do
+    allocate(matches(num))
+    matches(:) = tempMatches(1:num)
+    deallocate(tempMatches)
+  end function limitedMatchWithError
+  
+  function limitedCompatPairsWithError(library, genos, ErrorAllow, limit, nAnisG) result(pairs)
+    use Constants
+    class(HapLib) :: library
+    integer(kind = 1), dimension(:), intent(in) :: genos
+    integer, intent(in) :: ErrorAllow
+    integer, dimension(:), intent(in) :: limit
+    integer, intent(in) :: nAnisG
+    integer, dimension(:,:), pointer :: pairs
+    
+    integer, dimension(:,:), pointer :: tempPairs
+    integer :: i, j, k, p, e
+    logical :: match
+    
+    allocate(tempPairs(nAnisG*2,2))
+    
+    p = 0
+    i = 1
+    do while ((i <= size(limit)) .and. ((p*p) <= (nAnisG - 1)))
+      j = i + 1
+      do while ((j <= size(limit)) .and. ((p*p) <= (nAnisG - 1)))
+	match = .true.
+	do k = 1, library%nSnps
+	  if (Genos(library % randomOrder(k)) /= MissingGenotypeCode)then
+	    if ((library%getPhase(limit(i), library % randomOrder(k)) &
+	    + library%getPhase(limit(j), library % randomOrder(k))) &
+	    /= Genos(library%randomOrder(k))) then
+	      e = e + 1
+	      if (e > ErrorAllow) then
+		match = .false.
+		exit
+	      end if
+	    end if
+	  endif
+	end do
+	
+	if (match) then
+	  p = p + 1
+	  tempPairs(p,1) = limit(i)
+	  tempPairs(p,2) = limit(j)
+	end if
+	j = j + 1
+      end do
+      i = i + 1
+    end do
+    
+    allocate(pairs(p,2))
+    pairs = tempPairs(1:p,:)
+    deallocate(tempPairs)
+  end function limitedCompatPairsWithError
+	
 
   function getHap(library, id) result(hap)
     class(HapLib) :: library
@@ -277,6 +343,50 @@ contains
     freq = library%hapFreq(id)
   end function getHapFreq
   
+  function getCompatHaps(library, genos) result (compatHaps)
+    use parameters, only : percgenohaplodisagree
+    
+    class(HapLib) :: library
+    integer(kind=1), dimension(:), intent(in) :: genos
+    integer, dimension(:), pointer :: compatHaps
+    
+    integer, dimension(:), allocatable :: tempCompatHaps
+    integer :: k, j, numCompatHaps, disagree, ErrorAllow
+    
+    ErrorAllow = int(PercGenoHaploDisagree * library%nSnps)
+    allocate(tempCompatHaps(library%size))
+    numCompatHaps = 0
+    do k = 1, library%size
+      Disagree = 0
+      do j = 1, library%nSnps
+	if ((library%getPhase(k, library%randomOrder(j)) == 0) .and. (genos(library%randomOrder(j)) == 2)) then
+	  Disagree = Disagree + 1
+	  if (Disagree > ErrorAllow) then
+	    exit
+	  end if
+	end if
+	if ((library%getPhase(k, library%randomOrder(j)) == 1) .and. (genos(library%randomOrder(j)) == 0)) then
+	  Disagree = Disagree + 1
+	  if (Disagree > ErrorAllow) then
+	    exit
+	  end if
+	end if
+      end do
+      if (Disagree <= ErrorAllow) then
+	numCompatHaps = numCompatHaps + 1
+	tempCompatHaps(numCompatHaps) = k
+      end if
+    end do
+    allocate(compatHaps(numCompatHaps))
+    compatHaps = tempCompatHaps(1:numCompatHaps)
+    deallocate(tempCompatHaps)
+  end function getCompatHaps
+  
+  
+  
+  
+  
+  
   !MESSY! SHOULDN'T BE HERE!!!!
   !subroutine CheckCompatHapGeno(genos, phase)
   subroutine CheckCompatHapGeno(c)
@@ -289,16 +399,13 @@ contains
 
   integer(kind=1), dimension(:,:), pointer :: genos
   
-  integer :: i, j, CountError, SizeCore, ErrorAllow, Disagree, counter, counterMissing, nAnisG, nCoreSnp
+  integer :: i, j, CountError, ErrorAllow, counter, counterMissing, nAnisG, nCoreSnp
   double precision :: value, Yield
 
   nAnisG  = c%getNAnisG()
   nCoreSnp = c%getNCoreSnp()
   
   genos => c%getCoreGenos()
-  
-  !Refactor out!
-  SizeCore = nCoreSnp
   
   ErrorAllow = int(PercGenoHaploDisagree * nCoreSnp)
 
@@ -347,55 +454,26 @@ subroutine MakeHapLib(library, c)
   type(HapLib), intent(in) :: library
   type(Core) :: c
   
-  integer :: i, j, truth
-  integer :: nSNPcore, nCount, nAnisG
-  integer, allocatable :: Shuffle(:)
-  integer :: secs
-  
+  integer :: i
   integer :: id
-
-  nAnisG = c%getNAnisG()
 
   call library%resetHapFreq()
   call c%resetFullyPhased()
   call c%resetHapAnis()
 
-  call system_clock(nCount)
-  secs = mod(nCount, int(1e6))
-
-  ! Create random indexes
-  nSnpCore = c%getNCoreSnp() ! Total number of markers in the core
-  
   !THIS IS HORRIBLE!
-  call library%initalise(nSNPcore,500,500)
+  call library%initalise(c%getNCoreSnp(),500,500)
   
-  allocate(Shuffle(nSNPcore))
-  call RandomOrder(Shuffle, nSNPcore, 1, -abs(secs))
-
-  do i = 1, nAnisG
+  do i = 1, c%getNAnisG()
     !Paternal Haps
-    truth = 0
-    do j = 1, nSNPcore
-      if (c%getPhase(i, Shuffle(j), 1) == 9) then
-	truth = 1
-	exit
-      endif
-    enddo
-    if (truth == 0) then
+    if (fullyPhased(c%getHaplotype(i,1))) then
       id = library%matchAddHap(c%getHaplotype(i,1))
       call c%setHapAnis(i,1,id)
       call c%setFullyPhased(i,1)
     endif
     
     !Maternal Haps
-    truth = 0
-    do j = 1, nSNPcore
-      if (c%getPhase(i, Shuffle(j), 2) == 9) then
-	truth = 1
-	exit
-      endif
-    enddo
-    if (truth == 0) then
+    if (fullyPhased(c%getHaplotype(i,2))) then
       !FUDGE FOR CONSISTENCY.  There should be no if statement here
       if (.not. consistent .or. (library%getSize() > 0)) then
 	call c%setFullyPhased(i,2)
@@ -404,8 +482,6 @@ subroutine MakeHapLib(library, c)
       call c%setHapAnis(i,2,id)
     endif
   enddo
-
-  deallocate(Shuffle)
   
 end subroutine MakeHapLib
 
@@ -426,25 +502,30 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
   integer, intent(inout) :: nGlobalHapsIter
 
   integer(kind=1), dimension(:,:), pointer :: genos
-  integer :: i, j, k, l, m, truth, truth1, HapLibIter, nHapsOld, Disagree, SizeCore, ErrorAllow, HapM, HapP, nCand, nCandPat, Miss, nHapsTmp
-  integer :: CompatPairs, WorkScaler, CountZero, CountOne, Switch
-  integer(kind=1) :: value
+  integer :: i, j, k, HapLibIter, nHapsOld, ErrorAllow, HapM, HapP, nCand, nCandPat, nCandMat
+  integer :: WorkScaler, CountZero, CountOne
+  integer(kind=1) :: first, val
   integer :: id
-  integer, allocatable, dimension(:) :: CandGenos, CandHaps, WorkVec
-  integer, allocatable, dimension(:,:) :: CandPairs
-  character(len = 300) :: filout
+  integer, allocatable, dimension(:) :: CandGenos, WorkVec
+  integer, pointer, dimension(:,:) :: CandPairs
 
-  integer :: nSNPcore, nCount, nAnisG, nSnp, secs, nHaps
-  integer, allocatable :: Shuffle(:)
+  integer :: nAnisG, nSnp, nHaps
   
-  integer, allocatable, dimension(:) :: compatHaps
-  integer :: numCompatHaps
+  integer, dimension(:), pointer :: compatHaps
   
   integer, allocatable, dimension (:,:) :: TempHapArray
   integer, allocatable, dimension (:) :: TempHapVector, ClusterMember
   integer :: nHapsCluster, rounds
   
   integer :: countA, countB, ErrorCountAB
+  
+  integer(kind=1), pointer, dimension(:) :: comp
+  integer, pointer, dimension(:) :: CandHapsPat, CandHapsMat, CandHaps, matches
+  
+  logical :: singlePat, singleMat
+  
+  !!!! TEMP STUFF
+  integer, pointer, dimension(:) :: CandHaps2
   
   nAnisG = c%getNAnisG()
   nSnp = c%getNCoreSnp()
@@ -458,18 +539,8 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
   
   genos => c%getCoreGenos()
 
-  ! Create a seed for RNG
-  call system_clock(nCount)
-  secs = mod(nCount, int(1e6))
-
-  ! Create random indexes
-  nSnpCore = nSnp ! Total number of markers in the core
-  allocate(Shuffle(nSNPcore))
-  call RandomOrder(Shuffle, nSNPcore, 1, -abs(secs))
-
-  SizeCore = nSnp
-  ErrorAllow = int(PercGenoHaploDisagree * SizeCore)
-  ErrorCountAB = int(SizeCore * 0.09)
+  ErrorAllow = int(PercGenoHaploDisagree * nSnp)
+  ErrorCountAB = int(nSnp * 0.09)
 
   HapLibIter = 1
   if (nGlobalHapsIter == 1) then
@@ -492,92 +563,38 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
       if ((.not. c%getFullyPhased(i,1)) .or. (.not. c%getFullyPhased(i,2)))  then
 	! If one of the gametes is completely phased (Section Step 2e.i Hickey et al. 2011): PATERNAL HAPLOTYPE
 	if (c%getFullyPhased(i, 1)) then
-	  CandHaps = 0
-	  nCand = 0
-	  truth1 = 0
-	  HapM = 0
-	  do k = 1, nHaps
-	    truth = 0
-	    Disagree = 0
-	    do j = 1, nSNPcore
-	      if (Genos(i, Shuffle(j)) /= MissingGenotypeCode) then
-		if (library%getPhase(k, Shuffle(j)) + c%getPhase(i, Shuffle(j), 1) /= Genos(i, Shuffle(j))) then
-		  Disagree = Disagree + 1
-		  if (Disagree > ErrorAllow) then
-		    truth = 1
-		    exit
-		  endif
-		end if
-	      end if
-	    end do
-	    if (truth == 0) then
-	      HapM = k
-	      nCand = nCand + 1
-	      CandHaps(nCand) = k
-	    end if
-	  end do
+	  comp => complement(Genos(i,:), c%getHaplotype(i,1))
+	  CandHaps2 => library%matchWithError(comp, ErrorAllow)
 
-	  if (nCand > 1) then
-	    do j = 1, nSNPcore
-	      Disagree = 0
-	      do k = 1, nCand
-		do l = k, nCand
-		  if (library%getPhase(CandHaps(k), Shuffle(j)) /= library%getPhase(CandHaps(l), Shuffle(j))) then
-		    Disagree = 1
-		  end if
-		end do
-	      end do
-	      if (Disagree == 0) then
-		call c%setPhase(i, Shuffle(j), 2, library%getPhase(CandHaps(1), Shuffle(j)))
+	  if (size(CandHaps2,1) > 1) then
+	    do j = 1, nSNP
+	      if (agree(CandHaps2, library, j)) then
+		call c%setPhase(i, j, 2, library%getPhase(CandHaps2(1), j))
 	      end if
 	    end do
 	  endif
 
-	  if (nCand == 1) then
-	    call c%setHaplotype(i,2,library%getHap(HapM))
+	  if (size(CandHaps2,1) == 1) then
+	    call c%setHaplotype(i,2,library%getHap(CandHaps2(1)))
 	    call c%setFullyPhased(i,2)
-	    call library%incrementHapFreq(HapM)
-	    call c%setHapAnis(i, 2, HapM)
+	    call library%incrementHapFreq(CandHaps2(1))
+	    call c%setHapAnis(i, 2, CandHaps2(1))
 	  end if
 
-	  if (nCand == 0) then
-	    Miss = 0
-	    do j = 1, nSnpCore
-	      if (Genos(i, j) /= MissingGenotypeCode)then
-		value = Genos(i, j) - c%getPhase(i, j, 1)
-		if ((value == 0).or.(value == 1)) then
-		  call c%setPhase(i, j, 2, value)
-		else
-		  Miss = Miss + 1
+	  if (size(CandHaps2,1) == 0) then
+	    do j = 1, nSnp
+		if ((comp(j) == 0).or.(comp(j) == 1)) then
+		  call c%setPhase(i, j, 2, comp(j))
 		endif
-	      else
-		Miss = Miss + 1
-	      endif
 	    enddo
-	    if (Miss == 0) then
+
+	    if (fullyPhased(comp)) then
+	      id = library%matchAddHap(c%getHaplotype(i,2))
+	      call c%setHapAnis(i,2,id)
 	      call c%setFullyPhased(i,2)
-	      truth = 0
-	      do k = 1, nHaps
-		Disagree = 0
-		do j = 1, nSNPcore
-		  if (library%getPhase(k, Shuffle(j)) /= c%getPhase(i, Shuffle(j), 2)) then
-		    Disagree = 1
-		    exit
-		  endif
-		enddo
-		if (Disagree == 0) then
-		  call library%incrementHapFreq(k)
-		  call c%setHapAnis(i, 2, k)
-		  truth = 1
-		  exit
-		end if
-	      end do
-	      if (truth == 0) then
-		nHaps = nHaps + 1
-		call library%addHap(c%getHaplotype(i, 2))
-		call library%incrementHapFreq(nHaps)
-		call c%setHapAnis(i, 2, nHaps)
-	      end if
+	      
+	      !!! TEMP HACK as nHaps is still used lower
+	      nHaps = library%getSize()
 	    end if
 	  endif
 	end if
@@ -588,93 +605,39 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 	! Affects results - not entirely sure why...
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	if (c%getFullyPhased(i, 2)) then
-	  truth1 = 0
-	  HapP = 0
-	  CandHaps = 0
-	  nCand = 0
-	  do k = 1, nHaps
-	    truth = 0
-	    Disagree = 0
-	    do j = 1, nSNPcore
-	      if (Genos(i, Shuffle(j)) /= MissingGenotypeCode) then
-		if (library%getPhase(k, Shuffle(j)) + c%getPhase(i, Shuffle(j), 2) /= Genos(i, Shuffle(j))) then
-		  Disagree = Disagree + 1
-		  if (Disagree > ErrorAllow) then
-		    truth = 1
-		    exit
-		  endif
-		end if
-	      end if
-	    enddo
-	    if (truth == 0) then
-	      HapP = k
-	      nCand = nCand + 1
-	      CandHaps(nCand) = k
-	    endif
-	  enddo
+	  comp => complement(Genos(i,:), c%getHaplotype(i,2))
+	  CandHaps2 => library%matchWithError(comp, ErrorAllow)
 
-	  if (nCand > 1) then
-	    do j = 1, nSNPcore
-	      Disagree = 0
-	      do k = 1, nCand
-		do l = k, nCand
-		  if (library%getPhase(CandHaps(k), Shuffle(j)) /= library%getPhase(CandHaps(l), Shuffle(j))) then
-		    Disagree = 1
-		  end if
-		end do
-	      end do
-	      if (Disagree == 0) then
-		call c%setPhase(i, Shuffle(j), 1, library%getPhase(CandHaps(1), Shuffle(j)))
+	  if (size(CandHaps2,1) > 1) then
+	    do j = 1, nSNP
+	      if (agree(CandHaps2, library, j)) then
+		call c%setPhase(i, j, 1, library%getPhase(CandHaps2(1), j))
 	      end if
-	    enddo
+	    end do
 	  endif
 
-	  if (nCand == 1) then
-	    call c%setHaplotype(i, 1, library%getHap(HapP))
-	    call c%setFullyPhased(i, 1)
-	    call library%incrementHapFreq(HapP)
-	    call c%setHapAnis(i, 1, HapP)
-	  endif
+	  if (size(CandHaps2,1) == 1) then
+	    call c%setHaplotype(i,1,library%getHap(CandHaps2(1)))
+	    call c%setFullyPhased(i,1)
+	    call library%incrementHapFreq(CandHaps2(1))
+	    call c%setHapAnis(i, 1, CandHaps2(1))
+	  end if
 
-	  if (nCand == 0) then
-	    Miss = 0
-	    do j = 1, nSnpCore
-	      if (Genos(i, j) /= MissingGenotypeCode)then
-		value = Genos(i, j) - c%getPhase(i, j, 2)
-		if ((value == 0).or.(value == 1)) then
-		  call c%setPhase(i, j, 1, value)
-		else
-		  Miss = Miss + 1
+	  if (size(CandHaps2,1) == 0) then
+	    do j = 1, nSnp
+		if ((comp(j) == 0).or.(comp(j) == 1)) then
+		  call c%setPhase(i, j, 1, comp(j))
 		endif
-	      else
-		Miss = Miss + 1
-	      endif
 	    enddo
-	    if (Miss == 0) then
-	      call c%setFullyPhased(i, 1)
-	      truth = 0
-	      do k = 1, nHaps
-		Disagree = 0
-		do j = 1, nSNPcore
-		  if (library%getPhase(k, Shuffle(j)) /= c%getPhase(i, Shuffle(j), 1)) then
-		    Disagree = 1
-		    exit
-		  endif
-		enddo
-		if (Disagree == 0) then
-		  call library%incrementHapFreq(k)
-		  call c%setHapAnis(i, 1, k)
-		  truth = 1
-		  exit
-		end if
-	      end do
-	      if (truth == 0) then
-		nHaps = nHaps + 1
-		call library%addHap(c%getHaplotype(i, 1))
-		call library%incrementHapFreq(nHaps)
-		call c%setHapAnis(i, 1, nHaps)
-	      end if
-	    endif
+
+	    if (fullyPhased(comp)) then
+	      id = library%matchAddHap(c%getHaplotype(i,1))
+	      call c%setHapAnis(i,1,id)
+	      call c%setFullyPhased(i,1)
+	      
+	      !!! TEMP HACK as nHaps is still used lower
+	      nHaps = library%getSize()
+	    end if
 	  endif
 	end if
 
@@ -683,152 +646,70 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 	  HapP = 0
 	  HapM = 0
 	  CandHaps = 0
-	  nCand = 0
+	  nCand = 0	  
 	  
-	  allocate(compatHaps(nHaps))
-	  numCompatHaps = 0
-	  do k = 1, nHaps
-	    if (consistent) then
-	      numCompatHaps = numCompatHaps + 1
-	      compatHaps(numCompatHaps) = k
-	    else	      
-	      Disagree = 0
-	      do j = 1, nSNPcore
-		if ((library%getPhase(k, Shuffle(j)) == 0) .and. (genos(i, Shuffle(j)) == 2)) then
-		  Disagree = Disagree + 1
-		  if (Disagree > ErrorAllow) then
-		    exit
-		  end if
-		end if
-		if ((library%getPhase(k, Shuffle(j)) == 1) .and. (genos(i, Shuffle(j)) == 0)) then
-		  Disagree = Disagree + 1
-		  if (Disagree > ErrorAllow) then
-		    exit
-		  end if
-		end if
-	      end do
-	      if (Disagree <= ErrorAllow) then
-		numCompatHaps = numCompatHaps + 1
-		compatHaps(numCompatHaps) = k
-	      end if
-	    end if
-	  end do
-
-	  do k = 1, numCompatHaps
-	    truth = 0
-	    Disagree = 0
-	    do j = 1, nSNPcore
-	      if ((c%getPhase(i, Shuffle(j), 1) /= 9).and.(c%getPhase(i, Shuffle(j), 1) /= library%getPhase(compatHaps(k), Shuffle(j)))) Disagree = Disagree + 1
-	      if (Disagree > ErrorAllow) then
-		truth = 1
-		exit
-	      end if
+	  if (consistent) then
+	    allocate(compatHaps(nHaps))
+	    do k = 1, nHaps
+	      compatHaps(k) = k
 	    end do
+	  else
+	    compatHaps => library%getCompatHaps(genos(i,:))
+	  end if
 
-	    ! If the there is no disagreement, we've found a new candidate haplotype
-	    if (truth == 0) then
-	      nCand = nCand + 1
-	      CandHaps(nCand) = compatHaps(k)
-	    end if
-	  enddo
-	  
+	  CandHapsPat => library%limitedMatchWithError(c%getHaplotype(i,1), ErrorAllow, compatHaps)
+  
 	  ! Update the number of candidates for paternal haplotype
-	  nCandPat = nCand
+	  nCandPat = size(CandHapsPat,1)
 
 	  ! If only have one paternal candidate haplotype, then
 	  ! the paternal haplotype is nCand
-	  if (nCand == 1) HapP = CandHaps(nCand)
+	  if (nCandPat == 1) HapP = CandHapsPat(1)
 	  
-	  ! Find candidates for maternal haplotype
-	  do k = 1, numCompatHaps
-	    truth = 0
-	    Disagree = 0
-	    do j = 1, nSNPcore
-	      if ((c%getPhase(i, Shuffle(j), 2) /= 9).and.(c%getPhase(i, Shuffle(j), 2) /= library%getPhase(compatHaps(k), Shuffle(j)))) Disagree = Disagree + 1
-	      if (Disagree > ErrorAllow) then
-		truth = 1
-		exit
-	      end if
-	    end do
-
-	    ! If the there is no disagreement, we've found a new candidate haplotype
-	    if (truth == 0) then
-	      truth1 = 0
-	      do j = 1, nCand
-		if (k == CandHaps(j)) then
-		  truth1 = 1
-		  exit
-		end if
-	      enddo
-	      if (truth1 == 0) then
-		nCand = nCand + 1
-		CandHaps(nCand) = compatHaps(k)
-	      endif
-	    endif
-	  enddo
-
-	  deallocate(compatHaps)
+	  !Find all candiate maternal haps and then remove those that are already candidate paternal haps
+	  CandHapsMat => uniqueHaps( &
+	    library%limitedMatchWithError(c%getHaplotype(i,2), ErrorAllow, compatHaps), CandHapsPat)
 	  
 	  ! If only have one maternal candidate haplotype, then
 	  ! the maternal haplotype is nCand
-	  if ((nCand - nCandPat) == 1) HapM = CandHaps(nCand)
+	  nCandMat = size(CandHapsMat,1)
+	  if (nCandMat == 1) HapM = CandHapsMat(1)
+	  
+	  ! Make array of all haps
+	  nCand = size(CandHapsPat) + size(CandHapsMat)
+	  allocate(CandHaps(nCand))
+	  CandHaps(1:size(CandHapsPat)) = CandHapsPat
+	  CandHaps(size(CandHapsPat)+1:nCand) = CandHapsMat
 	  
 	  ! If only one maternal candidate haplotype and many paternal candidate haplotypes
-	  if ((HapM > 0).AND.(HapP == 0)) then
-	    truth1 = 0
-	    do k = 1, nCandPat
-	      Disagree = 0
-	      truth = 1
-	      do j = 1, nSNPcore
-		if ((Genos(i, Shuffle(j)) /= MissingGenotypeCode).and.&
-		  (Genos(i, Shuffle(j)) /= (library%getPhase(HapM, Shuffle(j)) + library%getPhase(CandHaps(k), Shuffle(j))))) then
-		  Disagree = Disagree + 1
-		  if (Disagree > ErrorAllow) then
-		    truth = 0
-		    exit
-		  end if
-		endif
-	      enddo
-	      if (truth == 1) then
-		truth1 = truth1 + 1
-		HapP = CandHaps(k)
-		if (truth1 > 1) then
-		  HapP = 0
-		end if
-	      end if
-	    end do
-	  end if
-
-	  ! If only one paternal candidate haplotype and one / many maternal candidate haplotypes 
-	  if ((nCandPat == 1).and.(nCand - nCandPat > 0)) then
-	    truth1 = 0
-	    do k = nCandPat + 1, nCand
-	      Disagree = 0
-	      truth = 1
-	      do j = 1, nSNPcore
-		if ((Genos(i, Shuffle(j)) /= MissingGenotypeCode).and.(Genos(i, Shuffle(j)) /= (library%getPhase(HapP, Shuffle(j)) &
-		  + library%getPhase(CandHaps(k),Shuffle(j))))) then                                                             
-		Disagree = Disagree + 1
-		if (Disagree > ErrorAllow) then
-		  truth = 0
-		  exit
-		end if
-	      endif
-	    enddo
-	    ! Really not sure about this next if.  Seems to me to be saying that if we've found one compatible hap but then find
-	    ! one that isn't we set HapM to none - despite so far only having one match...  Also why the difference from above?
-	    ! Think this is here so that if we only have one candidate for maternal it's compatible but think it has undesirable
-	    ! side effects
-	    if (truth == 0) HapM = 0
-	    if (truth == 1) then
-	      truth1 = truth1 + 1
-	      HapM = CandHaps(k)
-	      if (truth1 > 1) then
-		HapM = 0
-	      end if
+	  !! There's some odd logic here - if we have one paternal and maternal we end up keeping HapP as the
+	  !! paternal even if it's not compitable with the mat.  May be checked later.
+	  if ((nCandMat == 1).AND.(nCandPat > 0)) then
+	    comp => complement(Genos(i,:),library%getHap(HapM))
+	    matches => library%limitedMatchWithError(comp, ErrorAllow, CandHapsPat)
+	    if (size(matches) == 1) then
+	      HapP = matches(1)
 	    end if
-	  end do
-	end if
+	  end if
+	  
+	  deallocate(compatHaps)
+
+	  ! If only one paternal candidate haplotype and one / many maternal candidate haplotypes
+	  if ((nCandPat == 1).and.(nCandMat > 0)) then
+	    ! FUDGE TO DEAL WITH STRANGE LOGIC IN ORIGINAL CODE
+	    HapM = 0
+	    
+	    comp => complement(Genos(i,:),library%getHap(HapP))
+	    matches => library%limitedMatchWithError(comp, ErrorAllow, CandHapsMat)
+	    if (size(matches) == 1) then
+	      HapM = matches(1)
+	    end if
+
+	    ! FUDGE TO DEAL WITH STRANGE LOGIC IN ORIGINAL CODE
+	    if (HapM /= CandHaps(nCand)) then
+	      HapM = 0
+	    end if
+	  end if
 	
 	! If only have one paternal candidate haplotype
 	if (HapP /= 0) then
@@ -842,46 +723,22 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 	  ! If no haplotype has been found for the maternal gamete, or 
 	  ! there are more than one maternal candidate haplotype
 	  if (HapM == 0) then
-	    Miss = 0
-	    do j = 1, nSnpCore
-	      if (Genos(i, j) /= MissingGenotypeCode)then
-		value = Genos(i, j) - c%getPhase(i, j, 1)
-		if ((value == 0).or.(value == 1)) then
-		  call c%setPhase(i, j, 2, value)
-		else
-		  Miss = Miss + 1
+	    comp => complement(genos(i,:), c%getHaplotype(i,1))
+	    
+	    do j = 1, nSnp
+		if ((comp(j) == 0).or.(comp(j) == 1)) then
+		  call c%setPhase(i, j, 2, comp(j))
 		endif
-	      else
-		Miss = Miss + 1
-	      endif
 	    enddo
-	    if (Miss == 0) then
-	      call c%setFullyPhased(i, 2)
-	      truth = 0
 
-	      ! Update (if necessary) Haplotype Library with the new maternal gamete found
-	      do k = 1, nHaps
-		Disagree = 0
-		do j = 1, nSNPcore
-		  if (library%getPhase(k, Shuffle(j)) /= c%getPhase(i, Shuffle(j), 2)) then
-		    Disagree = 1
-		    exit
-		  endif
-		enddo
-		if (Disagree == 0) then
-		  call library%incrementHapFreq(k)
-		  call c%setHapAnis(i, 2, k)
-		  truth = 1
-		  exit
-		end if
-	      end do
-	      if (truth == 0) then
-		nHaps = nHaps + 1
-		call library%addHap(c%getHaplotype(i, 2))
-		call library%incrementHapFreq(nHaps)
-		call c%setHapAnis(i, 2, nHaps)
-	      end if
-	    end if
+	    if (fullyPhased(comp)) then
+	      id = library%matchAddHap(c%getHaplotype(i,2))
+	      call c%setHapAnis(i,2,id)
+	      call c%setFullyPhased(i,2)
+	      
+	      !!! TEMP HACK as nHaps is still used lower
+	      nHaps = library%getSize()
+	    end if	    
 	  end if
 	end if
 
@@ -903,94 +760,41 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 	  ! If no haplotype has been found for the paternal gamete, or 
 	  ! there are more than one paternal candidate haplotype
 	  if (HapP == 0) then
-	    Miss = 0
-	    do j = 1, nSnpCore
-	      if (Genos(i, j) /= MissingGenotypeCode)then
-		value = Genos(i, j) - c%getPhase(i, j, 2)
-		if ((value == 0).or.(value == 1)) then
-		  call c%setPhase(i, j, 1, value)
-		else
-		  Miss = Miss + 1
+	    comp => complement(genos(i,:), c%getHaplotype(i,2))
+	    
+	    do j = 1, nSnp
+		if ((comp(j) == 0).or.(comp(j) == 1)) then
+		  call c%setPhase(i, j, 1, comp(j))
 		endif
-	      else
-		Miss = Miss + 1
-	      endif
 	    enddo
-	    if (Miss == 0) then
-	      call c%setFullyPhased(i, 1)
-	      truth = 0
 
-	      ! Update (if necessary) Haplotype Library with the new maternal gamete found
-	      do k = 1, nHaps
-		Disagree = 0
-		do j = 1, nSNPcore
-		  if (library%getPhase(k, Shuffle(j)) /= c%getPhase(i, Shuffle(j), 1)) then
-		    Disagree = 1
-		    exit
-		  endif
-		enddo
-		if (Disagree == 0) then
-		  call library%incrementHapFreq(k)
-		  call c%setHapAnis(i, 1, k)
-		  truth = 1
-		  exit
-		end if
-	      end do
-	      if (truth == 0) then
-		nHaps = nHaps + 1
-		call library%addHap(c%getHaplotype(i, 1))
-		call library%incrementHapFreq(nHaps)
-		call c%setHapAnis(i, 1, nHaps)
-	      end if
-	    end if
+	    if (fullyPhased(comp)) then
+	      id = library%matchAddHap(c%getHaplotype(i,1))
+	      call c%setHapAnis(i,1,id)
+	      call c%setFullyPhased(i,1)
+	      
+	      !!! TEMP HACK as nHaps is still used lower
+	      nHaps = library%getSize()
+	    end if	
 	  end if
 	end if
 
 	! If the paternal and maternal gamete cannot be identify without ambiguity
 	! (more than one or none at all)           
 	if ((HapP == 0).and.(HapM == 0)) then
-	  CandPairs = 0
-	  CompatPairs = 0
-	  do k = 1, nCand
-	    do l = (k + 1), nCand
-	      Disagree = 0
-	      truth = 1
-
-	      ! Check agreement between pairs
-	      do j = 1, nSNPcore
-		if (Genos(i, Shuffle(j)) /= MissingGenotypeCode)then
-		  if ((library%getPhase(CandHaps(k), Shuffle(j)) + library%getPhase(CandHaps(l), Shuffle(j))) /= Genos(i, Shuffle(j))) then
-		    Disagree = Disagree + 1
-		    if (Disagree > ErrorAllow) then
-		      truth = 0
-		      exit
-		    end if
-		  end if
-		endif
-	      end do
-
-	      ! If there is a pair that agrees, 
-	      ! the haplotypes are consider to be the paternal and maternal gametes (arbitrarily)
-	      if (truth == 1) then
-		CompatPairs = CompatPairs + 1
-		CandPairs(CompatPairs, 1) = CandHaps(k)
-		CandPairs(CompatPairs, 2) = CandHaps(l)
-		HapP = CandHaps(k)
-		HapM = CandHaps(l)
-		if ((CompatPairs * CompatPairs) > (nAnisG - 1)) exit
-	      end if
-	    end do
-	    if ((CompatPairs * CompatPairs) > (nAnisG - 1)) exit
-	  end do
-
+	  CandPairs => library%limitedCompatPairsWithError(Genos(i,:),ErrorAllow,CandHaps,nAnisG)
+	  
 	  ! If only one pair agrees...
-	  if (CompatPairs == 1) then
+	  if (size(CandPairs,1) == 1) then
 	    ! Phase the paternal haplotype and update the library with the new frequency 
+	    HapP = CandPairs(1,1)
 	    call c%setHaplotype(i, 1, library%getHap(HapP))
 	    call c%setFullyPhased(i, 1)
 	    call library%incrementHapFreq(HapP)
 	    call c%setHapAnis(i, 1, HapP)
+	    
 	    ! Phase the maternal haplotype and update the library with the new frequency 
+	    HapM = CandPairs(1,2)
 	    call c%setHaplotype(i, 2, library%getHap(HapM))
 	    call c%setFullyPhased(i, 2)
 	    call library%incrementHapFreq(HapM)
@@ -998,18 +802,19 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 	  end if
 
 	  ! If more than one pair agrees...                
-	  if ((CompatPairs > 1).and.((CompatPairs * CompatPairs) < nAnisG)) then !Note the 200 number is a fudge
-	    truth = 1
+	  if ((size(CandPairs,1) > 1).and.((size(CandPairs,1) * size(CandPairs,1)) < nAnisG)) then !Note the 200 number is a fudge
 
 	    ! Check how many paternal candidates haplotypes
+	    singlePat = .true.
 	    id = CandPairs(1, 1)
-	    do k = 2, CompatPairs
-	      if (CandPairs(k, 1) /= id) truth = 0
+	    do k = 2, Size(CandPairs,1)
+	      if (CandPairs(k, 1) /= id) then
+		SinglePat = .false.
+	      end if
 	    end do
-	    Switch = 0
 
 	    ! If there is only one paternal haplotype in all the candidate pairs
-	    if (truth == 1) then
+	    if (singlePat) then
 	      ! Phase the paternal gamete with this haplotype
 	      call c%setHaplotype(i, 1, library%getHap(id))
 	      call c%setFullyPhased(i, 1)
@@ -1019,31 +824,24 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 	      ! If only one haplotype is found for the paternal gamete 
 	      ! and many for the maternal gamete, phase each loci only all pairs agree
 	      ! (Step 2e.ii.B)
-	      do j = 1, nSNPcore
-		value = library%getPhase(CandPairs(1, 2), Shuffle(j))
-		truth1 = 1
-		do k = 2, CompatPairs
-		  if (library%getPhase(CandPairs(k, 2), Shuffle(j)) /= value) then
-		    truth1 = 0
-		    exit
-		  end if
-		end do
-		if (truth1 == 1) then
-		  call c%setPhase(i, Shuffle(j), 2, value)
+	      do j = 1, nSNP
+		if (agree(CandPairs(:,2), library, j)) then
+		  call c%setPhase(i, j, 2, library%getPhase(CandPairs(1, 2), j))
 		end if
 	      end do
-	      Switch = 1
 	    end if
 
 	    ! Check how many maternal candidates haplotypes
-	    truth = 1
+	    SingleMat = .true.
 	    id = CandPairs(1, 2)
-	    do k = 2, CompatPairs
-	      if (CandPairs(k, 2) /= id) truth = 0
+	    do k = 2, size(CandPairs,1)
+	      if (CandPairs(k, 2) /= id) then
+		SingleMat = .false.
+	      end if
 	    end do
 
 	    ! If there is only one maternal haplotype in all the candidate pairs
-	    if (truth == 1) then
+	    if (SingleMat) then
 	      call c%setHaplotype(i, 2, library%getHap(id))
 	      call c%setFullyPhased(i, 2)
 	      call library%incrementHapFreq(id)
@@ -1052,35 +850,27 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 	      ! If only one haplotype is found for the paternal gamete 
 	      ! and many for the maternal gamete, phase each loci only all pairs agree
 	      ! (Step 2e.ii.C)
-	      do j = 1, nSNPcore
-		value = library%getPhase(CandPairs(1, 1), Shuffle(j))
-		truth1 = 1
-		do k = 2, CompatPairs
-		  if (library%getPhase(CandPairs(k, 1), Shuffle(j)) /= value) then
-		    truth1 = 0
-		    exit
-		  end if
-		end do
-		if (truth1 == 1) then
-		  call c%setPhase(i, Shuffle(j), 1, value)
+	      do j = 1, nSNP
+		if (agree(CandPairs(:,1), library, j)) then
+		  call c%setPhase(i, j, 1, library%getPhase(CandPairs(1,1), j))
 		endif
 	      enddo
-	      Switch = 1
 	    endif
 
 	    ! If proband is not completely phased and have more than one candidate 
 	    ! for both paternal and maternal haplotype 
 	    ! (Step 2e.iv)
-	    if ( ((.not. c%getFullyPhased(i,1)) .or. (.not. (c%getFullyPhased(i,2)))) .and. (Switch == 0)) then
+	    if ( ((.not. c%getFullyPhased(i,1)) .or. (.not. (c%getFullyPhased(i,2)))) &
+	      .and. (.not. SinglePat) .and. (.not. SingleMat)) then
 
 	      ! Initialize procedure of k-medoids
 	      WorkVec = 0
-	      do k = 1, CompatPairs
+	      do k = 1, size(CandPairs,1)
 		WorkVec(CandPairs(k, 1)) = 1
 		WorkVec(CandPairs(k, 2)) = 1
 	      enddo
 	      WorkScaler = sum(WorkVec(:))
-	      allocate(TempHapArray(WorkScaler, SizeCore))
+	      allocate(TempHapArray(WorkScaler, nSnp))
 	      allocate(TempHapVector(WorkScaler))
 	      nHapsCluster = 0
 
@@ -1133,7 +923,7 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 		if ((count(ClusterMember(:) == 2) > 1).and.(count(ClusterMember(:) == 2) > 1)) then
 		  call c%setHaplotypeToUnphased(i,1)
 		  call c%setHaplotypeToUnphased(i,2)
-		  do j = 1, nSnpCore
+		  do j = 1, nSnp
 		    if (Genos(i, j) == 0) then
 		      call c%setPhase(i, j, 1, 0)
 		      call c%setPhase(i, j, 2, 0)
@@ -1154,16 +944,7 @@ subroutine ImputeFromLib(library, c, nGlobalHapsIter)
 		    end do
 		    if ((CountZero == 0).and.(CountOne > 0)) call c%setPhase(i, j, 2, 1)
 		    if ((CountZero > 0).and.(CountOne == 0)) call c%setPhase(i, j, 2, 0)
-		  end do
-		  do j = 1, nSnpCore
-		    if (Genos(i, j) == 0) then
-		      call c%setPhase(i, j, 1, 0)
-		      call c%setPhase(i, j, 2, 0)
-		    end if
-		    if (Genos(i, j) == 2) then
-		      call c%setPhase(i, j, 1, 1)
-		      call c%setPhase(i, j, 2, 1)
-		    end if
+		    
 		    CountZero = 0
 		    CountOne = 0
 		    do k = 1, nHapsCluster
@@ -1192,26 +973,20 @@ enddo
 do i = 1, nAnisG
   CountA = 0
   CountB = 0
-  do j = 1, nSnpCore
+  do j = 1, nSnp
     if (Genos(i, j) /= MissingGenotypeCode) then
-      !if ((Phase(i, j, 1) /= 9).and.(Phase(i, j, 2) == 9)) then
       if ((c%getPhase(i, j, 1) /= 9).and.(c%getPhase(i, j, 2) == 9)) then
-	!value = Genos(i, j) - Phase(i, j, 1)
-	value = Genos(i, j) - c%getPhase(i, j, 1)
-	if ((value == 0).or.(value == 1)) then !here 7th april 2011
-	  !Phase(i, j, 2) = value
-	  call c%setPhase(i, j, 2, value)
+	val = Genos(i, j) - c%getPhase(i, j, 1)
+	if ((val == 0).or.(val == 1)) then !here 7th april 2011
+	  call c%setPhase(i, j, 2, val)
 	else
 	  CountA = CountA + 1
 	endif
       endif
-      !if ((Phase(i, j, 2) /= 9).and.(Phase(i, j, 1) == 9)) then
       if ((c%getPhase(i, j, 2) /= 9).and.(c%getPhase(i, j, 1) == 9)) then
-	!value = Genos(i, j) - Phase(i, j, 2)
-	value = Genos(i, j) - c%getPhase(i, j, 2)
-	if ((value == 0).or.(value == 1)) then !here 7th april 2011
-	  !Phase(i, j, 1) = value
-	  call c%setPhase(i, j, 1, value)
+	val = Genos(i, j) - c%getPhase(i, j, 2)
+	if ((val == 0).or.(val == 1)) then !here 7th april 2011
+	  call c%setPhase(i, j, 1, val)
 	else
 	  CountB = CountB + 1
 	endif
@@ -1219,12 +994,9 @@ do i = 1, nAnisG
     end if
   end do
   if ((CountA > ErrorCountAB) .or. (CountB > ErrorCountAB)) then
-    !Phase(i, :, :) = 9
     call c%setHaplotypeToUnphased(i,1)
     call c%setHaplotypeToUnphased(i,2)
-    do j = 1, nSnpCore
-      !if (Genos(i, j) == 0) Phase(i, j,:) = 0
-      !if (Genos(i, j) == 2) Phase(i, j,:) = 1
+    do j = 1, nSnp
       if (Genos(i, j) == 0) then
 	call c%setPhase(i, j, 1, 0)
 	call c%setPhase(i, j, 2, 0)
@@ -1235,17 +1007,10 @@ do i = 1, nAnisG
       end if
     enddo
   endif
-!!  if (CountB > ErrorCountAB) then
-!!    Phase(i, : ,:) = 9
-!!    do j = 1, nSnpCore
-!!      if (Genos(i, j) == 0) Phase(i, j,:) = 0
-!!      if (Genos(i, j) == 2) Phase(i, j,:) = 1
-!!    enddo
-!!  endif
 end do
 
 do i = 1, nAnisG
-  do j = 1, nSnpCore
+  do j = 1, nSnp
     if (Genos(i, j) == 1) then
       if ((c%getPhase(i, j, 1) == 9).and.(c%getPhase(i, j, 2) /= 9)) call c%setPhase(i, j, 1, Genos(i, j) - c%getPhase(i, j, 2))
       if ((c%getPhase(i, j, 2) == 9).and.(c%getPhase(i, j, 1) /= 9)) call c%setPhase(i, j, 2, Genos(i, j) - c%getPhase(i, j, 1))
@@ -1284,31 +1049,27 @@ subroutine WriteHapLib(library, currentcore, c)
   type(Core), intent(in) :: c
   integer, intent(in) :: currentcore
 
-  ! This should be refactored out at some point - same as currentcore
-  integer :: OutputPoint
-  
   integer :: i, j, k, counter, SizeCore, nHaps !, nAnisG
   character(len = 300) :: filout
   
   SizeCore = library%getNumSnps()
-  OutputPoint = currentcore
   
   nHaps = library%getSize()
 
   if (FullFileOutput == 1) then
     if (WindowsLinux == 1) then
-      write (filout, '(".\PhasingResults\HaplotypeLibrary\HapLib",i0,".txt")') OutputPoint
+      write (filout, '(".\PhasingResults\HaplotypeLibrary\HapLib",i0,".txt")') currentcore
       open (unit = 24, FILE = filout, status = 'unknown')
     else
-      write (filout, '("./PhasingResults/HaplotypeLibrary/HapLib",i0,".txt")') OutputPoint
+      write (filout, '("./PhasingResults/HaplotypeLibrary/HapLib",i0,".txt")') currentcore
       open (unit = 24, FILE = filout, status = 'unknown')
     endif
   endif
   if (WindowsLinux == 1) then
-    write (filout, '(".\PhasingResults\HaplotypeLibrary\HapLib",i0,".bin")') OutputPoint
+    write (filout, '(".\PhasingResults\HaplotypeLibrary\HapLib",i0,".bin")') currentcore
     open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
   else
-    write (filout, '("./PhasingResults/HaplotypeLibrary/HapLib",i0,".bin")') OutputPoint
+    write (filout, '("./PhasingResults/HaplotypeLibrary/HapLib",i0,".bin")') currentcore
     open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
   endif
 
@@ -1342,5 +1103,67 @@ subroutine WriteHapLib(library, currentcore, c)
   close(29)
 
 end subroutine WriteHapLib
+
+function fullyPhased(haplotype) result (fully)
+  integer(kind=1), dimension(:), intent(in) :: haplotype
+  logical :: fully
+  
+  fully = all((haplotype == 0) .or. (haplotype == 1))
+end function fullyPhased
+
+function complement(genos, haplotype) result (comp)
+  use Constants
+  integer(kind=1), dimension(:), intent(in) :: genos, haplotype
+  integer(kind=1), dimension(:), pointer :: comp
+  
+  integer :: i
+  
+  allocate(comp(size(genos,1)))
+  
+  do i = 1, size(genos,1)
+    if (genos(i) == MissingGenotypeCode) then
+      comp(i) = 9
+    else
+      comp(i) = genos(i) - haplotype(i)
+    end if
+  end do
+end function complement
+
+function agree(candidates, library, position) result (a)
+  integer, dimension(:), intent(in) :: candidates
+  class(HapLib), intent(in) :: library
+  integer, intent(in) :: position
+  
+  logical :: a
+  integer(kind = 1), dimension(size(candidates,1)) :: phases
+  integer :: i
+  
+  do i = 1, size(candidates,1)
+    phases(i) = library%getPhase(candidates(i),position)
+  end do
+  
+  a = (all(phases == 0) .and. (all(phases == 1)))
+end function agree
+
+function uniquehaps(haps1, haps2) result (uniq)
+  integer, dimension(:), intent(in) :: haps1, haps2
+  integer, dimension(:), pointer :: uniq
+  
+  integer, dimension(:), allocatable :: tempU
+    
+  integer :: i, p
+
+  allocate(tempU(size(haps1)))
+  p = 0
+  do i = 1, size(haps1)
+    if (.not. any (haps1(i) == haps2)) then
+      p = p + 1
+      tempU(p) = haps1(i)
+    end if
+  end do
+  
+  allocate (uniq(p))
+  uniq = tempU(1:p)
+end function uniquehaps
 
 end module HaplotypeLibrary
