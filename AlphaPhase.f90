@@ -1,21 +1,27 @@
 program Rlrplhi
   use Parameters, only: readCoreAtTime, nSnp, consistent, GenotypeMissingErrorPercentage, CoreAndTailLength, startCoreChar, endCoreChar, Simulation
-  use HaplotypeLibrary
+  
+  use HaplotypeLibraryDefinition
   use SurrogateDefinition
   use CoreSubsetDefinition
   use PedigreeDefinition
-  use Phasing
   use CoreDefinition
-  use NRMcode
-  use InputOutput
   use MemberManagerDefinition
+  
+  use LongRangePhasing
+  use HaplotypeLibraryPhasing
   use Testing
+  
+  use InputOutput
+  
+  use NRMcode
+ 
   implicit none
 
   integer :: h, i, j, counter, SizeCore, nGlobalHapsOld, nCount, threshold
   double precision :: value, Yield
   
-  type(HapLib) :: library
+  type(HaplotypeLibrary) :: library
   type(SurrDef) :: surrogates
   type(Core) :: c
   type(CoreSubset) :: cs

@@ -674,10 +674,10 @@ contains
   subroutine HapCommonality(library, OutputPoint)
     use Parameters, only: FullFileOutput
     use Constants
-    use HaplotypeLibrary
+    use HaplotypeLibraryDefinition
     implicit none
 
-    type(HapLib), intent(in) :: library
+    type(HaplotypeLibrary), intent(in) :: library
     integer, intent(in) :: OutputPoint
 
     integer :: i, SizeCore, nHaps
@@ -867,5 +867,71 @@ contains
     end if
 
   end subroutine MakeDirectories  
+  
+  subroutine WriteHapLib(library, currentcore, c)
+    use Parameters, only: fullfileoutput
+    use HaplotypeLibraryDefinition
+    use Constants
+    use CoreDefinition
+    implicit none
+
+    type(HaplotypeLibrary), intent(in) :: library
+    type(Core), intent(in) :: c
+    integer, intent(in) :: currentcore
+
+    integer :: i, j, k, counter, SizeCore, nHaps !, nAnisG
+    character(len = 300) :: filout
+
+    SizeCore = library%getNumSnps()
+
+    nHaps = library%getSize()
+
+    if (FullFileOutput == 1) then
+      if (WindowsLinux == 1) then
+	write (filout, '(".\PhasingResults\HaplotypeLibrary\HapLib",i0,".txt")') currentcore
+	open (unit = 24, FILE = filout, status = 'unknown')
+      else
+	write (filout, '("./PhasingResults/HaplotypeLibrary/HapLib",i0,".txt")') currentcore
+	open (unit = 24, FILE = filout, status = 'unknown')
+      endif
+    endif
+    if (WindowsLinux == 1) then
+      write (filout, '(".\PhasingResults\HaplotypeLibrary\HapLib",i0,".bin")') currentcore
+      open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
+    else
+      write (filout, '("./PhasingResults/HaplotypeLibrary/HapLib",i0,".bin")') currentcore
+      open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
+    endif
+
+
+    write (34) nHaps, SizeCore
+    do i = 1, nHaps
+      if (FullFileOutput == 1)&
+      write (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
+      i, library%getHapFreq(i), " ", library%getHap(i)
+      write (34) library%getHap(i)
+    end do
+
+    if (FullFileOutput == 1) then
+      close(24)
+    end if
+    close(34)
+
+    print*, "   ", "Final iteration found ", nHaps, "haplotypes"
+
+    print*, ""
+    write (*, '(a4,a30,f5.2,a1)') "   ", "Final yield for this core was ", c%getTotalYield(), "%"
+
+    if (WindowsLinux == 1) then
+      open (unit = 29, file = ".\PhasingResults\PhasingYield.txt", status = "unknown", position = "append")
+    else
+      open (unit = 29, file = "./PhasingResults/PhasingYield.txt", status = "unknown", position = "append")
+    endif
+
+    write (29, '(i10,f7.2)') CurrentCore, c%getTotalYield()
+
+    close(29)
+
+  end subroutine WriteHapLib
   
 end module InputOutput
