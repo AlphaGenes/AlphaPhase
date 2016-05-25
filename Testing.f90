@@ -221,13 +221,13 @@ contains
 	if (c % getPhase(i, j, 1) == 9) then
 	  MistakePhase(i, j, 1) = 9
 	  CountPatNotPhased(i) = CountPatNotPhased(i) + 1
-	  if (c % getGeno(i, j) == 1) then
+	  if (c % getCoreGeno(i, j) == 1) then
 	    HetCountPatNotPhased(i) = HetCountPatNotPhased(i) + 1
 	  end if
-	  if (c % getGeno(i, j) == MissingGenotypeCode) then
+	  if (c % getCoreGeno(i, j) == MissingGenotypeCode) then
 	    MissCountPatNotPhased(i) = MissCountPatNotPhased(i) + 1
 	  end if
-	  if ((c % getGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 1) + TruePhase(i, j, 2)) /= c % getGeno(i, j))) then
+	  if ((c % getCoreGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 1) + TruePhase(i, j, 2)) /= c % getCoreGeno(i, j))) then
 	    ErrCountPatNotPhased(i) = ErrCountPatNotPhased(i) + 1
 	  end if
 
@@ -236,25 +236,25 @@ contains
 	  if (TruePhase(i, j, 1) == c % getPhase(i, j, 1)) then
 	  MistakePhase(i, j, 1) = 1
 	  CountPatCorrect(i) = CountPatCorrect(i) + 1
-	  if (c % getGeno(i, j) == 1) then
+	  if (c % getCoreGeno(i, j) == 1) then
 	    HetCountPatCorrect(i) = HetCountPatCorrect(i) + 1
 	  end if
-	  if (c % getGeno(i, j) == MissingGenotypeCode) then
+	  if (c % getCoreGeno(i, j) == MissingGenotypeCode) then
 	    MissCountPatCorrect(i) = MissCountPatCorrect(i) + 1
 	  end if
-	  if ((c % getGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 1) + TruePhase(i, j, 2)) /= c % getGeno(i, j))) then
+	  if ((c % getCoreGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 1) + TruePhase(i, j, 2)) /= c % getCoreGeno(i, j))) then
 	    ErrCountPatCorrect(i) = ErrCountPatCorrect(i) + 1
 	  end if
 	else
 	  MistakePhase(i, j, 1) = 5
 	  CountPatWrong(i) = CountPatWrong(i) + 1
-	  if (c % getGeno(i, j) == 1) then
+	  if (c % getCoreGeno(i, j) == 1) then
 	  HetCountPatWrong(i) = HetCountPatWrong(i) + 1
 	  end if
-	  if (c % getGeno(i, j) == MissingGenotypeCode) then
+	  if (c % getCoreGeno(i, j) == MissingGenotypeCode) then
 	  MissCountPatWrong(i) = MissCountPatWrong(i) + 1
 	  end if
-	  if ((c % getGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 1) + TruePhase(i, j, 2)) /= c % getGeno(i, j))) then
+	  if ((c % getCoreGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 1) + TruePhase(i, j, 2)) /= c % getCoreGeno(i, j))) then
 	  ErrCountPatWrong(i) = ErrCountPatWrong(i) + 1
 	  end if
 
@@ -264,38 +264,38 @@ contains
 	if (c % getPhase(i, j, 2) == 9) then
 	  MistakePhase(i, j, 2) = 9
 	  CountMatNotPhased(i) = CountMatNotPhased(i) + 1
-	  if (c % getGeno(i, j) == 1) then
+	  if (c % getCoreGeno(i, j) == 1) then
 	    HetCountMatNotPhased(i) = HetCountMatNotPhased(i) + 1
 	  end if
-	  if (c % getGeno(i, j) == MissingGenotypeCode) then
+	  if (c % getCoreGeno(i, j) == MissingGenotypeCode) then
 	    MissCountMatNotPhased(i) = MissCountMatNotPhased(i) + 1
 	  end if
-	  if ((c % getGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 2) + TruePhase(i, j, 1)) /= c % getGeno(i, j))) then
+	  if ((c % getCoreGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 2) + TruePhase(i, j, 1)) /= c % getCoreGeno(i, j))) then
 	    ErrCountMatNotPhased(i) = ErrCountMatNotPhased(i) + 1
 	  end if
 	else
 	  if (TruePhase(i, j, 2) == c % getPhase(i, j, 2)) then
 	  MistakePhase(i, j, 2) = 1
 	  CountMatCorrect(i) = CountMatCorrect(i) + 1
-	  if (c % getGeno(i, j) == 1) then
+	  if (c % getCoreGeno(i, j) == 1) then
 	    HetCountMatCorrect(i) = HetCountMatCorrect(i) + 1
 	  end if
-	  if (c % getGeno(i, j) == MissingGenotypeCode) then
+	  if (c % getCoreGeno(i, j) == MissingGenotypeCode) then
 	    MissCountMatCorrect(i) = MissCountMatCorrect(i) + 1
 	  end if
-	  if ((c % getGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 2) + TruePhase(i, j, 1)) /= c % getGeno(i, j))) then
+	  if ((c % getCoreGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 2) + TruePhase(i, j, 1)) /= c % getCoreGeno(i, j))) then
 	    ErrCountMatCorrect(i) = ErrCountMatCorrect(i) + 1
 	  end if
 	else
 	  MistakePhase(i, j, 2) = 5
 	  CountMatWrong(i) = CountMatWrong(i) + 1
-	  if (c % getGeno(i, j) == 1) then
+	  if (c % getCoreGeno(i, j) == 1) then
 	  HetCountMatWrong(i) = HetCountMatWrong(i) + 1
 	  end if
-	  if (c % getGeno(i, j) == MissingGenotypeCode) then
+	  if (c % getCoreGeno(i, j) == MissingGenotypeCode) then
 	  MissCountMatWrong(i) = MissCountMatWrong(i) + 1
 	  end if
-	  if ((c % getGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 2) + TruePhase(i, j, 1)) /= c % getGeno(i, j))) then
+	  if ((c % getCoreGeno(i, j) /= MissingGenotypeCode).and.((TruePhase(i, j, 2) + TruePhase(i, j, 1)) /= c % getCoreGeno(i, j))) then
 	  ErrCountMatWrong(i) = ErrCountMatWrong(i) + 1
 	  end if
 

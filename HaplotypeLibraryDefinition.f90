@@ -16,6 +16,7 @@ module HaplotypeLibraryDefinition
     procedure, public :: hasHap
     procedure :: addHap
     procedure, public :: getHap
+    procedure, public :: getHaps
     procedure, public :: matchWithError
     procedure, public :: limitedMatchWithError
     procedure, public :: limitedCompatPairsWithError
@@ -274,6 +275,20 @@ contains
     allocate(hap(library % nSnps))
     hap = library % store(id,:)
   end function getHap
+  
+  function getHaps(library, ids) result(haps)
+    class(HaplotypeLibrary) :: library
+    integer, dimension(:), intent(in) :: ids
+    integer(kind = 1), dimension(:,:), pointer :: haps
+    
+    integer :: i
+    
+    allocate(haps(size(ids,1), library%nSnps))
+    
+    do i = 1, size(ids,1)
+      haps(i,:) = library%getHap(ids(i))
+    end do
+  end function getHaps
 
   function getPhase(library, id, snp) result(phase)
     class(HaplotypeLibrary) :: library
@@ -389,23 +404,7 @@ contains
     fully = all((haplotype == 0) .or. (haplotype == 1))
   end function fullyPhased
 
-  function complement(genos, haplotype) result (comp)
-    use Constants
-    integer(kind=1), dimension(:), intent(in) :: genos, haplotype
-    integer(kind=1), dimension(:), pointer :: comp
 
-    integer :: i
-
-    allocate(comp(size(genos,1)))
-
-    do i = 1, size(genos,1)
-      if (genos(i) == MissingGenotypeCode) then
-	comp(i) = 9
-      else
-	comp(i) = genos(i) - haplotype(i)
-      end if
-    end do
-  end function complement
 
   function uniquehaps(haps1, haps2) result (uniq)
     integer, dimension(:), intent(in) :: haps1, haps2

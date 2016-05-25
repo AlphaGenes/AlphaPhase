@@ -5,7 +5,6 @@ module CoreDefinition
   type, public :: Core
     private
     !Almost definitely shouldn't be public but for now...
-    !integer(kind = 1), allocatable, dimension(:,:) :: genos
     integer(kind = 1), allocatable, dimension(:,:) :: genos
     integer(kind = 1), allocatable, dimension(:,:,:), public :: phase
     logical, allocatable, dimension(:,:) :: fullyPhased
@@ -19,7 +18,6 @@ module CoreDefinition
     private
     procedure, public :: create
     procedure, public :: getCoreAndTailGenos
-    procedure, public :: getCoreGenos
     procedure, public :: getSingleCoreAndTailGenos
     procedure, public :: getSingleCoreGenos
     procedure, public :: setPhase
@@ -40,7 +38,8 @@ module CoreDefinition
     procedure, public :: resetHapAnis
     procedure, public :: setHapAnis
     procedure, public :: getBothFullyPhased
-    procedure, public :: getGeno
+    procedure, public :: getCoreGeno
+    procedure, public :: numNotMissing
   end type Core
 
 contains
@@ -95,21 +94,6 @@ contains
     
     return
   end function getCoreAndTailGenos
-  
-  function getCoreGenos(c) result(cGenos)
-    implicit none
-    
-    class(Core), target :: c
-    !integer(kind=1), dimension(:,:), allocatable :: cGenos
-    integer(kind=1), dimension(:,:), pointer :: cGenos
-    
-    allocate(cGenos(size(c%genos,1),c%endCoreSnp - c%startCoreSnp+1))
-    
-    !cGenos = c%genos(:,c%startCoreSnp:c%endCoreSnp)
-    cGenos => c%genos(:,c%startCoreSnp:c%endCoreSnp)
-    
-    return
-  end function getCoreGenos
   
   function getSingleCoreAndTailGenos(c,i) result (ctGenos)
     implicit none
@@ -302,13 +286,23 @@ contains
     c%hapAnis(animal,phase) = id
   end subroutine setHapAnis
   
-  function getGeno(c,animal,snp) result(geno)
+  function getCoreGeno(c,animal,snp) result(geno)
     class(Core) :: c
     integer, intent(in) :: animal,snp
     integer(kind = 1) :: geno
     
-    geno = c%genos(animal,snp)
-  end function getGeno
+    geno = c%genos(animal,c%startCoreSnp + snp - 1)
+  end function getCoreGeno
+  
+  function numNotMissing(c, animal) result(num)
+    use Constants
+    
+    class(Core) :: c
+    integer, intent(in) :: animal
+    integer :: num
+    
+    num = count(c%genos(animal,c%startCoreSnp:c%endCoreSnp) /= MissingGenotypeCode)
+  end function numNotMissing
     
 end module CoreDefinition
 
