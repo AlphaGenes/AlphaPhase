@@ -16,7 +16,7 @@ module CoreDefinition
     integer :: endSurrSnp
   contains
     private
-    procedure, public :: create
+    !procedure, public :: create
     procedure, public :: getCoreAndTailGenos
     procedure, public :: getSingleCoreAndTailGenos
     procedure, public :: getSingleCoreGenos
@@ -40,16 +40,21 @@ module CoreDefinition
     procedure, public :: getBothFullyPhased
     procedure, public :: getCoreGeno
     procedure, public :: numNotMissing
+    final :: destroy
   end type Core
+  
+  interface Core
+    module procedure newCore
+  end interface Core
 
 contains
 
-  subroutine create(c, genos, startCoreSnp, endCoreSnp, endSurrSnp)
+  function newCore(genos, startCoreSnp, endCoreSnp, endSurrSnp) result(c)
     implicit none
     
-    class(Core) :: c
     integer(kind = 1), dimension(:,:), intent(in) :: genos
     integer, intent(in) :: startCoreSnp, endCoreSnp
+    type(Core) :: c
     
     integer, intent(in) :: endSurrSnp
     
@@ -58,13 +63,6 @@ contains
     nAnisG = size(genos,1)
     nSnp = size(genos,2)
     nCoreSnp = endCoreSnp - startCoreSnp + 1
-    
-    if (allocated(c%genos)) then
-      deallocate(c%genos)
-      deallocate(c%phase)
-      deallocate(c%fullyPhased)
-      deallocate(c%hapAnis)
-    end if    
     
     allocate(c%genos(nAnisG,nSnp))
     allocate(c%phase(nAnisG,nCoreSnp,2))
@@ -78,7 +76,18 @@ contains
     c%fullyPhased = .false.
     c%phase = 9
     c%hapAnis = -99
-  end subroutine create
+  end function newCore
+  
+  subroutine destroy(c)
+    type(Core) :: c
+    
+    if (allocated(c%genos)) then
+      deallocate(c%genos)
+      deallocate(c%phase)
+      deallocate(c%fullyPhased)
+      deallocate(c%hapAnis)
+    end if
+  end subroutine destroy
   
   function getCoreAndTailGenos(c) result (ctGenos)
     implicit none

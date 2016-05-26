@@ -22,7 +22,7 @@ program Rlrplhi
   double precision :: value, Yield
   
   type(HaplotypeLibrary) :: library
-  type(SurrDef) :: surrogates
+  type(Surrogate) :: surrogates
   type(Core) :: c
   type(CoreSubset) :: cs
   type(Pedigree) :: p
@@ -41,6 +41,8 @@ program Rlrplhi
   integer :: startCore, endCore
   logical :: combine
   
+!  character(len=255) :: cmd
+  
   type(MemberManager) :: manager
   
   interface calculateCores
@@ -52,6 +54,9 @@ program Rlrplhi
     end subroutine calculateCores
   end interface calculateCores
   
+!  call get_command_argument(1,cmd)
+!  print *, trim(cmd)
+    
   readCoreAtTime = .false.
   
   call Titles
@@ -110,26 +115,25 @@ program Rlrplhi
       Genos = AllGenos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp))
     end if
     ! Fudge below
-    call c%create(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)    
-    call manager%create(c)
+    c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)    
+    manager = MemberManager(c)
     
     do while (manager%hasNext())
-      call cs%create(c, p, manager%getNext())
+      cs = CoreSubSet(c, p, manager%getNext())
     
-      call surrogates%calculate(cs, threshold, consistent, pseudoNRM)
+      surrogates = Surrogate(cs, threshold, consistent, pseudoNRM)
       call writeSurrogates(surrogates,threshold, h, p)
       call Erdos(surrogates, threshold, cs)
       call CheckCompatHapGeno(cs)      
       
-      call library%initalise(EndCoreSnp-StartCoreSnp+1,500,500)      
       nGlobalHapsIter = 1
-      call MakeHapLib(library, c)
+      library = MakeHapLib(c)
       nGlobalHapsOld = library%getSize()
       print*, " "
       print*, "  ", "Haplotype library imputation step"
       do j = 1, 20
 	call ImputeFromLib(library, c, nGlobalHapsIter)
-	call MakeHapLib(library, c)
+	library = MakeHapLib(c)
 	if (nGlobalHapsOld == library%getSize()) exit
 	nGlobalHapsOld = library%getSize()
       end do

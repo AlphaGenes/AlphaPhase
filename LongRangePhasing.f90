@@ -9,7 +9,7 @@ contains
     use Parameters, only: useSurrsN, consistent, numsurrdisagree
     implicit none
 
-    type(SurrDef), intent(in) :: surrogates
+    type(Surrogate), intent(in) :: surrogates
     type(CoreSubSet) :: c
     integer, intent(in) :: threshold
 
@@ -176,7 +176,7 @@ contains
     use SurrogateDefinition
 
     integer, intent(in) :: next, sideon, threshold, visiting
-    type(SurrDef), intent(in) :: surrogates
+    type(Surrogate), intent(in) :: surrogates
     logical, dimension(:), intent(in) :: visited
     integer, dimension(:), intent(in) :: surravediff
     integer, dimension(:), intent(in) :: tovisit, depths

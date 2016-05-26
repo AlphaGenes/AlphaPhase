@@ -2,7 +2,7 @@ module SurrogateDefinition
   implicit none
   private
 
-  type, public :: SurrDef
+  type, public :: Surrogate
     private
     !Almost definitely shouldn't be public but for now...
     integer(kind = 2), allocatable, dimension(:,:), public :: numOppose
@@ -11,21 +11,23 @@ module SurrogateDefinition
     integer, public :: threshold
   contains
     private
-    procedure, public :: calculate
-  end type SurrDef
+    final :: destroy
+  end type Surrogate
+  
+  interface Surrogate
+    module procedure newSurrogate
+  end interface Surrogate
 
 contains
-  subroutine calculate(definition, cs, threshold, useNRM, pseudoNRM)
-    !Don't like this but for now!!
+  function newSurrogate(cs, threshold, useNRM, pseudoNRM) result(definition)
     use Clustering
     use CoreSubSetDefinition
     
-    class(SurrDef) :: definition
-    class(CoreSubSet) :: cs
-    
+    class(CoreSubSet), intent(in) :: cs    
     integer, intent(in) :: threshold
     logical, intent(in) :: useNRM
     integer(kind = 1), dimension (:,:), intent(in) :: PseudoNRM
+    type(Surrogate) :: definition
     
     !integer(kind = 1), dimension (:,:), allocatable :: genos
     integer(kind = 1), dimension (:,:), pointer :: genos
@@ -377,9 +379,7 @@ contains
 	    TempSurrArray(j, j) = 1
 	  end do
 
-!	  allocate(Medoids(2, SurrCounter))
 	  allocate(ClusterMember(SurrCounter))
-	  !allocate(MinClust(SurrCounter))
 	  ClusterMember(1) = 1
 	  do j = 1, SurrCounter
 	    if (TempSurrArray(1, j) == 0) then
@@ -388,29 +388,15 @@ contains
 	      ClusterMember(j) = 1
 	    endif
 	  end do
-!	  call EvaluateMedoids
-!	  Change = 0
-!	  MinClust = 1
-!	  rounds = 1
-!	  call RePartition
-!	  do j = 1, SurrCounter
-!	    call EvaluateMedoids
-!	    Change = 0
-!	    call RePartition
-!	    if (Change == 0) exit
-!	  enddo
 	  rounds = cluster(TempSurrArray, ClusterMember, 2, SurrCounter, .true.)
 	  if (rounds <= SurrCounter) then
-!	  if (cluster(TempSurrArray, ClusterMember, 2, SurrCounter, .true.)) then
 	    do j = 1, SurrCounter
 	      definition%partition(i, TempSurrVector(j)) = ClusterMember(j)
 	    enddo
 	    definition%method(i) = 7
 	  end if
 
-!	  deallocate(Medoids)
 	  deallocate(ClusterMember)
-!	  deallocate(MinClust)
 	  deallocate(TempSurrArray)
 	  deallocate(TempSurrVector)
 	endif
@@ -419,7 +405,7 @@ contains
       if (mod(i, 400) == 0) print*, "   Partitioning done for genotyped individual --- ", i
       definition%partition(i, i) = 0
     end do
-  end subroutine calculate
+  end function newSurrogate
   
   function mismatches(homo, additional, first, second, numsections) result(c)
     integer(kind = 8), dimension(:,:), intent(in) :: homo, additional
@@ -432,4 +418,16 @@ contains
 	IEOR(additional(first, i), additional(second, i))))
     end do
   end function mismatches
+  
+  subroutine destroy(definition)
+    type(Surrogate) :: definition
+    
+    if (allocated(definition%partition)) then
+      deallocate(definition%partition)
+      deallocate(definition%numoppose)
+      deallocate(definition%method)
+    end if
+    
+  end subroutine destroy
+    
 end module SurrogateDefinition

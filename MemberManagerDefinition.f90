@@ -17,17 +17,20 @@ module MemberManagerDefinition
     logical :: noneLeft
   contains
     private
-    procedure, public :: create
     procedure, public :: hasNext
     procedure, public :: getNext
-      
+    final :: destroy      
   end type MemberManager
+  
+  interface MemberManager
+    module procedure newMemberManager
+  end interface MemberManager
   
 contains
 
-  subroutine create(manager, c)
-    class(MemberManager) :: manager
-    class(Core) :: c
+  function newMemberManager(c) result(manager)
+    class(Core), intent(in) :: c
+    type(MemberManager) :: manager
     
     if (itterateType .eq. "Off") then
       call createAll(manager, c)
@@ -38,7 +41,15 @@ contains
     if (itterateType .eq. "RandomOrder") then
       call createRandomOrder(manager, c, itterateNumber, numIter)
     end if
-  end subroutine create
+  end function newMemberManager
+  
+  subroutine destroy(manager)
+    type(MemberManager) :: manager
+    
+    if (allocated(manager%order)) then
+      deallocate(manager%order)
+    end if
+  end subroutine destroy
   
   subroutine createInputOrder(manager, c, number, numIter)
     class(MemberManager) :: manager
@@ -50,9 +61,7 @@ contains
     manager%c => c
     
     nAnisG = c%getNAnisG()
-    if (allocated(manager%order)) then
-      deallocate(manager%order)
-    end if
+
     allocate(manager%order(nAnisG))
     do i = 1, nAnisG
       manager%order(i) = i
@@ -80,9 +89,6 @@ contains
     secs = mod(nCount, int(1e6))
 
     nAnisG = c%getNAnisG()
-    if (allocated(manager%order)) then
-      deallocate(manager%order)
-    end if
     allocate(manager%order(nAnisG))
     call RandomOrder(manager%order, nAnisG, 1, -abs(secs))
     

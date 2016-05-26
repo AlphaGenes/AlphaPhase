@@ -482,7 +482,7 @@ contains
     allocate (nrmped(size(ped,1),size(ped,2)))
     nrmped = ped
     
-    call p%create(sireGenotyped, damGenotyped, genotypeId)
+    p = Pedigree(sireGenotyped, damGenotyped, genotypeId)
     
     deallocate(sireGenotyped, damGenotyped, genotypeID)
   end function ParsePedigreeData
@@ -725,7 +725,7 @@ contains
     character(len = 300) :: filout
     integer :: i, j, nSurrogates
 
-    type(SurrDef), intent(in) :: definition
+    type(Surrogate), intent(in) :: definition
     integer, intent(in) :: threshold
     integer, intent(in) :: OutputPoint
     type(Pedigree), intent(in) :: p

@@ -71,7 +71,7 @@ contains
     implicit none
 
     type(Core), intent(in) :: c
-    type(SurrDef), intent(in) :: surrogates
+    type(Surrogate), intent(in) :: surrogates
     type(Pedigree), intent(in) :: p
     !! Probably should be consistent about what we call this
     integer, intent(in) :: OutputPoint

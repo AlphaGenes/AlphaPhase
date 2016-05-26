@@ -14,7 +14,6 @@ module CoreSubsetDefinition
     integer :: nAnisG
   contains
     private
-    procedure, public :: create
     procedure, public :: getCoreAndTailGenos
     procedure, public :: getCoreGenos
     procedure, public :: getSingleCoreAndTailGenos
@@ -29,33 +28,30 @@ module CoreSubsetDefinition
     procedure, public :: getSire
     procedure, public :: getDam
     procedure, public :: getYield
+    final :: destroy
   end type CoreSubset
+  
+  interface CoreSubSet
+    module procedure newCoreSubSet
+  end interface CoreSubSet
 
 contains
 
-  subroutine create(set, parentCore, parentPedigree, members)
+  function newCoreSubSet(parentCore, parentPedigree, members) result(set)
     implicit none
     
-    class(CoreSubset) :: set
     type(Core), target :: parentCore
     type(Pedigree), target :: parentPedigree
     integer, dimension(:), intent(in) :: members
+    type(CoreSubset) :: set
     
-    !integer :: newNumber, origNumber, nSnp
     integer :: i
     
     set%parentCore => parentCore
     set%parentPedigree => parentPedigree
     
-    !set%nAnisG = count(members)
     set%nAnisG = size(members,1)
     
-    ! I need to find a more elegant solution to this!
-    if (allocated(set%full2sub)) then
-      deallocate(set%full2sub)
-      deallocate(set%sub2full)
-    end if
-
     allocate(set%full2sub(0:set%parentCore%getNAnisG()))
     allocate(set%sub2full(set%nAnisG))
     
@@ -65,12 +61,17 @@ contains
       set%full2sub(members(i)) = i
       set%sub2full(i) = members(i)
     end do
-    
-!    do i = 1, newNumber
-!      set%sireGenotyped(i) = set%full2sub(origSireGenotyped(set%sub2full(i)))
-!      set%damGenotyped(i) = set%full2sub(origDamGenotyped(set%sub2full(i)))
-!    end do
-  end subroutine create
+
+  end function newCoreSubset
+  
+  subroutine destroy(set)
+    type(CoreSubSet) :: set
+
+    if (allocated(set%full2sub)) then
+      deallocate(set%full2sub)
+      deallocate(set%sub2full)
+    end if
+  end subroutine destroy
   
   function getNAnisG(set) result(num)
     class(CoreSubSet) :: set

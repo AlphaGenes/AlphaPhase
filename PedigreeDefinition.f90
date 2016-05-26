@@ -5,28 +5,31 @@ module PedigreeDefinition
 
   type, public :: Pedigree
     private    
-    !integer(kind = 4), dimension (:), pointer :: sire, dam
     integer(kind = 4), dimension (:), allocatable :: sire, dam
     character(lengan), dimension(:), allocatable :: id
     
   contains
     private
-    procedure, public :: create
     procedure, public :: getSire
     procedure, public :: getDam
     procedure, public :: getID
     procedure, public :: getNAnis
+    final :: destroy
       
   end type Pedigree
   
+  interface Pedigree
+    module procedure newPedigree
+  end interface Pedigree
+  
 contains
   
-  subroutine create(p, sire, dam, id)
+  function newPedigree(sire, dam, id) result(p)
     use Constants
     
-    class(Pedigree) :: p
-    integer, dimension(:), intent(in), target :: sire, dam
-    character(lengan), dimension(:), intent(in), target :: id(:)
+    integer, dimension(:), intent(in) :: sire, dam
+    character(lengan), dimension(:), intent(in):: id(:)
+    type(Pedigree) :: p
     
     integer :: nAnisG
 
@@ -38,12 +41,17 @@ contains
     
     allocate(p%id(size(id,1)))
     p%id = id
+  end function newPedigree
+  
+  subroutine destroy(p)
+    type(Pedigree) :: p
     
-    !p%sire => sire
-    !p%dam => dam
-    !p%id => id
-    
-  end subroutine create
+    if (allocated(p%sire)) then
+      deallocate(p%sire)
+      deallocate(p%dam)
+      deallocate(p%id)
+    end if
+  end subroutine destroy
   
   function getSire(p,animal) result (sire)
     class(Pedigree) :: p

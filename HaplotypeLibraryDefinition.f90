@@ -12,7 +12,6 @@ module HaplotypeLibraryDefinition
     integer, dimension(:), allocatable :: randomOrder
   contains
     private
-    procedure, public :: initalise
     procedure, public :: hasHap
     procedure :: addHap
     procedure, public :: getHap
@@ -29,12 +28,17 @@ module HaplotypeLibraryDefinition
     procedure, public :: getHapFreq
     procedure, public :: getCompatHaps    
     procedure, public :: matchAddHap
+    final :: destroy
   end type HaplotypeLibrary
+  
+  interface HaplotypeLibrary
+    module procedure newHaplotypeLibrary
+  end interface HaplotypeLibrary
 
 contains
-  subroutine initalise(library, nSnps, storeSize, stepSize)
+  function newHaplotypeLibrary(nSnps, storeSize, stepSize) result(library)
     use Random
-    class(HaplotypeLibrary) :: library
+    type(HaplotypeLibrary) :: library
     integer, intent(in) :: nSnps
     integer, intent(in) :: storeSize
     integer, intent(in) :: stepSize
@@ -45,22 +49,25 @@ contains
     library % size = 0
     library % storeSize = storeSize
     library % stepSize = stepSize
-    if (allocated(library%store)) then
-      deallocate(library%store)
-      deallocate(library%hapFreq)
-    end if
     allocate(library % store(storeSize, nSnps))
     allocate(library % hapFreq(storeSize))
     library % store = 0
     library % hapFreq = 0
     call system_clock(nCount)
     secs = mod(nCount, int(1e6))
-    if (allocated(library%randomOrder)) then
-      deallocate(library%randomOrder)
-    end if
     allocate(library % randomOrder(library % nSnps))
     call RandomOrder(library % randomOrder, library % nSnps, 1, -abs(secs))
-  end subroutine initalise
+  end function newHaplotypeLibrary
+  
+  subroutine destroy(library)
+    type(HaplotypeLibrary) :: library
+    
+    if (allocated(library%store)) then
+      deallocate(library%store)
+      deallocate(library%hapFreq)
+      deallocate(library%randomOrder)
+    end if
+  end subroutine destroy
 
   function hasHap(library, haplotype) result(id)
     class(HaplotypeLibrary) :: library
