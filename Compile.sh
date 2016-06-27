@@ -1,2 +1,1 @@
-ifort -syntax-only AlphaPhase.f90 2> /dev/null
-ifort -static-intel -fpp -O3 -m64 -o AlphaPhase1.1 Random.f90 CoreDefinition.f90 DataSubset.f90 SurrogateDefinition.f90 HaplotypeLibrary.f90 Phasing.f90 NRMcode.f90 AlphaPhase.f90
+ifort  -openmp -static-intel -fpp -openmp-link=static -O3 -m64 -o alphaphase Constants.f90 Parameters.f90 Random.f90 PedigreeDefinition.f90 NRMcode.f90 CoreDefinition.f90 CoreSubsetDefinition.f90 Clustering.f90 HaplotypeLibrary.f90 SurrogateDefinition.f90 Phasing.f90 MemberManagerDefinition.f90 InputOutput.f90 Testing.f90 AlphaPhase.f90

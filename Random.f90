@@ -10,7 +10,6 @@ subroutine RandomOrder(order, n, start, idum)
     !integer, INTENT(OUT) :: order(n)
     integer, allocatable, INTENT(inout) :: order(:)
     integer :: idum
-    double precision ran1
 
     !     Local variables
     integer :: i, j, k
