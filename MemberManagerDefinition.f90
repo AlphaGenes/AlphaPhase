@@ -1,6 +1,6 @@
 module MemberManagerDefinition
   use CoreDefinition
-  use Parameters, only: itterateType, itterateNumber, numIter
+  use Parameters, only: itterateType, itterateNumber !, numIter
   
   implicit none
   private
@@ -36,10 +36,14 @@ contains
       call createAll(manager, c)
     end if
     if (itterateType .eq. "InputOrder") then
-      call createInputOrder(manager, c, itterateNumber, numIter)
+      !Change how numIter is used but for now keeping this here in case I go back to this method.  If we keep the current way
+      !then obviously no need to pass one!
+      !call createInputOrder(manager, c, itterateNumber, numIter)
+      call createInputOrder(manager, c, itterateNumber, 1)
     end if
     if (itterateType .eq. "RandomOrder") then
-      call createRandomOrder(manager, c, itterateNumber, numIter)
+      !call createRandomOrder(manager, c, itterateNumber, numIter)
+      call createRandomOrder(manager, c, itterateNumber, 1)
     end if
   end function newMemberManager
   
@@ -146,7 +150,7 @@ contains
       if (.not. manager%c%getBothFullyPhased(manager%curPos)) then
 	c  = c + 1
 	!tempMembers(c) = manager%curPos
-	members(c) = manager%curPos
+	members(c) = manager%order(manager%curPos)
       end if
       if (manager%curPos == size(manager%order,1)) then
 	manager%curPos = 1

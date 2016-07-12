@@ -22,6 +22,7 @@ contains
   function newSurrogate(cs, threshold, useNRM, pseudoNRM) result(definition)
     use Clustering
     use CoreSubSetDefinition
+    use Parameters, only : ItterateType
     
     class(CoreSubSet), intent(in) :: cs    
     integer, intent(in) :: threshold
@@ -131,8 +132,10 @@ contains
 !      stop
 !    end if
 
-    print*, " "
-    print*, " Identifying surrogates"
+    if (ItterateType .eq. "Off") then
+      print*, " "
+      print*, " Identifying surrogates"
+    end if
     
     if (allocated(definition%partition)) then
       deallocate(definition%partition)
@@ -166,7 +169,9 @@ contains
 	end if
       end do
       definition%numoppose(i, i) = 0
-      if (mod(i, 400) == 0) print*, "   Surrogate identification done for genotyped individual --- ", i
+      if ((mod(i, 400) == 0) .and. (ItterateType .eq. "Off")) then
+	print*, "   Surrogate identification done for genotyped individual --- ", i
+      end if
     end do
     
     ProgCount = 0
@@ -179,8 +184,10 @@ contains
       end if
     end do
 
-    print*, " "
-    print*, " Partitioning surrogates"
+    if (ItterateType .eq. "Off") then
+      print*, " "
+      print*, " Partitioning surrogates"
+    end if
     do i = 1, nAnisG
 
       DumSire = 0
@@ -402,7 +409,9 @@ contains
 	endif
 	definition%method(i) = 6
       endif
-      if (mod(i, 400) == 0) print*, "   Partitioning done for genotyped individual --- ", i
+      if ((mod(i, 400) == 0) .and. (ItterateType .eq. "Off")) then
+	print*, "   Partitioning done for genotyped individual --- ", i
+      end if
       definition%partition(i, i) = 0
     end do
   end function newSurrogate

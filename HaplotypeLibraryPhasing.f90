@@ -40,7 +40,7 @@ contains
     ! by matching their phased loci to haplotypes in the Haplotype Library,
     ! following strategies listed in the section Step 2e of Hickey et al 2011.
 
-    use Parameters, only: percgenohaplodisagree, consistent
+    use Parameters, only: percgenohaplodisagree, consistent, itteratetype
     use HaplotypeLibraryDefinition
     use Constants
     use CoreDefinition
@@ -64,6 +64,7 @@ contains
 
     ErrorAllow = int(PercGenoHaploDisagree * c % getNCoreSnp())
 
+!    if ((nGlobalHapsIter == 1) .and. (ItterateType .eq. "Off")) then
     if (nGlobalHapsIter == 1) then
       print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
     endif
@@ -253,8 +254,11 @@ contains
 	    endif
 	  endif
 	endif
+!	if (mod(i,10000) == 0) print *, i
       end do
-      print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
+!      if (ItterateType .eq. "Off") then
+	print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
+!      end if
     enddo
 
     call abErrors(c)

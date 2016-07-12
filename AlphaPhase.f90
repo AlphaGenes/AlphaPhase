@@ -15,6 +15,8 @@ program Rlrplhi
   use InputOutput
   
   use NRMcode
+  
+  use Parameters, only : ItterateType, NumIter
  
   implicit none
 
@@ -35,6 +37,7 @@ program Rlrplhi
   integer :: nCores
   integer :: nGlobalHapsIter
   integer :: nAnisG
+  integer :: subsetCount
   
   integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM
   
@@ -102,7 +105,7 @@ program Rlrplhi
   do h = startCore, endCore
     print*, " "
     print*, " "
-    print*, " Starting Core", h
+    print*, " Starting Core", h, "/", nCores
     StartCoreSnp = CoreIndex(h, 1)
     EndCoreSnp = CoreIndex(h, 2)
     StartSurrSnp = TailIndex(h, 1)
@@ -114,23 +117,55 @@ program Rlrplhi
     else
       Genos = AllGenos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp))
     end if
+    
     ! Fudge below
-    c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)    
-    manager = MemberManager(c)
-    
-    do while (manager%hasNext())
-      cs = CoreSubSet(c, p, manager%getNext())
-    
-      surrogates = Surrogate(cs, threshold, consistent, pseudoNRM)
-      call writeSurrogates(surrogates,threshold, h, p)
-      call Erdos(surrogates, threshold, cs)
-      call CheckCompatHapGeno(cs)      
-      
+    c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
+
+    do i = 1, NumIter
+      manager = MemberManager(c)
+
+      subsetCount = 0
+      do while (manager%hasNext())
+	cs = CoreSubSet(c, p, manager%getNext())
+
+	surrogates = Surrogate(cs, threshold, consistent, pseudoNRM)
+	call writeSurrogates(surrogates,threshold, h, p)
+	call Erdos(surrogates, threshold, cs)
+	call CheckCompatHapGeno(cs)      
+
+
+  !      nGlobalHapsIter = 1
+  !      library = MakeHapLib(c)
+  !      nGlobalHapsOld = library%getSize()
+  !      if (ItterateType .eq. "Off") then
+  !	print*, " "
+  !	print*, "  ", "Haplotype library imputation step"
+  !      end if
+  !      do j = 1, 20
+  !	call ImputeFromLib(library, c, nGlobalHapsIter)
+  !	library = MakeHapLib(c)
+  !	if (nGlobalHapsOld == library%getSize()) exit
+  !	nGlobalHapsOld = library%getSize()
+  !      end do
+
+	subsetCount = subsetCount + 1
+	if (ItterateType .ne. "Off") then
+	  !print '(8x, i5, a20, i6, a19, f6.2, a25)', subsetCount, " Subsets completed, ", library%getSize(), " Haplotypes found, ", &
+	  !  c%getPercentFullyPhased(), "% Haplotypes fully phased"
+	  !print '(33x, f6.2, a16, f6.2, a16)', c%getYield(1), "% Paternal yield, ", c%getYield(2), "% Maternal Yield"
+	  print '(8x, i5, a20, f6.2, a16, f6.2, a16)', subsetCount, " Subsets completed, ", c%getYield(1), "% Paternal yield, ", &
+	    c%getYield(2), "% Maternal Yield"
+	end if
+
+      end do
+
       nGlobalHapsIter = 1
       library = MakeHapLib(c)
       nGlobalHapsOld = library%getSize()
-      print*, " "
-      print*, "  ", "Haplotype library imputation step"
+      if (ItterateType .eq. "Off") then
+	print*, " "
+	print*, "  ", "Haplotype library imputation step"
+      end if
       do j = 1, 20
 	call ImputeFromLib(library, c, nGlobalHapsIter)
 	library = MakeHapLib(c)
@@ -138,22 +173,27 @@ program Rlrplhi
 	nGlobalHapsOld = library%getSize()
       end do
       
-    end do  
-      
+      if (ItterateType .ne. "Off") then
+	print '(4x, a9, 20x, i6, a19, f6.2, a25)', "After HLI", library%getSize(), " Haplotypes found, ", &
+	  c%getPercentFullyPhased(), "% Haplotypes fully phased"
+	print '(33x, f6.2, a16, f6.2, a16)', c%getYield(1), "% Paternal yield, ", c%getYield(2), "% Maternal Yield"
+      end if
+    end do
+    
     call WriteHapLib(library, h, c)
     
     call HapCommonality(library, h)
     
     if (readCoreAtTime) then
       call WriteOutCore(c%phase,c%hapAnis, h, CoreIndex(h,1), p)
+    else
+      AllPhase(:,startCoreSnp:endCoreSnp,:) = c%phase
+      AllHapAnis(:,1,h) = c%hapAnis(:,1)
+      AllHapAnis(:,2,h) = c%hapAnis(:,2)      
     end if
     
     deallocate(Genos)
     
-    AllPhase(:,startCoreSnp:endCoreSnp,:) = c%phase
-    AllHapAnis(:,1,h) = c%hapAnis(:,1)
-    AllHapAnis(:,2,h) = c%hapAnis(:,2)
-
     if (Simulation == 1) then
        call Flipper(c%phase,StartCoreSnp,EndCoreSnp,nSnp)
        call Checker(c,surrogates,p,h,StartCoreSnp,EndCoreSnp,nSnp)

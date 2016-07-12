@@ -82,7 +82,7 @@ contains
 	WorkOut(k - 1) = AllHapAnis(i, 1, j)
 	WorkOut(k) = AllHapAnis(i, 2, j)
       end do
-      write (33, '(i10,20000i5,20000i5,20000i5,20000i5,20000i5)') i, WorkOut(:)
+      write (33, '(a20,20000i8,20000i8,20000i8,20000i8,20000i8)') p%getID(i), WorkOut(:)
     end do
     
     close(15)
@@ -351,7 +351,9 @@ contains
     real(kind = 4) :: value, valueS, valueD, SumNrm, SumDiag
     integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
     
-    integer, allocatable, dimension (:) :: DanRecode !, DanDamGenotyped, DanSireGenotyped
+    integer, allocatable, dimension (:) :: DanRecode, DanPos !, DanDamGenotyped, DanSireGenotyped
+    character(lengan), allocatable, dimension(:) :: DanArray
+    integer spos, dpos
 
     integer :: nAnisRawPedigree
     
@@ -371,8 +373,6 @@ contains
     allocate(WorkVec(nSnp * 2))
     allocate(ReadingVector(nSnp))
     
-    !allocate(HapLib(nAnisG * 2, nSnp))
-
     if (trim(PedigreeFile) /= "NoPedigree") then
       open (unit = 2, file = trim(PedigreeFile), status = "old")
       do i = 1, nAnisRawPedigree
@@ -392,6 +392,11 @@ contains
 
     open (unit = 3, file = trim(GenotypeFile), status = "old")
     
+    allocate(DanArray(size(ped, 1)))
+    allocate(DanPos(size(ped,1)))
+    DanArray = adjustr(ped(:,1))
+    call InsertionSort(DanArray,DanPos)
+    
     do i = 1, nAnisG
       truth = 0
       if (GenotypeFileFormat == 1) then
@@ -406,15 +411,18 @@ contains
       if (GenotypeFileFormat == 3) then
 	read (3, *) GenotypeId(i), WorkVec(:)
       endif
-      do j = 1, nAnisRawPedigree
-	if (GenotypeId(i) == ped(j, 1)) then
-	  truth = 1
-	  exit
-	endif
-      enddo
+!      do j = 1, nAnisRawPedigree
+!	if (GenotypeId(i) == ped(j, 1)) then
+!	  truth = 1
+!	  exit
+!	endif
+!      enddo
+      truth = BinarySearch(DanArray,adjustr(GenotypeID(i)))
       if (truth == 0) GenoInPed(i) = 1
     enddo
     deallocate(Ped)
+    deallocate(DanArray)
+    deallocate(DanPos)
     
     close(3)
 
@@ -448,36 +456,73 @@ contains
 
     endif
 
-    allocate(DanRecode(size(ped,1)))
-    DanRecode = 0
-    do i = 1, nAnisG
-      do j = 1, size(ped,1)
-	if (ped(j,1) == GenotypeId(i)) then
-	  DanRecode(j) = i
-	  exit
-	end if
-      end do
-    end do
-    
     allocate(SireGenotyped(nAnisG))
-    allocate(DamGenotyped(nAnisG))
+    allocate(DamGenotyped(nAnisG))    
+    
+!    allocate(DanRecode(size(ped,1)))
+!    DanRecode = 0
+!    do i = 1, nAnisG
+!      do j = 1, size(ped,1)
+!	if (ped(j,1) == GenotypeId(i)) then
+!	  DanRecode(j) = i
+!	  exit
+!	end if
+!      end do
+!    end do
+!    
+!    allocate(SireGenotyped(nAnisG))
+!    allocate(DamGenotyped(nAnisG))
+    
+!    SireGenotyped = 0
+!    DamGenotyped = 0
+!    do i = 1, size(ped,1)
+!      if (DanRecode(i) /= 0) then
+!	do j = 1, nAnisG
+!	  if (GenotypeID(j) .eq. ped(i,2)) then
+!	    SireGenotyped(DanRecode(i)) = j
+!	  end if
+!	  if (GenotypeID(j) .eq. ped(i,3)) then
+!	    DamGenotyped(DanRecode(i)) = j
+!	  end if
+!	end do
+!      end if
+!    end do
+!
+!    deallocate(DanRecode)
+    
+    allocate(DanArray(size(GenotypeID)))
+    allocate(DanPos(size(GenotypeID)))
+    DanArray = adjustr(GenotypeID)
+    call InsertionSort(DanArray,DanPos)
+    
+    allocate(DanRecode(size(ped,1)))
+    do i = 1, size(ped,1)
+      dpos = BinarySearch(DanArray, adjustr(ped(i,1)))
+      if (dpos > 0) then
+	DanRecode(i) = DanPos(dpos)
+      else
+	DanRecode(i) = 0
+      endif
+    end do
     
     SireGenotyped = 0
     DamGenotyped = 0
     do i = 1, size(ped,1)
       if (DanRecode(i) /= 0) then
-	do j = 1, nAnisG
-	  if (GenotypeID(j) .eq. ped(i,2)) then
-	    SireGenotyped(DanRecode(i)) = j
-	  end if
-	  if (GenotypeID(j) .eq. ped(i,3)) then
-	    DamGenotyped(DanRecode(i)) = j
-	  end if
-	end do
+	spos = BinarySearch(DanArray, adjustr(ped(i,2)))
+	if (spos > 0) then
+	  SireGenotyped(DanRecode(i)) = DanPos(spos)
+	endif
+	dpos = BinarySearch(DanArray, adjustr(ped(i,3)))
+	if (dpos > 0) then
+	  DamGenotyped(DanRecode(i)) = DanPos(dpos)
+	endif
       end if
     end do
 
+    deallocate(DanArray)
     deallocate(DanRecode)
+    deallocate(DanPos)
 
     allocate (nrmped(size(ped,1),size(ped,2)))
     nrmped = ped
@@ -869,7 +914,7 @@ contains
   end subroutine MakeDirectories  
   
   subroutine WriteHapLib(library, currentcore, c)
-    use Parameters, only: fullfileoutput
+    use Parameters, only: fullfileoutput, ItterateType
     use HaplotypeLibraryDefinition
     use Constants
     use CoreDefinition
@@ -917,11 +962,13 @@ contains
     end if
     close(34)
 
-    print*, "   ", "Final iteration found ", nHaps, "haplotypes"
-
-    print*, ""
-    write (*, '(a4,a30,f5.2,a1)') "   ", "Final yield for this core was ", c%getTotalYield(), "%"
-
+    if (ItterateType .eq. "Off") then
+      print*, "   ", "Final iteration found ", nHaps, "haplotypes"
+    
+      print*, ""
+      write (*, '(a4,a30,f5.2,a1)') "   ", "Final yield for this core was ", c%getTotalYield(), "%"
+    end if
+    
     if (WindowsLinux == 1) then
       open (unit = 29, file = ".\PhasingResults\PhasingYield.txt", status = "unknown", position = "append")
     else
@@ -933,5 +980,60 @@ contains
     close(29)
 
   end subroutine WriteHapLib
+  
+  subroutine InsertionSort(array, pos)
+    character(*), dimension(:), intent(inout) :: array
+    integer, dimension(size(array)), intent(out) :: pos
+    
+    integer :: i, j, tempP
+    character(len(array)) :: tempA
+    
+    do i = 1, size(array)
+      pos(i) = i
+    end do
+    
+    do i = 2, size(array)
+      j = i
+      do while (array(j-1) > array(j))
+	tempA = array(j-1)
+	array(j-1) = array(j)
+	array(j) = tempA
+	
+	tempP = pos(j-1)
+	pos(j-1) = pos(j)
+	pos(j) = tempP
+	
+	j = j - 1
+	if (j == 1) exit
+      end do
+    end do
+  end subroutine InsertionSort
+  
+  function BinarySearch(array, val) result(pos)
+    character(*), dimension(:), intent(in) :: array
+    character(*), intent(in) :: val
+    integer :: pos
+    
+    integer :: low, high, mid
+    
+    low = 1
+    high = size(array)
+    
+    do while (low <= high)
+      mid = (low + high) / 2
+      if (array(mid) > val) then
+	high = mid - 1
+      end if
+      if (array(mid) < val) then
+	low = mid + 1
+      end if
+      if (array(mid) == val) then
+	pos = mid
+	return 
+      end if
+    end do
+    
+    pos = 0
+  end function
   
 end module InputOutput

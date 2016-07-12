@@ -6,7 +6,7 @@ contains
   subroutine Erdos(surrogates, threshold, c)
     use SurrogateDefinition
     use CoreSubsetDefinition
-    use Parameters, only: useSurrsN, consistent, numsurrdisagree
+    use Parameters, only: useSurrsN, consistent, numsurrdisagree, ItterateType
     implicit none
 
     type(Surrogate), intent(in) :: surrogates
@@ -64,109 +64,121 @@ contains
 	  counter = counter + 1
 	endif
       end do
-      SurrAveDiff(i) = int(total/counter)
+      if (counter /= 0) then
+	SurrAveDiff(i) = int(total/counter)
+      else
+	! All animals are surrogates of each other.  Can't see this happening in anything other than simulated data
+	! Should probably think about more and check with John and possibly others.
+	SurrAveDiff(i) = 0
+      end if
     end do
 
     do side = 1, 2
-      print*, " "
-      select case (side)
-	case (1)
-	  print*, " Phasing genotyped individuals for Paternal allele"
-	case (2)
-	  print*, " Phasing genotyped individuals for Maternal allele"
-      end select
+      if (ItterateType .eq. "Off") then
+	print*, " "
+	select case (side)
+	  case (1)
+	    print*, " Phasing genotyped individuals for Paternal allele"
+	  case (2)
+	    print*, " Phasing genotyped individuals for Maternal allele"
+	end select
+      end if
       highestErdos = 0
       do i = 1, nAnisG
-	if (mod(i, 400) == 0) then
+	if ((mod(i, 400) == 0) .and. (ItterateType .eq. "Off")) then
 	  print*, "   Phasing done for genotyped individual --- ", i
 	end if
 	do j = 1, nSnp
-	  visited = .false.
-	  toVisit = 0
-	  toVisit(1) = i
-	  Visited(i) = .true.
-	  toVisitPos = 1
-	  found = 0
-	  depth = 0
-	  allelecount = 0
-	  visiting = 1
+	  if (c%getPhase(i, j, side) == 9) then
+	    visited = .false.
+	    toVisit = 0
+	    toVisit(1) = i
+	    Visited(i) = .true.
+	    toVisitPos = 1
+	    found = 0
+	    depth = 0
+	    allelecount = 0
+	    visiting = 1
 
-	  !!! FUDGES !!!
-	  if (genos(i,j) == 0) then
-	    AlleleCount(1) = AlleleCount(1) + 1
-	    found = found + 1
-	  end if
-	  if (genos(i,j) == 2) then
-	    AlleleCount(2) = AlleleCount(2) + 1
-	    found = found + 1
-	  end if
-	  !!! END FUDGES !!!
+	    !!! FUDGES !!!
+	    if (genos(i,j) == 0) then
+	      AlleleCount(1) = AlleleCount(1) + 1
+	      found = found + 1
+	    end if
+	    if (genos(i,j) == 2) then
+	      AlleleCount(2) = AlleleCount(2) + 1
+	      found = found + 1
+	    end if
+	    !!! END FUDGES !!!
 
-	  do while ((toVisit(visiting) /= 0) .and.(found < useSurrsN))
-	    current = toVisit(visiting)
-	    k = 1
-	    do while ((k <= nSurrList(current)) .and. (found < useSurrsN))
-	      next = surrList(current,k)
-	      if (goodToVisit(next, depth, side, surrogates, visited,  &
-		toVisit, visiting, threshold, SurrAveDiff)) then
-		select case (Genos(next, j))
-		  case (0)
-		    if (mod(depth(Visiting) + 1, 2) == 0) then
-		      AlleleCount(2) = AlleleCount(2) + 1
-		    end if
-		    if (mod(depth(Visiting) + 1, 2) /= 0) then
-		      AlleleCount(1) = AlleleCount(1) + 1
-		    end if
-		    found = found + 1
-		  case (2)
-		    if (mod(depth(Visiting) + 1, 2) == 0) then
-		      AlleleCount(1) = AlleleCount(1) + 1
-		    end if
-		    if (mod(depth(Visiting) + 1, 2) /= 0) then
-		      AlleleCount(2) = AlleleCount(2) + 1
-		    end if
-		    found = found + 1
-		  case default		      
-		    toVisitPos = toVisitPos + 1
-		    toVisit(toVisitPos) = next
-		    depth(toVisitPos) = depth(visiting) + 1
-		end select
+	    do while ((toVisit(visiting) /= 0) .and.(found < useSurrsN))
+	      current = toVisit(visiting)
+	      k = 1
+	      do while ((k <= nSurrList(current)) .and. (found < useSurrsN))
+		next = surrList(current,k)
+		if (goodToVisit(next, depth, side, surrogates, visited,  &
+		  toVisit, visiting, threshold, SurrAveDiff)) then
+		  select case (Genos(next, j))
+		    case (0)
+		      if (mod(depth(Visiting) + 1, 2) == 0) then
+			AlleleCount(2) = AlleleCount(2) + 1
+		      end if
+		      if (mod(depth(Visiting) + 1, 2) /= 0) then
+			AlleleCount(1) = AlleleCount(1) + 1
+		      end if
+		      found = found + 1
+		    case (2)
+		      if (mod(depth(Visiting) + 1, 2) == 0) then
+			AlleleCount(1) = AlleleCount(1) + 1
+		      end if
+		      if (mod(depth(Visiting) + 1, 2) /= 0) then
+			AlleleCount(2) = AlleleCount(2) + 1
+		      end if
+		      found = found + 1
+		    case default		      
+		      toVisitPos = toVisitPos + 1
+		      toVisit(toVisitPos) = next
+		      depth(toVisitPos) = depth(visiting) + 1
+		  end select
+		end if
+		visited(next) = .true.
+		k = k + 1
+	      end do
+	      visiting = visiting + 1
+	      if (depth(visiting) /= depth(visiting-1)) then
+		call phaseSort(toVisit, visiting, toVisitPos)
 	      end if
-	      visited(next) = .true.
-	      k = k + 1
 	    end do
-	    visiting = visiting + 1
-	    if (depth(visiting) /= depth(visiting-1)) then
-	      call phaseSort(toVisit, visiting, toVisitPos)
-	    end if
-	  end do
 
-	  iAllele = 9
-	  if (sum(AlleleCount(:)) < UseSurrsN) then
-	    if ((AlleleCount(2) <= NumSurrDisagree).and.(AlleleCount(1) > AlleleCount(2))) iAllele = 0
-	    if ((AlleleCount(1) <= NumSurrDisagree).and.(AlleleCount(2) > AlleleCount(1))) iAllele = 1
-	  else
-	    if ((AlleleCount(1) > 0).and.(AlleleCount(2) <= NumSurrDisagree)) then
-	      iAllele = 0
-	    elseif ((AlleleCount(2) > 0).and.(AlleleCount(1) <= NumSurrDisagree)) then
-	      iAllele = 1
+	    iAllele = 9
+	    if (sum(AlleleCount(:)) < UseSurrsN) then
+	      if ((AlleleCount(2) <= NumSurrDisagree).and.(AlleleCount(1) > AlleleCount(2))) iAllele = 0
+	      if ((AlleleCount(1) <= NumSurrDisagree).and.(AlleleCount(2) > AlleleCount(1))) iAllele = 1
+	    else
+	      if ((AlleleCount(1) > 0).and.(AlleleCount(2) <= NumSurrDisagree)) then
+		iAllele = 0
+	      elseif ((AlleleCount(2) > 0).and.(AlleleCount(1) <= NumSurrDisagree)) then
+		iAllele = 1
+	      end if
+	    endif
+	    call c%setPhase(i, j, side, iAllele)
+	    ! +1 as we use the genotypes at one depth lower than we're currently visiting (slightly odd but maintains consistency
+	    ! with old version).  See discussion about odd depth first search above (when it's written!)
+	    if (depth(visiting - 1) + 1 > highestErdos) then
+	      highestErdos = depth(visiting - 1) + 1
 	    end if
-	  endif
-	  call c%setPhase(i, j, side, iAllele)
-	  ! +1 as we use the genotypes at one depth lower than we're currently visiting (slightly odd but maintains consistency
-	  ! with old version).  See discussion about odd depth first search above (when it's written!)
-	  if (depth(visiting - 1) + 1 > highestErdos) then
-	    highestErdos = depth(visiting - 1) + 1
 	  end if
 	end do
       end do
-      print*, " "
-      select case (side)
-	case (1)
-	  print*, " ", highestErdos, " was the highest Erdos used on Paternal Side"
-	case (2)
-	  print*, " ", highestErdos, " was the highest Erdos used on Maternal Side"
-      end select
+      if (ItterateType .eq. "Off") then
+	print*, " "
+	select case (side)
+	  case (1)
+	    print*, " ", highestErdos, " was the highest Erdos used on Paternal Side"
+	  case (2)
+	    print*, " ", highestErdos, " was the highest Erdos used on Maternal Side"
+	end select
+      end if
     end do
 
   end subroutine Erdos
@@ -227,7 +239,7 @@ contains
   end function
 
   subroutine CheckCompatHapGeno(c)
-    use Parameters, only: PercGenoHaploDisagree
+    use Parameters, only: PercGenoHaploDisagree, ItterateType
     use Constants
     use CoreSubsetDefinition
     implicit none
@@ -276,9 +288,11 @@ contains
       endif
     end do
 
-    print*, " "
-    write (*, '(a3,f6.2,a45)') "  ", c%getYield(1), "% was the Paternal allele yield for this core"
-    write (*, '(a3,f6.2,a45)') "  ", c%getYield(2), "% was the Maternal allele yield for this core"
+    if (ItterateType .eq. "Off") then
+      print*, " "
+      write (*, '(a3,f6.2,a45)') "  ", c%getYield(1), "% was the Paternal allele yield for this core"
+      write (*, '(a3,f6.2,a45)') "  ", c%getYield(2), "% was the Maternal allele yield for this core"
+    end if
 
   end subroutine CheckCompatHapGeno
 

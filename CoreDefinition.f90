@@ -35,6 +35,7 @@ module CoreDefinition
     procedure, public :: resetFullyPhased
     procedure, public :: setFullyPhased
     procedure, public :: getFullyPhased
+    procedure, public :: getPercentFullyPhased
     procedure, public :: resetHapAnis
     procedure, public :: setHapAnis
     procedure, public :: getBothFullyPhased
@@ -278,6 +279,13 @@ contains
     fully = c%fullyPhased(animal,1) .and. c%fullyPhased(animal,2)
     !fully = all(c%phase(animal,:,phase) /= 9)
   end function getBothFullyPhased
+  
+  function getPercentFullyPhased(c) result (percent)
+    class(Core) :: c
+    double precision :: percent
+    
+    percent = 100.0 * float(count(c%fullyPhased)) / (size(c%fullyPhased))
+  end function getPercentFullyPhased
     
   
   subroutine resetHapAnis(c)
