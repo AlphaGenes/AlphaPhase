@@ -58,7 +58,7 @@ contains
     integer, dimension(:), pointer :: compatHaps
 
     integer(kind = 1), pointer, dimension(:) :: comp
-    integer, pointer, dimension(:) :: CandHapsPat, CandHapsMat, CandHaps, matches
+    integer, pointer, dimension(:) :: CandHapsPat, CandHapsMat, AllCandHapsMat, CandHaps, matches
 
     logical :: singlePat, singleMat
 
@@ -99,13 +99,14 @@ contains
 	      compatHaps(k) = k
 	    end do
 	  else
-	    compatHaps => library % getCompatHaps(c % getSingleCoreGenos(i))
+	    compatHaps => library % getCompatHapsFreq(c % getSingleCoreGenos(i),1)
 	  end if
 
 	  CandHapsPat => library % limitedMatchWithError(c % getHaplotype(i, 1), ErrorAllow, compatHaps)
 	  !Find all candiate maternal haps and then remove those that are already candidate paternal haps
-	  CandHapsMat => uniqueHaps(&
-	  library % limitedMatchWithError(c % getHaplotype(i, 2), ErrorAllow, compatHaps), CandHapsPat)
+	  AllCandHapsMat => library % limitedMatchWithError(c % getHaplotype(i, 2), ErrorAllow, compatHaps)
+	  CandHapsMat => uniqueHaps(AllCandHapsMat, CandHapsPat)
+	  deallocate(AllCandHapsMat)
 
 	  deallocate(compatHaps)
 
@@ -126,6 +127,8 @@ contains
 	    if (size(matches) == 1) then
 	      HapP = matches(1)
 	    end if
+	    deallocate(comp)
+	    deallocate(matches)
 	  end if
 
 	  ! If only one paternal candidate haplotype and one / many maternal candidate haplotypes
@@ -143,6 +146,9 @@ contains
 	    if (HapM /= CandHapsMat(size(CandHapsMat, 1))) then
 	      HapM = 0
 	    end if
+	    
+	    deallocate(comp)
+	    deallocate(matches)
 	  end if
 
 	  ! If only have one paternal candidate haplotype
@@ -163,6 +169,8 @@ contains
 	      if (fullyPhased(comp)) then
 		call newHaplotype(c, i, 2, library)
 	      end if
+	      
+	      deallocate(comp)
 	    end if
 	  end if
 
@@ -190,6 +198,8 @@ contains
 	      if (fullyPhased(comp)) then
 		call newHaplotype(c, i, 1, library)
 	      end if
+	      
+	      deallocate(comp)
 	    end if
 	  end if
 
@@ -249,19 +259,18 @@ contains
 		.and. (.not.SinglePat) .and. (.not.SingleMat)) then
 		call clusterAndPhase(c, library, CandPairs, i)
 	      endif
-	      deallocate(CandHaps)
-	      deallocate(CandPairs)
 	    endif
+	    deallocate(CandHaps)
+	    deallocate(CandPairs)
 	  endif
+	  deallocate(CandHapsMat)
+	  deallocate(CandHapsPat)
 	endif
-!	if (mod(i,10000) == 0) print *, i
       end do
-!      if (ItterateType .eq. "Off") then
-	print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
-!      end if
+      print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
     enddo
 
-    call abErrors(c)
+!    call abErrors(c)
     call complementPhaseSnps(c)
 
     call library % resetHapFreq()
@@ -285,7 +294,7 @@ contains
       phases(i) = library % getPhase(candidates(i), position)
     end do
 
-    a = (all(phases == 0) .and. (all(phases == 1)))
+    a = (all(phases == 0) .or. (all(phases == 1)))
   end function agree
 
   subroutine processComplement(c, animal, library, fully)
@@ -339,6 +348,9 @@ contains
 
       end if
     endif
+    
+    deallocate(comp)
+    deallocate(CandHaps)
   end subroutine processComplement
 
   function complement(genos, haplotype) result (comp)
@@ -613,5 +625,34 @@ contains
       enddo
     enddo
   end subroutine complementPhaseSnps
+  
+  function fullyPhased(haplotype) result (fully)
+    integer(kind=1), dimension(:), intent(in) :: haplotype
+    logical :: fully
+
+    fully = all((haplotype == 0) .or. (haplotype == 1))
+  end function fullyPhased
+  
+  function uniquehaps(haps1, haps2) result (uniq)
+    integer, dimension(:), intent(in) :: haps1, haps2
+    integer, dimension(:), pointer :: uniq
+
+    integer, dimension(:), allocatable :: tempU
+
+    integer :: i, p
+
+    allocate(tempU(size(haps1)))
+    p = 0
+    do i = 1, size(haps1)
+      if (.not. any (haps1(i) == haps2)) then
+	p = p + 1
+	tempU(p) = haps1(i)
+      end if
+    end do
+
+    allocate (uniq(p))
+    uniq = tempU(1:p)
+    deallocate(tempU)
+  end function uniquehaps
 
 end module HaplotypeLibraryPhasing

@@ -20,8 +20,7 @@ program Rlrplhi
  
   implicit none
 
-  integer :: h, i, j, counter, SizeCore, nGlobalHapsOld, nCount, threshold
-  double precision :: value, Yield
+  integer :: h, i, j, nGlobalHapsOld, threshold
   
   type(HaplotypeLibrary) :: library
   type(Surrogate) :: surrogates
@@ -39,12 +38,14 @@ program Rlrplhi
   integer :: nAnisG
   integer :: subsetCount
   
+  !Linux max path length is 4096 which is more than windows or mac (all according to google)
+  character(len=4096) specfile
+  character(len=4096) :: cmd
+  
   integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM
   
   integer :: startCore, endCore
   logical :: combine
-  
-!  character(len=255) :: cmd
   
   type(MemberManager) :: manager
   
@@ -57,14 +58,25 @@ program Rlrplhi
     end subroutine calculateCores
   end interface calculateCores
   
-!  call get_command_argument(1,cmd)
-!  print *, trim(cmd)
-    
-  readCoreAtTime = .false.
-  
+  if (Command_Argument_Count() > 0) then
+    call get_command_argument(1,cmd)
+    if (cmd(1:2) .eq. "-v") then
+      call PrintVersion
+      call exit(0)
+    end if
+  end if
+
   call Titles
-  call ReadInParameterFile
-  call MakeDirectories
+  
+  if (Command_Argument_Count() > 0) then
+    call Get_Command_Argument(1,specfile)
+  else
+    specfile="AlphaPhaseSpec.txt"
+  end if
+  call ReadInParameterFile(specfile)
+  
+  
+    call MakeDirectories
   p = ParsePedigreeData()
   nAnisG = p%getNAnis()
   call CalculateCores(CoreIndex, TailIndex)
@@ -131,32 +143,13 @@ program Rlrplhi
 	surrogates = Surrogate(cs, threshold, consistent, pseudoNRM)
 	call writeSurrogates(surrogates,threshold, h, p)
 	call Erdos(surrogates, threshold, cs)
-	call CheckCompatHapGeno(cs)      
-
-
-  !      nGlobalHapsIter = 1
-  !      library = MakeHapLib(c)
-  !      nGlobalHapsOld = library%getSize()
-  !      if (ItterateType .eq. "Off") then
-  !	print*, " "
-  !	print*, "  ", "Haplotype library imputation step"
-  !      end if
-  !      do j = 1, 20
-  !	call ImputeFromLib(library, c, nGlobalHapsIter)
-  !	library = MakeHapLib(c)
-  !	if (nGlobalHapsOld == library%getSize()) exit
-  !	nGlobalHapsOld = library%getSize()
-  !      end do
+	call CheckCompatHapGeno(cs)     
 
 	subsetCount = subsetCount + 1
 	if (ItterateType .ne. "Off") then
-	  !print '(8x, i5, a20, i6, a19, f6.2, a25)', subsetCount, " Subsets completed, ", library%getSize(), " Haplotypes found, ", &
-	  !  c%getPercentFullyPhased(), "% Haplotypes fully phased"
-	  !print '(33x, f6.2, a16, f6.2, a16)', c%getYield(1), "% Paternal yield, ", c%getYield(2), "% Maternal Yield"
 	  print '(8x, i5, a20, f6.2, a16, f6.2, a16)', subsetCount, " Subsets completed, ", c%getYield(1), "% Paternal yield, ", &
 	    c%getYield(2), "% Maternal Yield"
 	end if
-
       end do
 
       nGlobalHapsIter = 1
@@ -178,11 +171,16 @@ program Rlrplhi
 	  c%getPercentFullyPhased(), "% Haplotypes fully phased"
 	print '(33x, f6.2, a16, f6.2, a16)', c%getYield(1), "% Paternal yield, ", c%getYield(2), "% Maternal Yield"
       end if
+      
     end do
     
+    deallocate(Genos)
+   
     call WriteHapLib(library, h, c)
     
-    call HapCommonality(library, h)
+    if (consistent) then
+      call HapCommonality(library, h)
+    end if
     
     if (readCoreAtTime) then
       call WriteOutCore(c%phase,c%hapAnis, h, CoreIndex(h,1), p)
@@ -191,8 +189,6 @@ program Rlrplhi
       AllHapAnis(:,1,h) = c%hapAnis(:,1)
       AllHapAnis(:,2,h) = c%hapAnis(:,2)      
     end if
-    
-    deallocate(Genos)
     
     if (Simulation == 1) then
        call Flipper(c%phase,StartCoreSnp,EndCoreSnp,nSnp)
@@ -208,9 +204,17 @@ program Rlrplhi
   if (consistent) then
     deallocate(PseudoNRM)
   end if
+  if (.not. readCoreAtTime) then
+    deallocate(AllHapAnis)
+    deallocate(AllPhase)
+    deallocate(AllGenos)
+  end if
   if ((Simulation == 1) .and. combine) then
     call CheckerCombine(nCores)
   end if
+  
+  deallocate(CoreIndex,TailIndex)
+  
   call PrintTimerTitles
 
 end program Rlrplhi
@@ -230,11 +234,6 @@ subroutine calculateCores(CoreIndex, TailIndex)
   
   if (consistent) then
     if (Offset == 0) then
-  !    StartCoreSnp = 1
-  !    EndCoreSnp = CoreAndTailLength
-  !    nSnpErrorThresh = int(GenotypeMissingErrorPercentage * CoreAndTailLength)
-      !NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
-
       nCores = int(nSnp)/Jump
       allocate(CoreIndex(nCores, 2))
       allocate(TailIndex(nCores, 2))
@@ -256,8 +255,6 @@ subroutine calculateCores(CoreIndex, TailIndex)
     endif
 
     if (Offset == 1) then
-  !    nSnpErrorThresh = int(GenotypeMissingErrorPercentage * CoreAndTailLength)
-      !NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
       resid = int((CoreAndTailLength - Jump)/2)
 
       nCores = (int(nSnp)/Jump) + 1
@@ -330,10 +327,7 @@ subroutine calculateCores(CoreIndex, TailIndex)
 end subroutine CalculateCores
 
 !####################################################################################################################################################################
- 
-
-subroutine Titles
-
+subroutine Header
   print*, ""
   print*, "                              **********************                         "
   print*, "                              *                    *                         "
@@ -344,6 +338,13 @@ subroutine Titles
   print*, "                    Software For Phasing and Imputing Genotypes               "
   print*, ""
   print*, "                     Written by John Hickey and Brian Kinghorn                "
+end subroutine Header
+
+!####################################################################################################################################################################
+
+subroutine Titles
+
+  call Header
   print*, ""
   print*, ""
   print*, ""
@@ -363,16 +364,7 @@ subroutine PrintTimerTitles
 
   print*, ""
   print*, ""
-  print*, ""
-  print*, "                              **********************                         "
-  print*, "                              *                    *                         "
-  print*, "                              *   AlphaPhase 1.1   *                         "
-  print*, "                              *                    *                         "
-  print*, "                              **********************                         "
-  print*, "                                                                              "
-  print*, "                    Software For Phasing and Imputing Genotypes               "
-  print*, ""
-  print*, "                     Written by John Hickey and Brian Kinghorn                "
+  call Header
   PRINT*, ""
   PRINT*, "                                  No Liability"
   PRINT*, "                          Bugs to John.Hickey@une.edu.au"
@@ -397,3 +389,15 @@ subroutine PrintTimerTitles
 
   close(32)
 end subroutine PrintTimerTitles
+
+!###################################################################################################################################################
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+subroutine PrintVersion
+  call Header
+  print *
+  print *, "                              Commit:   "//TOSTRING(COMMIT)
+  print *, "                              Compiled: "//__DATE__//", "//__TIME__  
+end subroutine PrintVersion

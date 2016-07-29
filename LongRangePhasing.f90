@@ -180,6 +180,14 @@ contains
 	end select
       end if
     end do
+    
+    deallocate(surrList)
+    deallocate(nSurrList)
+    deallocate(visited)
+    deallocate(toVisit)
+    deallocate(depth)
+    deallocate(surrAveDiff)
+    deallocate(genos)
 
   end subroutine Erdos
 
@@ -293,6 +301,8 @@ contains
       write (*, '(a3,f6.2,a45)') "  ", c%getYield(1), "% was the Paternal allele yield for this core"
       write (*, '(a3,f6.2,a45)') "  ", c%getYield(2), "% was the Maternal allele yield for this core"
     end if
+    
+    deallocate(genos)
 
   end subroutine CheckCompatHapGeno
 

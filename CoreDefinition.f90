@@ -41,6 +41,7 @@ module CoreDefinition
     procedure, public :: getBothFullyPhased
     procedure, public :: getCoreGeno
     procedure, public :: numNotMissing
+    procedure, public :: hapNumMissing
     final :: destroy
   end type Core
   
@@ -320,6 +321,16 @@ contains
     
     num = count(c%genos(animal,c%startCoreSnp:c%endCoreSnp) /= MissingGenotypeCode)
   end function numNotMissing
+  
+  function hapNumMissing(c, animal, phase) result(num)
+    use Constants
+    
+    class(Core) :: c
+    integer, intent(in) :: animal, phase
+    integer :: num
+    
+    num = count(c%phase(animal,c%startCoreSnp:c%endCoreSnp,phase) == 9)
+  end function hapNumMissing
     
 end module CoreDefinition
 

@@ -1,15 +1,17 @@
 module HaplotypeLibraryDefinition
   implicit none
-  public
+  private
 
   type, public :: HaplotypeLibrary
     private
     integer(kind = 1), dimension (:,:), allocatable :: store
+    integer(kind = 8), dimension (:,:), allocatable :: bitstore
+    integer :: bitoverhang
+    integer :: numsections
     integer, dimension(:), allocatable :: hapFreq
     integer :: size
     integer :: nSnps
     integer :: storeSize, stepSize
-    integer, dimension(:), allocatable :: randomOrder
   contains
     private
     procedure, public :: hasHap
@@ -28,6 +30,7 @@ module HaplotypeLibraryDefinition
     procedure, public :: getHapFreq
     procedure, public :: getCompatHaps    
     procedure, public :: matchAddHap
+    procedure, public :: getCompatHapsFreq
     final :: destroy
   end type HaplotypeLibrary
   
@@ -55,8 +58,11 @@ contains
     library % hapFreq = 0
     call system_clock(nCount)
     secs = mod(nCount, int(1e6))
-    allocate(library % randomOrder(library % nSnps))
-    call RandomOrder(library % randomOrder, library % nSnps, 1, -abs(secs))
+    
+    library%numsections = nSnps / 64 + 1
+    library%bitoverhang = 64 - (nSnps - (library%numsections - 1) * 64)
+    allocate(library%bitstore(storeSize,library%numsections))
+    library%bitstore = 0
   end function newHaplotypeLibrary
   
   subroutine destroy(library)
@@ -64,25 +70,26 @@ contains
     
     if (allocated(library%store)) then
       deallocate(library%store)
+      deallocate(library%bitstore)
       deallocate(library%hapFreq)
-      deallocate(library%randomOrder)
     end if
   end subroutine destroy
 
   function hasHap(library, haplotype) result(id)
     class(HaplotypeLibrary) :: library
     integer(kind = 1), dimension(:), intent(in) :: haplotype
+    integer(kind = 8), dimension(:), pointer :: bits
     integer :: id
 
     integer :: i, j
     logical :: match
 
+    bits => HaplotypeToBits(haplotype, library%numsections)
     id = 0
-
-    do i = 1, library % size
+    do i = 1, library%size
       match = .true.
-      do j = 1, library % nSnps
-	if (library % store(i, library % RandomOrder(j)) /= haplotype(library % RandomOrder(j))) then
+      do j = 1, library % numsections
+	if (library%bitstore(i,j) /= bits(j)) then
 	  match = .false.
 	  exit
 	end if
@@ -92,6 +99,8 @@ contains
 	exit
       end if
     end do
+    deallocate(bits)
+!    print *, id, ido
   end function hasHap
 
   function addHap(library, haplotype) result(id)
@@ -101,7 +110,10 @@ contains
 
     integer :: newStoreSize
     integer(kind = 1), dimension(:,:), allocatable :: tempStore
+    integer(kind = 8), dimension(:,:), allocatable :: tempBitStore
     integer, dimension(:), allocatable :: tempHapFreq
+    
+    integer(kind=8), dimension(:), pointer :: bits
 
     if (library % Size == library % storeSize) then
       newStoreSize = library % storeSize + library % stepSize
@@ -122,11 +134,22 @@ contains
       library % hapFreq(1:library % Size) = tempHapFreq
       deallocate(tempHapFreq)
       
+      allocate(tempBitStore(library % storeSize, library % numsections))
+      tempBitStore = library%bitStore
+      deallocate(library%bitStore)
+      allocate(library%bitStore(newStoreSize, library%numsections))
+      library % bitStore = 0
+      library % bitStore(1:library % Size, :) = tempBitStore
+      deallocate(tempBitStore)
+      
       library % StoreSize = newStoreSize
     end if
 
     library % Size = library % Size + 1
     library % Store(library % Size,:) = haplotype
+    bits => HaplotypeToBits(haplotype, library%numsections)
+    library % BitStore(library%Size,:) = bits
+    deallocate(bits)
     
     library%hapfreq(library%size) = 1
     id = library%size
@@ -152,32 +175,47 @@ contains
     integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
-    integer :: i, j, e, num
+    integer :: i, j, e, num, eo, invalid
     logical :: match
+    integer(kind=8), dimension(:), pointer :: bits, present
 
     allocate(tempMatches(library % size))
+    
+    invalid = 0
+    do i = 1, size(haplotype)
+      if ((haplotype(i) /= 0) .and. (haplotype(i) /= 1) .and. (haplotype(i) /= 9)) then
+	invalid = invalid + 1
+      end if
+    end do 
 
     num = 0
+ 
+    if (invalid <= allowedError) then
+      bits => HaplotypeToBits(haplotype, library%numsections)
+      present => HaplotypePresent(haplotype, library%numsections)    
 
-    do i = 1, library % size
-      e = 0
-      match = .true.
-      do j = 1, library % nSnps
-	if (haplotype(library % RandomOrder(j)) /= 9) then
-	  if (library % store(i, library % RandomOrder(j)) /= haplotype(library % RandomOrder(j))) then
-	    e = e + 1
-	    if (e > allowedError) then
-	      match = .false.
-	      exit
-	    endif
-	  end if
+      do i = 1, library % size      
+	e = invalid
+
+	do j = 1, library % numsections
+	  e = e + POPCNT(IAND( &
+		      IEOR(library%bitstore(i,j), bits(j)), &
+		      present(j)))
+	  if (e > allowedError) then
+	    match = .false.
+	    exit
+	  endif
+	end do
+
+	if (e <= allowedError) then
+	  num = num + 1
+	  tempMatches(num) = i
 	end if
       end do
-      if (match) then
-	num = num + 1
-	tempMatches(num) = i
-      end if
-    end do
+      deallocate(bits)
+      deallocate(present)
+    end if
+    
     allocate(matches(num))
     matches(:) = tempMatches(1:num)
     deallocate(tempMatches)
@@ -191,33 +229,70 @@ contains
     integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
-    integer :: i, j, k, e, num
+    integer :: i, j, k, e, num, invalid
     logical :: match
+    integer(kind=8), dimension(:), pointer :: bits, present
 
     allocate(tempMatches(library % size))
 
     num = 0
 
-    do k = 1, size(limit)
-      i = limit(k)
-      e = 0
-      match = .true.
-      do j = 1, library % nSnps
-	if (haplotype(library % RandomOrder(j)) /= 9) then
-	  if (library % store(i, library % RandomOrder(j)) /= haplotype(library % RandomOrder(j))) then
-	    e = e + 1
-	    if (e > allowedError) then
-	      match = .false.
-	      exit
-	    endif
-	  end if
+!    do k = 1, size(limit)
+!      i = limit(k)
+!      e = 0
+!      match = .true.
+!      do j = 1, library % nSnps
+!	if (haplotype(library % RandomOrder(j)) /= 9) then
+!	  if (library % store(i, library % RandomOrder(j)) /= haplotype(library % RandomOrder(j))) then
+!	    e = e + 1
+!	    if (e > allowedError) then
+!	      match = .false.
+!	      exit
+!	    endif
+!	  end if
+!	end if
+!      end do
+!      if (match) then
+!	num = num + 1
+!	tempMatches(num) = i
+!      end if
+!    end do
+    
+    invalid = 0
+    do i = 1, size(haplotype)
+      if ((haplotype(i) /= 0) .and. (haplotype(i) /= 1) .and. (haplotype(i) /= 9)) then
+	invalid = invalid + 1
+      end if
+    end do 
+    
+    if (invalid <= allowedError) then
+      bits => HaplotypeToBits(haplotype, library%numsections)
+      present => HaplotypePresent(haplotype, library%numsections)    
+
+      do k = 1, size(limit)
+	i = limit(k)
+	e = invalid
+
+	do j = 1, library % numsections
+	  e = e + POPCNT(IAND( &
+		      IEOR(library%bitstore(i,j), bits(j)), &
+		      present(j)))
+	  if (e > allowedError) then
+	    match = .false.
+	    exit
+	  endif
+	end do
+
+	if (e <= allowedError) then
+	  num = num + 1
+	  tempMatches(num) = i
 	end if
       end do
-      if (match) then
-	num = num + 1
-	tempMatches(num) = i
-      end if
-    end do
+      
+      deallocate(bits)
+      deallocate(present)
+    end if
+    
     allocate(matches(num))
     matches(:) = tempMatches(1:num)
     deallocate(tempMatches)
@@ -233,8 +308,40 @@ contains
     integer, dimension(:,:), pointer :: pairs
     
     integer, dimension(:,:), pointer :: tempPairs
-    integer :: i, j, k, p, e
+    integer :: i, j, k, p, e, ii, jj
     logical :: match
+    
+    integer(kind=8), dimension(:), allocatable :: zeros, ones, twos, present
+    integer :: cursection, curpos
+    integer(kind=8) :: matchz, matcho, matcht
+    
+    allocate(zeros(library%numsections),ones(library%numsections),twos(library%numsections),present(library%numsections))
+    zeros = 0
+    ones = 0
+    twos = 0
+    present = 0
+    
+    cursection = 1
+    curpos = 1
+    do i = 1, size(genos)
+      select case (genos(i))
+      case (0)
+	zeros(cursection) = ibset(zeros(cursection), curpos)
+	present(cursection) = ibset(present(cursection), curpos)
+      case (1)
+	ones(cursection) = ibset(ones(cursection), curpos)
+	present(cursection) = ibset(present(cursection), curpos)
+      case (2)
+	twos(cursection) = ibset(twos(cursection), curpos)
+	present(cursection) = ibset(present(cursection), curpos)
+      end select
+      curpos = curpos + 1
+      if (curpos == 65) then
+	curpos = 1
+	cursection = cursection + 1
+      end if
+    end do
+    
     
     allocate(tempPairs(nAnisG*2,2))
     
@@ -244,24 +351,36 @@ contains
       j = i + 1
       do while ((j <= size(limit)) .and. ((p*p) <= (nAnisG - 1)))
 	match = .true.
-	do k = 1, library%nSnps
-	  if (Genos(library % randomOrder(k)) /= MissingGenotypeCode)then
-	    if ((library%getPhase(limit(i), library % randomOrder(k)) &
-	    + library%getPhase(limit(j), library % randomOrder(k))) &
-	    /= Genos(library%randomOrder(k))) then
-	      e = e + 1
+	e = 0
+	ii = limit(i)
+	jj = limit(j)
+!	do k = 1, library%nSnps
+!	  if (Genos(library % randomOrder(k)) /= MissingGenotypeCode)then
+!	    if ((library%getPhase(limit(i), library % randomOrder(k)) &
+!	    + library%getPhase(limit(j), library % randomOrder(k))) &
+!	    /= Genos(library%randomOrder(k))) then
+!	      e = e + 1
+	do k = 1, library%numsections
+	  matchz = IAND(zeros(k), NOT(IOR(library%bitstore(ii,k),library%bitstore(jj,k))))
+	  matcho = IAND(ones(k), IEOR(library%bitstore(ii,k),library%bitstore(jj,k)))
+	  matcht = IAND(twos(k), IAND(library%bitstore(ii,k),library%bitstore(jj,k)))
+	  
+	  e = e + POPCNT( IAND( &
+		  IAND(NOT(matchz),NOT(matcho)), &
+		  IAND(NOT(matcht),present(k)) &
+		  ))
 	      if (e > ErrorAllow) then
 		match = .false.
 		exit
 	      end if
-	    end if
-	  endif
+!	    end if
+!	  endif
 	end do
 	
 	if (match) then
 	  p = p + 1
-	  tempPairs(p,1) = limit(i)
-	  tempPairs(p,2) = limit(j)
+	  tempPairs(p,1) = ii
+	  tempPairs(p,2) = jj
 	end if
 	j = j + 1
       end do
@@ -271,6 +390,7 @@ contains
     allocate(pairs(p,2))
     pairs = tempPairs(1:p,:)
     deallocate(tempPairs)
+    deallocate(zeros,ones,twos,present)
   end function limitedCompatPairsWithError
 	
 
@@ -373,65 +493,212 @@ contains
     integer, dimension(:), pointer :: compatHaps
     
     integer, dimension(:), allocatable :: tempCompatHaps
-    integer :: k, j, numCompatHaps, disagree, ErrorAllow
+    integer :: j, i, numCompatHaps, disagree, ErrorAllow
+    
+    integer(kind=8), dimension(:), allocatable :: zeros, twos
+    integer :: cursection, curpos
+   
+    allocate(zeros(library%numsections),twos(library%numsections))
+    zeros = 0
+    twos = 0
+    
+    cursection = 1
+    curpos = 1
+    do i = 1, size(genos)
+      select case (genos(i))
+      case (0)
+	zeros(cursection) = ibset(zeros(cursection), curpos)
+      case (2)
+	twos(cursection) = ibset(twos(cursection), curpos)
+      end select
+      curpos = curpos + 1
+      if (curpos == 65) then
+	curpos = 1
+	cursection = cursection + 1
+      end if
+    end do
     
     ErrorAllow = int(PercGenoHaploDisagree * library%nSnps)
     allocate(tempCompatHaps(library%size))
     numCompatHaps = 0
-    do k = 1, library%size
+    do i = 1, library%size
       Disagree = 0
-      do j = 1, library%nSnps
-	if ((library%getPhase(k, library%randomOrder(j)) == 0) .and. (genos(library%randomOrder(j)) == 2)) then
-	  Disagree = Disagree + 1
-	  if (Disagree > ErrorAllow) then
-	    exit
-	  end if
-	end if
-	if ((library%getPhase(k, library%randomOrder(j)) == 1) .and. (genos(library%randomOrder(j)) == 0)) then
-	  Disagree = Disagree + 1
-	  if (Disagree > ErrorAllow) then
-	    exit
-	  end if
-	end if
+      do j = 1, library % numsections
+	Disagree = Disagree + POPCNT(IOR( &
+		  IAND(zeros(j), library%bitstore(i,j)), &
+		  IAND(twos(j), NOT(library%bitstore(i,j))) &
+		  ))
       end do
       if (Disagree <= ErrorAllow) then
 	numCompatHaps = numCompatHaps + 1
-	tempCompatHaps(numCompatHaps) = k
+	tempCompatHaps(numCompatHaps) = i
       end if
     end do
     allocate(compatHaps(numCompatHaps))
     compatHaps = tempCompatHaps(1:numCompatHaps)
     deallocate(tempCompatHaps)
   end function getCompatHaps
-
-  function fullyPhased(haplotype) result (fully)
-    integer(kind=1), dimension(:), intent(in) :: haplotype
-    logical :: fully
-
-    fully = all((haplotype == 0) .or. (haplotype == 1))
-  end function fullyPhased
-
-
-
-  function uniquehaps(haps1, haps2) result (uniq)
-    integer, dimension(:), intent(in) :: haps1, haps2
-    integer, dimension(:), pointer :: uniq
-
-    integer, dimension(:), allocatable :: tempU
-
-    integer :: i, p
-
-    allocate(tempU(size(haps1)))
-    p = 0
-    do i = 1, size(haps1)
-      if (.not. any (haps1(i) == haps2)) then
-	p = p + 1
-	tempU(p) = haps1(i)
+  
+  function getCompatHapsFreq(library, genos,freq) result (compatHaps)
+    use parameters, only : percgenohaplodisagree
+    
+    class(HaplotypeLibrary) :: library
+    integer(kind=1), dimension(:), intent(in) :: genos
+    integer, intent(in) :: freq
+    integer, dimension(:), pointer :: compatHaps
+    
+    integer, dimension(:), allocatable :: tempCompatHaps
+    integer :: j, i, numCompatHaps, disagree, ErrorAllow
+    
+    integer(kind=8), dimension(:), allocatable :: zeros, twos
+    integer :: cursection, curpos
+   
+    allocate(zeros(library%numsections),twos(library%numsections))
+    zeros = 0
+    twos = 0
+    
+    cursection = 1
+    curpos = 1
+    do i = 1, size(genos)
+      select case (genos(i))
+      case (0)
+	zeros(cursection) = ibset(zeros(cursection), curpos)
+      case (2)
+	twos(cursection) = ibset(twos(cursection), curpos)
+      end select
+      curpos = curpos + 1
+      if (curpos == 65) then
+	curpos = 1
+	cursection = cursection + 1
       end if
     end do
+    
+    ErrorAllow = int(PercGenoHaploDisagree * library%nSnps)
+    allocate(tempCompatHaps(library%size))
+    numCompatHaps = 0
+    do i = 1, library%size
+      if (library%hapFreq(i) >= freq) then
+	Disagree = 0
+	do j = 1, library % numsections
+	  Disagree = Disagree + POPCNT(IOR( &
+		    IAND(zeros(j), library%bitstore(i,j)), &
+		    IAND(twos(j), NOT(library%bitstore(i,j))) &
+		    ))
+	end do
+	if (Disagree <= ErrorAllow) then
+	  numCompatHaps = numCompatHaps + 1
+	  tempCompatHaps(numCompatHaps) = i
+	end if
+      end if
+    end do
+    allocate(compatHaps(numCompatHaps))
+    compatHaps = tempCompatHaps(1:numCompatHaps)
+    deallocate(tempCompatHaps)
+  end function getCompatHapsFreq
 
-    allocate (uniq(p))
-    uniq = tempU(1:p)
-  end function uniquehaps
+  !!!!!! PRIVATE FUNCTIONS !!!!!!!
+    
+  function HaplotypeToBits(hap, numsections) result(bits)
+    integer(kind=1), dimension(:), intent(in) :: hap
+    integer, intent(in) :: numsections
+    integer(kind=8), dimension(:), pointer :: bits
+    integer :: curpos, cursection, i
+    
+    allocate(bits(numsections))
+    cursection = 1
+    curpos = 1
+    bits = 0
+    do i = 1, size(hap)
+      select case (hap(i))
+!      case (0)
+!	bits(cursection) = ibclr(bits(cursection), curpos)
+      case (1)
+	bits(cursection) = ibset(bits(cursection), curpos)
+      end select
+      curpos = curpos + 1
+      if (curpos == 65) then
+	curpos = 1
+	cursection = cursection + 1
+      end if
+    end do
+  end function  HaplotypeToBits
+  
+  function HaplotypePresent(hap, numsections) result(bits)
+    integer(kind=1), dimension(:), intent(in) :: hap
+    integer, intent(in) :: numsections
+    integer(kind=8), dimension(:), pointer :: bits
+    integer :: curpos, cursection, i
+    
+    allocate(bits(numsections))
+    cursection = 1
+    curpos = 1
+    bits = 0
+    do i = 1, size(hap)
+      if ((hap(i) == 0) .or. (hap(i) == 1)) then
+	bits(cursection) = ibset(bits(cursection), curpos)
+      end if
+      curpos = curpos + 1
+      if (curpos == 65) then
+	curpos = 1
+	cursection = cursection + 1
+      end if
+    end do
+  end function HaplotypePresent
+  
+  function BitsMissingToHaplotype(bits, missing, overhang) result(haplotype)
+    integer(kind=8), dimension(:), intent(in) :: bits, missing
+    integer, intent(in) :: overhang
+    integer(kind=1), dimension(:), allocatable :: haplotype
+    
+    integer :: i, j, e
+    
+    allocate(haplotype(size(bits)*64 - overhang))
+    
+    do i = 1, size(bits) 
+      if (i < size(bits)) then
+	e = 64
+      else
+	e = 64 - overhang
+      end if
+      do j = 1, e
+	if (.not. btest(missing(i),j)) then
+	  haplotype((i-1)*64+j) = 9
+	else
+	  if (btest(bits(i), j)) then
+	    haplotype((i-1)*64+j) = 1
+	  else
+	    haplotype((i-1)*64+j) = 0
+	  end if
+	end if
+      end do
+    end do
+    
+  end function BitsMissingToHaplotype
+  
+  function BitsToHaplotype(bits, overhang) result(haplotype)
+    integer(kind=8), dimension(:), intent(in) :: bits
+    integer, intent(in) :: overhang
+    integer(kind=1), dimension(:), allocatable :: haplotype
+    
+    integer :: i, j, e
+    
+    allocate(haplotype(size(bits)*64 - overhang))
+    
+    do i = 1, size(bits) 
+      if (i < size(bits)) then
+	e = 64
+      else
+	e = 64 - overhang
+      end if
+      do j = 1, e
+	if (btest(bits(i), j)) then
+	  haplotype((i-1)*64+j) = 1
+	else
+	  haplotype((i-1)*64+j) = 0
+	end if
+      end do
+    end do
+    
+  end function BitsToHaplotype
 
 end module HaplotypeLibraryDefinition

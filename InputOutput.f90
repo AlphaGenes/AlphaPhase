@@ -83,6 +83,7 @@ contains
 	WorkOut(k) = AllHapAnis(i, 2, j)
       end do
       write (33, '(a20,20000i8,20000i8,20000i8,20000i8,20000i8)') p%getID(i), WorkOut(:)
+      !write (33, '(i10,20000i5,20000i5,20000i5,20000i5,20000i5)') i, WorkOut(:)
     end do
     
     close(15)
@@ -343,6 +344,7 @@ contains
     use Constants
     use PedigreeDefinition
     use NRMCode
+    use Sorting
     implicit none
     
     type(Pedigree) :: p
@@ -395,7 +397,7 @@ contains
     allocate(DanArray(size(ped, 1)))
     allocate(DanPos(size(ped,1)))
     DanArray = adjustr(ped(:,1))
-    call InsertionSort(DanArray,DanPos)
+    call SortWithIndex(DanArray,DanPos)
     
     do i = 1, nAnisG
       truth = 0
@@ -493,7 +495,7 @@ contains
     allocate(DanArray(size(GenotypeID)))
     allocate(DanPos(size(GenotypeID)))
     DanArray = adjustr(GenotypeID)
-    call InsertionSort(DanArray,DanPos)
+    call SortWithIndex(DanArray,DanPos)
     
     allocate(DanRecode(size(ped,1)))
     do i = 1, size(ped,1)
@@ -600,15 +602,18 @@ contains
     close(3)
   end function ParseGenotypeData
 
-  subroutine ReadInParameterFile
+  subroutine ReadInParameterFile(filename)
     use Parameters
     implicit none
+    
+    character(*), intent(in) :: filename
 
     double precision :: PercSurrDisagree
-    integer :: i, TempInt, Graphics, status
-    character (len = 300) :: dumC, FileFormat, OffsetVariable
+    integer :: i, TempInt, Graphics, status, cl
+    character (len = 300) :: dumC, FileFormat, OffsetVariable, hold
 
-    open (unit = 1, file = "AlphaPhaseSpec.txt", status = "old")
+    !open (unit = 1, file = "AlphaPhaseSpec.txt", status = "old")
+    open (unit = 1, file = filename, status = "old")
 
     read (1, *) dumC, PedigreeFile
     read (1, *) dumC, GenotypeFile, FileFormat
@@ -682,13 +687,41 @@ contains
       itterateType = "Off"
     end if
 
-    read (1, *, iostat=status) dumC, itterateNumber
-    if (status /= 0) then
+!    read (1, *, iostat=status) dumC, itterateNumber
+!    if (status /= 0) then
+!      itterateNumber = 200
+!    end if
+!    read (1, *, iostat=status) dumC, numIter
+!    if (status /= 0) then
+!      numIter = 1
+!    end if
+    read(1, *, iostat=status) dumC, hold
+    if (status == 0) then
+      if (hold(1:1) == "*") then
+	read(hold,"(X,I2)") cl
+	call get_command_argument(cl,hold)
+	read(hold,*) itterateNumber
+      else
+	read(hold,*) itterateNumber
+      end if
+    else
       itterateNumber = 200
     end if
-    read (1, *, iostat=status) dumC, numIter
-    if (status /= 0) then
-      numIter = 2
+    
+    read(1, *, iostat=status) dumC, hold
+    if (status == 0) then
+      if (hold(1:1) == "*") then
+	read(hold,"(X,I2)") cl
+	call get_command_argument(cl,hold)
+	read(hold,*) numIter
+      else
+	read(hold,*) numIter
+      end if
+    else
+      numIter = 1
+    end if
+    if (itterateType .eq. "Off") then
+      numIter = 1
     end if
 
     read (1, *, iostat=status) dumC, startCoreChar, endCoreChar

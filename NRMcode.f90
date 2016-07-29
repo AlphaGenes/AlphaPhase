@@ -102,6 +102,11 @@ contains
     
     close(9)
     
+    deallocate(xnumrelmatHold)
+    deallocate(RecDam)
+    deallocate(RecSire)
+    deallocate(RecodeGenotypeID)
+    
     return
 
     !!!!! END NRM

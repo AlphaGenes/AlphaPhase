@@ -63,7 +63,7 @@ contains
 
   subroutine Checker(c, Surrogates, p, OutputPoint, startSnp, endSnp, totalSnps)
     !!! THIS COULD DO WITH SOME MAJOR WORK!
-    use Parameters, only: FullFileOutput, TruePhaseFile, itterateType
+    use Parameters, only: FullFileOutput, TruePhaseFile, itterateType, numIter
     use Constants
     use SurrogateDefinition
     use PedigreeDefinition
@@ -346,7 +346,7 @@ contains
       /(ErrCountMatCorrect(i) + ErrCountMatNotPhased(i) + ErrCountMatWrong(i) + 0.00000000001))
 
       if (FullFileOutput == 1) then
-	if (itterateType .eq. "Off") then
+	if ((itterateType .eq. "Off") .and. (numIter == 1)) then
 	  nSurrogates = 0
 	  do k = i, nAnisG
 	    if (surrogates % numOppose(i, k) <= surrogates % threshold) nSurrogates = nSurrogates + 1

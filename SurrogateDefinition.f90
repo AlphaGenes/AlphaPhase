@@ -414,6 +414,8 @@ contains
       end if
       definition%partition(i, i) = 0
     end do
+    
+    deallocate(genos)
   end function newSurrogate
   
   function mismatches(homo, additional, first, second, numsections) result(c)
