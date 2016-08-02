@@ -100,7 +100,6 @@ contains
       end if
     end do
     deallocate(bits)
-!    print *, id, ido
   end function hasHap
 
   function addHap(library, haplotype) result(id)
@@ -486,60 +485,14 @@ contains
   end function getHapFreq
   
   function getCompatHaps(library, genos) result (compatHaps)
-    use parameters, only : percgenohaplodisagree
-    
     class(HaplotypeLibrary) :: library
     integer(kind=1), dimension(:), intent(in) :: genos
     integer, dimension(:), pointer :: compatHaps
     
-    integer, dimension(:), allocatable :: tempCompatHaps
-    integer :: j, i, numCompatHaps, disagree, ErrorAllow
-    
-    integer(kind=8), dimension(:), allocatable :: zeros, twos
-    integer :: cursection, curpos
-   
-    allocate(zeros(library%numsections),twos(library%numsections))
-    zeros = 0
-    twos = 0
-    
-    cursection = 1
-    curpos = 1
-    do i = 1, size(genos)
-      select case (genos(i))
-      case (0)
-	zeros(cursection) = ibset(zeros(cursection), curpos)
-      case (2)
-	twos(cursection) = ibset(twos(cursection), curpos)
-      end select
-      curpos = curpos + 1
-      if (curpos == 65) then
-	curpos = 1
-	cursection = cursection + 1
-      end if
-    end do
-    
-    ErrorAllow = int(PercGenoHaploDisagree * library%nSnps)
-    allocate(tempCompatHaps(library%size))
-    numCompatHaps = 0
-    do i = 1, library%size
-      Disagree = 0
-      do j = 1, library % numsections
-	Disagree = Disagree + POPCNT(IOR( &
-		  IAND(zeros(j), library%bitstore(i,j)), &
-		  IAND(twos(j), NOT(library%bitstore(i,j))) &
-		  ))
-      end do
-      if (Disagree <= ErrorAllow) then
-	numCompatHaps = numCompatHaps + 1
-	tempCompatHaps(numCompatHaps) = i
-      end if
-    end do
-    allocate(compatHaps(numCompatHaps))
-    compatHaps = tempCompatHaps(1:numCompatHaps)
-    deallocate(tempCompatHaps)
+    compatHaps = getCompatHapsFreq(library, genos, 1)    
   end function getCompatHaps
   
-  function getCompatHapsFreq(library, genos,freq) result (compatHaps)
+  function getCompatHapsFreq(library, genos, freq) result (compatHaps)
     use parameters, only : percgenohaplodisagree
     
     class(HaplotypeLibrary) :: library

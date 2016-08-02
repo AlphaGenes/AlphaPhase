@@ -16,7 +16,7 @@ program Rlrplhi
   
   use NRMcode
   
-  use Parameters, only : ItterateType, NumIter
+  use Parameters, only : ItterateType, NumIter, GenotypeFileFormat
  
   implicit none
 
@@ -29,7 +29,7 @@ program Rlrplhi
   type(Pedigree) :: p
   
   integer, allocatable, dimension (:,:,:) :: AllHapAnis
-  integer(kind=1), allocatable, dimension(:,:,:) :: AllPhase
+  integer(kind=1), allocatable, dimension(:,:,:) :: AllPhase, Phase
   integer(kind=1), allocatable, dimension(:,:) :: AllGenos, Genos
   integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
   integer, allocatable, dimension (:,:) :: CoreIndex, TailIndex
@@ -76,24 +76,29 @@ program Rlrplhi
   call ReadInParameterFile(specfile)
   
   
-    call MakeDirectories
+  call MakeDirectories
   p = ParsePedigreeData()
   nAnisG = p%getNAnis()
   call CalculateCores(CoreIndex, TailIndex)
-  nCores = size(CoreIndex,1)
-  if (.not. readCoreAtTime) then
-    allocate(AllGenos(nAnisG,nSnp))
-    AllGenos = ParseGenotypeData(1,nSnp,nAnisG)
-  end if
-  
-  if (consistent) then
-    allocate(PseudoNRM(nAnisG,nAnisG))
-    PseudoNRM = createNRM(p)
-  end if
-  
+  nCores = size(CoreIndex,1)  
+    
   if (.not. readCoreAtTime) then
     allocate(AllHapAnis(nAnisG, 2, nCores))
     allocate(AllPhase(nAnisG, nSnp, 2))
+  end if
+  
+  if (.not. readCoreAtTime) then
+    if (GenotypeFileFormat /= 2) then
+      allocate(AllGenos(nAnisG,nSnp))
+      AllGenos = ParseGenotypeData(1,nSnp,nAnisG)
+    else
+      AllPhase = ParsePhaseData(1,nSnp,nAnisG)
+    end if
+  end if
+  
+  if ((consistent) .and. (GenotypeFileFormat /= 2)) then
+    allocate(PseudoNRM(nAnisG,nAnisG))
+    PseudoNRM = createNRM(p)
   end if
     
   threshold = int(GenotypeMissingErrorPercentage*CoreAndTailLength)
@@ -115,66 +120,83 @@ program Rlrplhi
   end if
     
   do h = startCore, endCore
-    print*, " "
-    print*, " "
-    print*, " Starting Core", h, "/", nCores
     StartCoreSnp = CoreIndex(h, 1)
     EndCoreSnp = CoreIndex(h, 2)
     StartSurrSnp = TailIndex(h, 1)
     EndSurrSnp = TailIndex(h, 2)
     
-    allocate(Genos(nAnisG, max(EndSurrSnp,EndCoreSnp)-startSurrSnp+1))
-    if (readCoreAtTime) then
-      Genos = ParseGenotypeData(StartSurrSnp,max(EndSurrSnp,EndCoreSnp),nAnisG)
-    else
-      Genos = AllGenos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp))
-    end if
+    print*, " "
+    print*, " "
+    print*, " Starting Core", h, "/", nCores
     
-    ! Fudge below
-    c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
-
-    do i = 1, NumIter
-      manager = MemberManager(c)
-
-      subsetCount = 0
-      do while (manager%hasNext())
-	cs = CoreSubSet(c, p, manager%getNext())
-
-	surrogates = Surrogate(cs, threshold, consistent, pseudoNRM)
-	call writeSurrogates(surrogates,threshold, h, p)
-	call Erdos(surrogates, threshold, cs)
-	call CheckCompatHapGeno(cs)     
-
-	subsetCount = subsetCount + 1
-	if (ItterateType .ne. "Off") then
-	  print '(8x, i5, a20, f6.2, a16, f6.2, a16)', subsetCount, " Subsets completed, ", c%getYield(1), "% Paternal yield, ", &
-	    c%getYield(2), "% Maternal Yield"
-	end if
-      end do
-
-      nGlobalHapsIter = 1
-      library = MakeHapLib(c)
-      nGlobalHapsOld = library%getSize()
-      if (ItterateType .eq. "Off") then
-	print*, " "
-	print*, "  ", "Haplotype library imputation step"
+    if (GenotypeFileFormat /= 2) then
+      allocate(Genos(nAnisG, max(EndSurrSnp,EndCoreSnp)-startSurrSnp+1))
+      if (readCoreAtTime) then
+	Genos = ParseGenotypeData(StartSurrSnp,max(EndSurrSnp,EndCoreSnp),nAnisG)
+      else
+	Genos = AllGenos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp))
       end if
-      do j = 1, 20
-	call ImputeFromLib(library, c, nGlobalHapsIter)
+
+      ! Fudge below
+      c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
+
+      do i = 1, NumIter
+	manager = MemberManager(c)
+
+	subsetCount = 0
+	do while (manager%hasNext())
+	  cs = CoreSubSet(c, p, manager%getNext())
+
+	  surrogates = Surrogate(cs, threshold, consistent, pseudoNRM)
+	  call writeSurrogates(surrogates,threshold, h, p)
+	  call Erdos(surrogates, threshold, cs)
+	  call CheckCompatHapGeno(cs)     
+
+	  subsetCount = subsetCount + 1
+	  if (ItterateType .ne. "Off") then
+	    print '(8x, i5, a20, f6.2, a16, f6.2, a16)', subsetCount, " Subsets completed, ", c%getYield(1), "% Paternal yield, ", &
+	      c%getYield(2), "% Maternal Yield"
+	  end if
+	end do
+
+	nGlobalHapsIter = 1
 	library = MakeHapLib(c)
-	if (nGlobalHapsOld == library%getSize()) exit
 	nGlobalHapsOld = library%getSize()
+	if (ItterateType .eq. "Off") then
+	  print*, " "
+	  print*, "  ", "Haplotype library imputation step"
+	end if
+	do j = 1, 20
+	  call ImputeFromLib(library, c, nGlobalHapsIter)
+	  library = MakeHapLib(c)
+	  if (nGlobalHapsOld == library%getSize()) exit
+	  nGlobalHapsOld = library%getSize()
+	end do
+
+	if (ItterateType .ne. "Off") then
+	  print '(4x, a9, 20x, i6, a19, f6.2, a25)', "After HLI", library%getSize(), " Haplotypes found, ", &
+	    c%getPercentFullyPhased(), "% Haplotypes fully phased"
+	  print '(33x, f6.2, a16, f6.2, a16)', c%getYield(1), "% Paternal yield, ", c%getYield(2), "% Maternal Yield"
+	end if
+
       end do
-      
-      if (ItterateType .ne. "Off") then
-	print '(4x, a9, 20x, i6, a19, f6.2, a25)', "After HLI", library%getSize(), " Haplotypes found, ", &
-	  c%getPercentFullyPhased(), "% Haplotypes fully phased"
-	print '(33x, f6.2, a16, f6.2, a16)', c%getYield(1), "% Paternal yield, ", c%getYield(2), "% Maternal Yield"
+
+      deallocate(Genos)
+    else
+      allocate(Phase(nAnisG,EndCoreSnp-StartCoreSnp+1,2))
+      if (readCoreAtTime) then
+	Phase = ParsePhaseData(StartCoreSnp,EndCoreSnp,nAnisG)
+      else
+	Phase = AllPhase(:,StartCoreSnp:EndCoreSnp,:)
       end if
-      
-    end do
-    
-    deallocate(Genos)
+      c = Core(Phase)
+      do i = 1, nAnisG
+	call c%setHaplotype(i,1,Phase(i,:,1))
+	call c%setHaplotype(i,2,Phase(i,:,2))
+      end do
+      library = MakeHapLib(c)
+      deallocate(Phase)
+    end if
    
     call WriteHapLib(library, h, c)
     
@@ -201,13 +223,15 @@ program Rlrplhi
   else
     call WriteOutResults(AllPhase,AllHapAnis,CoreIndex,p)
   end if
-  if (consistent) then
+  if ((consistent) .and. (GenotypeFileFormat /= 2)) then
     deallocate(PseudoNRM)
   end if
   if (.not. readCoreAtTime) then
     deallocate(AllHapAnis)
     deallocate(AllPhase)
-    deallocate(AllGenos)
+    if (GenotypeFileFormat /= 2) then
+      deallocate(AllGenos)
+    end if
   end if
   if ((Simulation == 1) .and. combine) then
     call CheckerCombine(nCores)

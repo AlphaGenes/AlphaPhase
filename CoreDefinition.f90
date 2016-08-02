@@ -47,6 +47,7 @@ module CoreDefinition
   
   interface Core
     module procedure newCore
+    module procedure newPhaseCore
   end interface Core
 
 contains
@@ -79,6 +80,29 @@ contains
     c%phase = 9
     c%hapAnis = -99
   end function newCore
+  
+  function newPhaseCore(phase) result(c)
+    implicit none
+    
+    integer(kind = 1), dimension(:,:,:), intent(in) :: phase
+    type(Core) :: c
+    
+    integer :: nAnisG, nSnp
+    
+    nAnisG = size(phase,1)
+    nSnp = size(phase,2)
+    
+    allocate(c%phase(nAnisG,nSnp,2))
+    allocate(c%fullyphased(nAnisG,2))
+    allocate(c%hapAnis(nAnisG,2))
+    
+    c%startCoreSnp = 1
+    c%endCoreSnp = nSnp
+    c%endSurrSnp = 0
+    c%fullyPhased = .false.
+    c%phase = phase
+    c%hapAnis = -99
+  end function newPhaseCore
   
   subroutine destroy(c)
     type(Core) :: c
@@ -151,7 +175,7 @@ contains
     class(Core) :: c
     integer :: num
     
-    num = size(c%genos,1)
+    num = size(c%phase,1)
   end function getNAnisG
   
   function getNSnp(c) result(num)

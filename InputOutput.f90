@@ -601,6 +601,39 @@ contains
     
     close(3)
   end function ParseGenotypeData
+  
+  function ParsePhaseData(startSnp, endSnp, nAnisG) result(Phase)
+    use Parameters, only: GenotypeFile, nSnp, GenotypeFileFormat
+    use Constants
+    implicit none
+
+    integer, intent(in) :: startSnp, endSnp
+    integer, intent(in) :: nAnisG
+    integer(kind=1), allocatable, dimension(:,:,:) :: Phase
+
+    integer :: i, j, k
+    integer, allocatable, dimension (:) :: WorkVec, ReadingVector
+    integer :: nReadSnp
+    character(lengan) :: dummy
+    
+    open (unit = 3, file = trim(GenotypeFile), status = "old")
+
+    nReadSnp = endSnp - startSnp + 1
+
+    allocate(Phase(nAnisG, nReadSnp, 2))
+    allocate(ReadingVector(nSnp))
+
+    Phase = 9
+
+    do i = 1, nAnisG
+      read (3, *) dummy, ReadingVector(:)
+      Phase(i,:,1) = ReadingVector(startSnp:endSnp)
+      read (3, *) dummy, ReadingVector(:)
+      Phase(i,:,2) = ReadingVector(startSnp:endSnp)
+    enddo
+    
+    close(3)
+  end function ParsePhaseData
 
   subroutine ReadInParameterFile(filename)
     use Parameters
@@ -729,6 +762,19 @@ contains
       startCoreChar = "1"
       endCoreChar = "Combine"
     end if
+    
+    read (1, *, iostat=status) dumC, hold
+    if (status == 0) then
+      if (hold(1:1) == "*") then
+	read(hold,"(X,I2)") cl
+	call get_command_argument(cl,hold)
+	read(hold,*) minHapFreq
+      else
+	read(hold,*) minHapFreq
+      end if
+    else
+      minHapFreq = 1
+    end if
 
     PercSurrDisagree = PercSurrDisagree/100
     NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
@@ -848,7 +894,7 @@ contains
 !#################################################################################################################################################################
 
   subroutine CountInData(nAnisRawPedigree, nAnisG)
-    use Parameters, only: PedigreeFile, GenotypeFile
+    use Parameters, only: PedigreeFile, GenotypeFile, GenotypeFileFormat
     implicit none
 
     integer, intent(out) :: nAnisRawPedigree, nAnisG
@@ -881,6 +927,9 @@ contains
 	exit
       endif
     enddo
+    if (GenotypeFileFormat == 2) then
+      nAnisG = nAnisG /2
+    end if
     close(3)
     print*, " ", nAnisG, " individuals in the genotype file"
 

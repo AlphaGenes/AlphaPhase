@@ -15,7 +15,7 @@ contains
     integer :: i, id
 
     library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
-
+    
     do i = 1, c % getNAnisG()
       !Paternal Haps
       if (fullyPhased(c % getHaplotype(i, 1))) then
@@ -40,7 +40,7 @@ contains
     ! by matching their phased loci to haplotypes in the Haplotype Library,
     ! following strategies listed in the section Step 2e of Hickey et al 2011.
 
-    use Parameters, only: percgenohaplodisagree, consistent, itteratetype
+    use Parameters, only: percgenohaplodisagree, consistent, itteratetype, minhapfreq
     use HaplotypeLibraryDefinition
     use Constants
     use CoreDefinition
@@ -99,7 +99,7 @@ contains
 	      compatHaps(k) = k
 	    end do
 	  else
-	    compatHaps => library % getCompatHapsFreq(c % getSingleCoreGenos(i),1)
+	    compatHaps => library % getCompatHapsFreq(c % getSingleCoreGenos(i),minHapFreq)
 	  end if
 
 	  CandHapsPat => library % limitedMatchWithError(c % getHaplotype(i, 1), ErrorAllow, compatHaps)

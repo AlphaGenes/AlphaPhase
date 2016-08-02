@@ -18,6 +18,7 @@ module Parameters
   integer :: itterateNumber
   integer :: numIter
   character (len = 10) :: startCoreChar, endCoreChar
+  integer :: minHapFreq
   
   logical :: consistent  
 end module Parameters
