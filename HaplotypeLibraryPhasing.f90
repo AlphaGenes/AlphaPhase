@@ -233,6 +233,7 @@ contains
 		    call c % setPhase(i, j, 2, library % getPhase(CandPairs(1, 2), j))
 		  end if
 		end do
+		call c%setSwappable(i, 1)
 	      end if
 
 	      ! Check how many maternal candidates haplotypes
@@ -250,6 +251,7 @@ contains
 		    call c % setPhase(i, j, 1, library % getPhase(CandPairs(1, 1), j))
 		  endif
 		enddo
+		call c%setSwappable(i, 2)
 	      endif
 
 	      ! If proband is not completely phased and have more than one candidate 
@@ -258,6 +260,7 @@ contains
 	      if (((.not.c % getFullyPhased(i, 1)) .or. (.not.c % getFullyPhased(i, 2))) &
 		.and. (.not.SinglePat) .and. (.not.SingleMat)) then
 		call clusterAndPhase(c, library, CandPairs, i)
+		call c%setSwappable(i, 3)
 	      endif
 	    endif
 	    deallocate(CandHaps)

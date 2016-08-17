@@ -2,26 +2,30 @@ module InputOutput
   
 contains
 
-  subroutine WriteOutResults(phase, allHapAnis, coreIndex, p)
+  !subroutine WriteOutResults(phase, allHapAnis, coreIndex, p)
+  subroutine WriteOutResults(allCores, coreIndex, p)
     use Constants
     use PedigreeDefinition
+    use CoreDefinition
     implicit none
 
-    integer(kind=1), dimension(:,:,:), intent(in) :: phase
-    integer, dimension(:,:,:), intent(in) :: allHapAnis
-    integer, dimension(:,:) :: coreIndex
-    type(Pedigree) :: p
+    type(Core), dimension(:), intent(in) :: allCores
+    integer, dimension(:,:), intent(in) :: coreIndex
+    type(Pedigree), intent(in) :: p
+    
+    integer(kind=1), dimension(:), allocatable :: tempPhase
 
     integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp, nCores
     integer, allocatable, dimension(:) :: WorkOut
     double precision, allocatable, dimension(:) :: CoreCount
+    integer(kind=1), allocatable, dimension(:) :: TempSwap
 
-    nAnisG = size(phase,1)
-    nSnp = size(phase,2)
-    nCores = size(allHapAnis,3)
-
-    allocate(WorkOut(nCores * 2))
-    allocate(CoreCount(nCores * 2))
+    nAnisG = allCores(1)%getNAnisG()
+    nCores = size(allCores)
+    nSnp = 0
+    do i = 1, nCores
+      nSnp = nSnp + allCores(i)%getNCoreSnp()
+    end do
 
     if (WindowsLinux == 1) then
       open (unit = 15, file = ".\PhasingResults\FinalPhase.txt", status = "unknown")
@@ -29,68 +33,90 @@ contains
       open (unit = 28, file = ".\PhasingResults\SnpPhaseRate.txt", status = "unknown")
       open (unit = 30, file = ".\PhasingResults\IndivPhaseRate.txt", status = "unknown")
       open (unit = 33, file = ".\PhasingResults\FinalHapIndCarry.txt", status = "unknown")
+      open (unit = 44, file = ".\PhasingResults\SwapPatMat.txt", status = "unknown")
     else
       open (unit = 15, file = "./PhasingResults/FinalPhase.txt", status = "unknown")
       open (unit = 25, file = "./PhasingResults/CoreIndex.txt", status = "unknown")
       open (unit = 28, file = "./PhasingResults/SnpPhaseRate.txt", status = "unknown")
       open (unit = 30, file = "./PhasingResults/IndivPhaseRate.txt", status = "unknown")
       open (unit = 33, file = "./PhasingResults/FinalHapIndCarry.txt", status = "unknown")
+      open (unit = 44, file = "./PhasingResults/SwapPatMat.txt", status = "unknown")
     end if
 
+    allocate(tempPhase(nSnp))
     do i = 1, nAnisG
+      do j = 1, nCores
+	TempPhase(coreIndex(j,1):coreIndex(j,2)) = allCores(j)%getHaplotype(i,1)
+      end do
       write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getId(i), &
-      Phase(i,:, 1)
+      TempPhase
+      do j = 1, nCores
+	TempPhase(coreIndex(j,1):coreIndex(j,2)) = allCores(j)%getHaplotype(i,2)
+      end do
       write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getId(i), &
-      Phase(i,:, 2)
+      TempPhase
     end do
+    deallocate(tempPhase)
 
     do i = 1, nCores
       write (25, *) i, CoreIndex(i,:)
     end do
 
-
-    do i = 1, nSnp
-      counter = 0
-      do j = 1, nAnisG
-	if ((Phase(j, i, 1) == 0).or.(Phase(j, i, 1) == 1)) counter = counter + 1
-	if ((Phase(j, i, 2) == 0).or.(Phase(j, i, 2) == 1)) counter = counter + 1
+    do i = 1, nCores
+      do j = 1, allCores(i)%getNCoreSnp()
+	counter = 0
+	do k = 1, nAnisG
+	  if ((allCores(i)%getPhase(k, j, 1) == 0).or.(allCores(i)%getPhase(k, j, 1) == 1)) counter = counter + 1
+	  if ((allCores(i)%getPhase(k, j, 2) == 0).or.(allCores(i)%getPhase(k, j, 2) == 1)) counter = counter + 1
+	end do
+	write (28, '(i10,f7.2)') coreIndex(i,1) + j - 1, (100 * (float(counter)/(2 * nAnisG)))
       end do
-      write (28, '(i10,f7.2)') i, (100 * (float(counter)/(2 * nAnisG)))
     end do
 
+    allocate(CoreCount(nCores * 2))
     do i = 1, nAnisG
       l = 0
       do j = 1, nCores
-	CounterP = 0
-	CounterM = 0
-	do k = CoreIndex(j, 1), CoreIndex(j, 2)
-	  if ((Phase(i, k, 1) == 0).or.(Phase(i, k, 1) == 1)) counterP = counterP + 1
-	  if ((Phase(i, k, 2) == 0).or.(Phase(i, k, 2) == 1)) counterM = counterM + 1
-	end do
+	CounterP = allCores(j)%getNCoreSnp() - allCores(j)%hapNumMissing(i,1)
 	l = l + 1
-	CoreCount(l) = (float(counterP)/((CoreIndex(j, 2) - CoreIndex(j, 1)) + 1)) * 100
+	CoreCount(l) = (float(counterP)/allCores(j)%getNCoreSnp()) * 100
+	CounterM = allCores(j)%getNCoreSnp() - allCores(j)%hapNumMissing(i,2)
 	l = l + 1
-	CoreCount(l) = (float(counterM)/((CoreIndex(j, 2) - CoreIndex(j, 1)) + 1)) * 100
+	CoreCount(l) = (float(counterM)/allCores(j)%getNCoreSnp()) * 100
       end do
       write (30, '(i10,20000f7.2,20000f7.2,20000f7.2,20000f7.2)') i, CoreCount(:)
     end do
+    deallocate(CoreCount)
 
+    allocate(WorkOut(nCores * 2))
     do i = 1, nAnisG
       k = 0
       do j = 1, nCores
 	k = k + 2
-	WorkOut(k - 1) = AllHapAnis(i, 1, j)
-	WorkOut(k) = AllHapAnis(i, 2, j)
+	WorkOut(k - 1) = AllCores(j)%getHapAnis(i,1)
+	WorkOut(k) = AllCores(j)%getHapAnis(i,2)
       end do
       write (33, '(a20,20000i8,20000i8,20000i8,20000i8,20000i8)') p%getID(i), WorkOut(:)
       !write (33, '(i10,20000i5,20000i5,20000i5,20000i5,20000i5)') i, WorkOut(:)
     end do
+    deallocate(WorkOut)
+    
+    allocate(TempSwap(nCores))
+    do i = 1, nAnisG
+      do j = 1, nCores
+	TempSwap(j) = AllCores(j)%getSwappable(i)
+      end do
+      write (44, '(i10,5000i2)') i, TempSwap
+    end do
+    deallocate(TempSwap)
+      
     
     close(15)
     close(25)
     close(28)
     close(30)
     close(33)
+    close(44)
 
   end subroutine WriteOutResults
 

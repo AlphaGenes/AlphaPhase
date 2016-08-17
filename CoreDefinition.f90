@@ -4,11 +4,12 @@ module CoreDefinition
 
   type, public :: Core
     private
-    !Almost definitely shouldn't be public but for now...
     integer(kind = 1), allocatable, dimension(:,:) :: genos
-    integer(kind = 1), allocatable, dimension(:,:,:), public :: phase
+    integer(kind = 1), allocatable, dimension(:,:,:) :: phase
     logical, allocatable, dimension(:,:) :: fullyPhased
     integer, dimension(:,:), allocatable, public :: hapAnis
+    
+    integer(kind=1), dimension(:), allocatable :: swappable
     
     integer :: startCoreSnp, endCoreSnp
     
@@ -16,7 +17,6 @@ module CoreDefinition
     integer :: endSurrSnp
   contains
     private
-    !procedure, public :: create
     procedure, public :: getCoreAndTailGenos
     procedure, public :: getSingleCoreAndTailGenos
     procedure, public :: getSingleCoreGenos
@@ -38,10 +38,16 @@ module CoreDefinition
     procedure, public :: getPercentFullyPhased
     procedure, public :: resetHapAnis
     procedure, public :: setHapAnis
+    procedure, public :: getHapAnis
     procedure, public :: getBothFullyPhased
     procedure, public :: getCoreGeno
     procedure, public :: numNotMissing
     procedure, public :: hapNumMissing
+    procedure, public :: getAllPhase
+    
+    procedure, public :: setSwappable
+    procedure, public :: getSwappable
+    
     final :: destroy
   end type Core
   
@@ -72,6 +78,8 @@ contains
     allocate(c%fullyphased(nAnisG,2))
     allocate(c%hapAnis(nAnisG,2))
     
+    allocate(c%swappable(nAnisG))
+    
     c%genos = genos
     c%startCoreSnp = startCoreSnp
     c%endCoreSnp = endCoreSnp
@@ -79,6 +87,8 @@ contains
     c%fullyPhased = .false.
     c%phase = 9
     c%hapAnis = -99
+    
+    c%swappable = 0
   end function newCore
   
   function newPhaseCore(phase) result(c)
@@ -211,6 +221,17 @@ contains
     p = c%phase(animal,snp,phase)
   end function getPhase
   
+  function getAllPhase(c) result(phase)
+    implicit none
+    class(Core) :: c
+    integer(kind=1), dimension(:,:,:), allocatable :: phase
+    
+    !! This is terrible and should be chnaged.
+    allocate(phase(size(c%phase,1), size(c%phase,2), size(c%phase,3)))
+    
+    phase = c%phase
+  end function getAllPhase
+  
   function getPhaseGeno(c,animal,snp) result (p)
     implicit none
     class(Core) :: c
@@ -328,6 +349,15 @@ contains
     c%hapAnis(animal,phase) = id
   end subroutine setHapAnis
   
+  function getHapAnis(c,animal,phase) result(id)
+    implicit none
+    class(Core) :: c
+    integer, intent(in) :: animal, phase
+    integer :: id
+    
+    id = c%hapAnis(animal,phase)
+  end function getHapAnis
+  
   function getCoreGeno(c,animal,snp) result(geno)
     class(Core) :: c
     integer, intent(in) :: animal,snp
@@ -353,8 +383,24 @@ contains
     integer, intent(in) :: animal, phase
     integer :: num
     
-    num = count(c%phase(animal,c%startCoreSnp:c%endCoreSnp,phase) == 9)
+    num = count(c%phase(animal,:,phase) == 9)
   end function hapNumMissing
+  
+  subroutine setSwappable(c, animal, val)
+    class(Core) :: c
+    integer, intent(in) :: animal
+    integer(kind=1), intent(in) :: val
+  
+    c%swappable(animal) = val
+  end subroutine setSwappable
+  
+  function getSwappable(c, animal) result(val)
+    class(Core) :: c
+    integer, intent(in) :: animal
+    integer(kind=1) :: val
+    
+    val = c%swappable(animal)
+  end function getSwappable
     
 end module CoreDefinition
 

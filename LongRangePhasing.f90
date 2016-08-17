@@ -38,7 +38,7 @@ contains
     allocate(surrList(nAnisG,nAnisG))
     allocate(nSurrList(nAnisG))
     allocate(visited(nAnisG))
-    allocate(toVisit(nAnisG))
+    allocate(toVisit(nAnisG + 1))
     allocate(depth(nAnisG))
     allocate(surrAveDiff(nAnisG))
 
@@ -93,6 +93,8 @@ contains
 	    visited = .false.
 	    toVisit = 0
 	    toVisit(1) = i
+	    ! Bit of a hack in case all animals are surrogates
+	    toVisit(nAnisG + 1) = 0
 	    Visited(i) = .true.
 	    toVisitPos = 1
 	    found = 0
@@ -145,8 +147,11 @@ contains
 		k = k + 1
 	      end do
 	      visiting = visiting + 1
-	      if (depth(visiting) /= depth(visiting-1)) then
-		call phaseSort(toVisit, visiting, toVisitPos)
+	      !Bit of a hack in case all animals are surrogates
+	      if (visiting <= nAnisG) then
+		if (depth(visiting) /= depth(visiting-1)) then
+		  call phaseSort(toVisit, visiting, toVisitPos)
+		end if
 	      end if
 	    end do
 

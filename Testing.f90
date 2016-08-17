@@ -2,11 +2,12 @@ module Testing
 
 contains
 
-  subroutine Flipper(phase, startSnp, endSnp, totalSnps)
+  subroutine Flipper(c, startSnp, endSnp, totalSnps)
     use Parameters, only: TruePhaseFile
+    use CoreDefinition
     implicit none
 
-    integer(kind = 1), dimension(:,:,:), intent(inout) :: phase
+    type(Core) :: c
     integer, intent(in) :: startSnp, endSnp, totalSnps
 
     integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth
@@ -17,8 +18,8 @@ contains
 
     integer :: nAnisG, nSnp
 
-    nAnisG = size(phase, 1)
-    nSnp = size(phase, 2)
+    nAnisG = c%getNAnisG()
+    nSnp = c%getNCoreSnp()
 
     allocate(TruePhase(nAnisG, nSnp, 2))
     allocate(W1(nSnp))
@@ -42,18 +43,18 @@ contains
       CountAgreeSwitch2 = 0
       truth = 0
       do j = 1, nSnp
-	if (TruePhase(i, j, 1) == Phase(i, j, 1)) CountAgreeStay1 = CountAgreeStay1 + 1
-	if (TruePhase(i, j, 2) == Phase(i, j, 1)) CountAgreeSwitch1 = CountAgreeSwitch1 + 1
-	if (TruePhase(i, j, 1) == Phase(i, j, 2)) CountAgreeSwitch2 = CountAgreeSwitch2 + 1
-	if (TruePhase(i, j, 2) == Phase(i, j, 2)) CountAgreeStay2 = CountAgreeStay2 + 1
+	if (TruePhase(i, j, 1) == c%getPhase(i, j, 1)) CountAgreeStay1 = CountAgreeStay1 + 1
+	if (TruePhase(i, j, 2) == c%getPhase(i, j, 1)) CountAgreeSwitch1 = CountAgreeSwitch1 + 1
+	if (TruePhase(i, j, 1) == c%getPhase(i, j, 2)) CountAgreeSwitch2 = CountAgreeSwitch2 + 1
+	if (TruePhase(i, j, 2) == c%getPhase(i, j, 2)) CountAgreeStay2 = CountAgreeStay2 + 1
       end do
       if ((CountAgreeSwitch2 > CountAgreeStay2).and.(CountAgreeStay1 <= CountAgreeSwitch1)) truth = 1
       if ((CountAgreeSwitch1 > CountAgreeStay1).and.(CountAgreeStay2 <= CountAgreeSwitch2)) truth = 1
       if (truth == 1) then
-	W1(:) = Phase(i,:, 1)
-	W2(:) = Phase(i,:, 2)
-	Phase(i,:, 1) = W2(:)
-	Phase(i,:, 2) = W1(:)
+	W1(:) = c%getHaplotype(i,1)
+	W2(:) = c%getHaplotype(i,2)
+	call c%setHaplotype(i,1,W2)
+	call c%setHaplotype(i,2,W1)
       end if
     end do
 

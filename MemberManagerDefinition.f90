@@ -45,6 +45,9 @@ contains
       !call createRandomOrder(manager, c, itterateNumber, numIter)
       call createRandomOrder(manager, c, itterateNumber, 1)
     end if
+    if (itterateType .eq. "Cluster") then
+      call createCluster(manager, c, itterateNumber, 1)
+    end if
   end function newMemberManager
   
   subroutine destroy(manager)
@@ -102,6 +105,84 @@ contains
     manager%numIter = numIter
     manager%completeIter = 0
   end subroutine createRandomOrder
+  
+  subroutine createCluster(manager, c, number, numIter)
+    class(MemberManager) :: manager
+    class(Core), intent(in), target :: c
+    integer, intent(in) :: number, numIter
+    
+    logical, dimension(c%getNAnisG()) :: used
+    integer :: nAnisG, numUsed, curMax, curOrder, seed, i, curIndiv, curSize
+    
+    manager%c => c
+    
+    nAnisG = c%getNAnisG()
+    allocate(manager%order(nAnisG))
+    used = .false.
+    numUsed = 0
+    curOrder = 0
+    
+    do while (numUsed < nAnisG)    
+      curSize = 0      
+      do i = 1, nAnisG
+	if (.not. used(i)) then
+	  seed = i
+	  used(i) = .true.
+	  curOrder = curOrder + 1
+	  manager%order(curOrder) = i
+	  numUsed = numUsed + 1
+	  curSize = 1
+	  !print *, "Seed", i
+	  exit
+	end if
+      end do
+
+      curMax = 0
+      curIndiv = 1
+      do while ((curSize < number) .and. (numUsed < nAnisG))
+	if (.not. used(curIndiv)) then
+	  if (dist(c%getSingleCoreAndTailGenos(seed),c%getSingleCoreAndTailGenos(curIndiv)) <= curMax) then
+	    used(curIndiv) = .true.
+	    curOrder = curOrder + 1
+	    manager%order(curOrder) = curIndiv
+	    numUsed = numUsed + 1
+	    curSize = curSize + 1
+	    !print *, "      Added", curIndiv, curMax
+	  end if
+	end if
+	curIndiv = curIndiv + 1
+	if (curIndiv > nAnisG) then
+	  curIndiv = 1
+	  curMax = curMax + 1
+	end if
+      end do
+    end do
+    
+    manager%noneleft = .false.
+    manager%number = number
+    manager%curPos = 1
+    manager%numIter = numIter
+    manager%completeIter = 0
+    
+  end subroutine createCluster
+  
+  function dist(input1, input2) result (d)
+    use Constants
+    integer(kind=1), dimension(:), intent(in) :: input1, input2
+    integer :: d
+    
+    integer :: i
+    
+    d = 0
+    do i = 1, size(input1)
+      if (input1(i) == 0 .and. input2(i) == 2) then
+	d = d + 1
+      end if
+      if (input1(i) == 2 .and. input1(i) == 0) then
+	d = d + 1
+      end if
+    end do
+  end function dist
   
   subroutine createAll(manager, c)
     class(MemberManager) :: manager

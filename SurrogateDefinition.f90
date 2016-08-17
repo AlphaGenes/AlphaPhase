@@ -413,6 +413,10 @@ contains
 	print*, "   Partitioning done for genotyped individual --- ", i
       end if
       definition%partition(i, i) = 0
+          
+      if (definition%method(i) > 3) then
+	call cs%setSwappable(i, definition%method(i))
+      end if
     end do
     
     deallocate(genos)

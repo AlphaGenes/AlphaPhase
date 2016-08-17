@@ -28,6 +28,9 @@ module CoreSubsetDefinition
     procedure, public :: getSire
     procedure, public :: getDam
     procedure, public :: getYield
+    
+    procedure, public :: setSwappable
+    
     final :: destroy
   end type CoreSubset
   
@@ -219,4 +222,12 @@ contains
     end do
     yield = (float(counter)/(set%nAnisG * set%parentCore%getNCoreSnp())) * 100
   end function getYield
+  
+  subroutine setSwappable(set, animal, val)
+    class(CoreSubSet) :: set
+    integer, intent(in) :: animal
+    integer(kind=1), intent(in) :: val
+    
+    call set%parentCore%setSwappable(set%sub2full(animal),val)
+  end subroutine setSwappable
 end module CoreSubsetDefinition

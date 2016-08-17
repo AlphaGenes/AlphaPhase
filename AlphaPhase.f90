@@ -38,6 +38,8 @@ program Rlrplhi
   integer :: nAnisG
   integer :: subsetCount
   
+  type(Core), allocatable, dimension(:) :: AllCores
+  
   !Linux max path length is 4096 which is more than windows or mac (all according to google)
   character(len=4096) specfile
   character(len=4096) :: cmd
@@ -85,6 +87,7 @@ program Rlrplhi
   if (.not. readCoreAtTime) then
     allocate(AllHapAnis(nAnisG, 2, nCores))
     allocate(AllPhase(nAnisG, nSnp, 2))
+    allocate(AllCores(nCores))
   end if
   
   if (.not. readCoreAtTime) then
@@ -136,7 +139,7 @@ program Rlrplhi
       else
 	Genos = AllGenos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp))
       end if
-
+      
       ! Fudge below
       c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
 
@@ -204,16 +207,18 @@ program Rlrplhi
       call HapCommonality(library, h)
     end if
     
-    if (readCoreAtTime) then
-      call WriteOutCore(c%phase,c%hapAnis, h, CoreIndex(h,1), p)
+    if (readCoreAtTime .or. .not. combine) then
+      call WriteOutCore(c%getAllPhase(),c%hapAnis, h, CoreIndex(h,1), p)
     else
-      AllPhase(:,startCoreSnp:endCoreSnp,:) = c%phase
+      AllPhase(:,startCoreSnp:endCoreSnp,:) = c%getAllPhase()
       AllHapAnis(:,1,h) = c%hapAnis(:,1)
-      AllHapAnis(:,2,h) = c%hapAnis(:,2)      
+      AllHapAnis(:,2,h) = c%hapAnis(:,2)
+
+      AllCores(h) = c
     end if
     
     if (Simulation == 1) then
-       call Flipper(c%phase,StartCoreSnp,EndCoreSnp,nSnp)
+       call Flipper(c,StartCoreSnp,EndCoreSnp,nSnp)
        call Checker(c,surrogates,p,h,StartCoreSnp,EndCoreSnp,nSnp)
     end if
   end do
@@ -221,7 +226,8 @@ program Rlrplhi
   if (readCoreAtTime .and. combine) then
     call CombineResults(nAnisG,CoreIndex,p)
   else
-    call WriteOutResults(AllPhase,AllHapAnis,CoreIndex,p)
+    !call WriteOutResults(AllPhase,AllHapAnis,CoreIndex,p)
+    call WriteOutResults(AllCores,CoreIndex,p)
   end if
   if ((consistent) .and. (GenotypeFileFormat /= 2)) then
     deallocate(PseudoNRM)

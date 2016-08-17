@@ -17,7 +17,6 @@ contains
     integer :: j
     
     integer :: rounds
-    double precision, allocatable, dimension (:,:) :: Medoids
     logical :: change
     
     rounds = 1
@@ -96,7 +95,6 @@ contains
     integer :: j
     
     integer :: rounds
-    double precision, allocatable, dimension (:,:) :: Medoids
     logical :: change
     
     rounds = 1
