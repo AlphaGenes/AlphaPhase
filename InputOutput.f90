@@ -7,6 +7,7 @@ contains
     use Constants
     use PedigreeDefinition
     use CoreDefinition
+    use Parameters, only: GenotypeFileFormat
     implicit none
 
     type(Core), dimension(:), intent(in) :: allCores
@@ -33,14 +34,18 @@ contains
       open (unit = 28, file = ".\PhasingResults\SnpPhaseRate.txt", status = "unknown")
       open (unit = 30, file = ".\PhasingResults\IndivPhaseRate.txt", status = "unknown")
       open (unit = 33, file = ".\PhasingResults\FinalHapIndCarry.txt", status = "unknown")
-      open (unit = 44, file = ".\PhasingResults\SwapPatMat.txt", status = "unknown")
+      if (GenotypeFileFormat /= 2) then
+	open (unit = 44, file = ".\PhasingResults\SwapPatMat.txt", status = "unknown")
+      end if
     else
       open (unit = 15, file = "./PhasingResults/FinalPhase.txt", status = "unknown")
       open (unit = 25, file = "./PhasingResults/CoreIndex.txt", status = "unknown")
       open (unit = 28, file = "./PhasingResults/SnpPhaseRate.txt", status = "unknown")
       open (unit = 30, file = "./PhasingResults/IndivPhaseRate.txt", status = "unknown")
       open (unit = 33, file = "./PhasingResults/FinalHapIndCarry.txt", status = "unknown")
-      open (unit = 44, file = "./PhasingResults/SwapPatMat.txt", status = "unknown")
+      if (GenotypeFileFormat /= 2) then
+	open (unit = 44, file = "./PhasingResults/SwapPatMat.txt", status = "unknown")
+      end if
     end if
 
     allocate(tempPhase(nSnp))
@@ -84,7 +89,8 @@ contains
 	l = l + 1
 	CoreCount(l) = (float(counterM)/allCores(j)%getNCoreSnp()) * 100
       end do
-      write (30, '(i10,20000f7.2,20000f7.2,20000f7.2,20000f7.2)') i, CoreCount(:)
+      write (30, '(a20,20000f7.2,20000f7.2,20000f7.2,20000f7.2)') p%getID(i), CoreCount(:)
+      !write (30, '(i10,20000f7.2,20000f7.2,20000f7.2,20000f7.2)') i, CoreCount(:)
     end do
     deallocate(CoreCount)
 
@@ -101,14 +107,16 @@ contains
     end do
     deallocate(WorkOut)
     
-    allocate(TempSwap(nCores))
-    do i = 1, nAnisG
-      do j = 1, nCores
-	TempSwap(j) = AllCores(j)%getSwappable(i)
+    if (GenotypeFileFormat /= 2) then
+      allocate(TempSwap(nCores))
+      do i = 1, nAnisG
+	do j = 1, nCores
+	  TempSwap(j) = AllCores(j)%getSwappable(i)
+	end do
+	write (44, '(a20,5000i2)') p%getID(i), TempSwap
       end do
-      write (44, '(i10,5000i2)') i, TempSwap
-    end do
-    deallocate(TempSwap)
+      deallocate(TempSwap)
+    end if
       
     
     close(15)
@@ -120,13 +128,14 @@ contains
 
   end subroutine WriteOutResults
 
-  subroutine writeOutCore(phase, hapAnis, coreID, coreStart, p)
+  subroutine writeOutCore(c, coreID, coreStart, p)
     use Constants
     use PedigreeDefinition
+    use CoreDefinition
+    use Parameters, only: GenotypeFileFormat
     implicit none
     
-    integer(kind=1), dimension(:,:,:), intent(in) :: phase
-    integer, dimension(:,:), intent(in) :: hapAnis
+    type(Core), intent(in) :: c
     integer, intent(in) :: coreID
     integer, intent(in) :: coreStart
     type(Pedigree), intent(in) :: p
@@ -137,8 +146,8 @@ contains
     
     character(:), allocatable :: coreIDtxt
   
-    nAnisG = size(phase,1)
-    nSnp = size(phase,2)
+    nAnisG = c%getNAnisG()
+    nSnp = c%getNCoreSnp()
     
     allocate(WorkOut(2))
     allocate(CoreCount(2))
@@ -150,51 +159,64 @@ contains
       open (unit = 28, file = ".\PhasingResults\SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       open (unit = 30, file = ".\PhasingResults\IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       open (unit = 33, file = ".\PhasingResults\FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
+      if (GenotypeFileFormat /= 2) then
+	open (unit = 44, file = ".\PhasingResults\SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
+      end if
     else
       open (unit = 15, file = "./PhasingResults/FinalPhase" // coreIDtxt // ".txt", status = "unknown")
       open (unit = 28, file = "./PhasingResults/SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       open (unit = 30, file = "./PhasingResults/IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       open (unit = 33, file = "./PhasingResults/FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
+      if (GenotypeFileFormat /= 2) then
+	open (unit = 44, file = "./PhasingResults/SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
+      end if
     end if
   
     do i = 1, nAnisG
       write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getID(i), &
-      Phase(i,:, 1)
+      c%getHaplotype(i,1)
       write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getID(i), &
-      Phase(i,:, 2)
+      c%getHaplotype(i,2)
     end do
   
     do i = 1, nSnp
       counter = 0
       do j = 1, nAnisG
-        if ((Phase(j, i, 1) == 0).or.(Phase(j, i, 1) == 1)) counter = counter + 1
-        if ((Phase(j, i, 2) == 0).or.(Phase(j, i, 2) == 1)) counter = counter + 1
+	  if ((c%getPhase(j, i, 1) == 0).or.(c%getPhase(j, i, 1) == 1)) counter = counter + 1
+	  if ((c%getPhase(j, i, 2) == 0).or.(c%getPhase(j, i, 2) == 1)) counter = counter + 1
       end do
       write (28, '(i10,f7.2)') i + CoreStart - 1, (100 * (float(counter)/(2 * nAnisG)))
     end do
   
     do i = 1, nAnisG
-      CounterP = 0
-      CounterM = 0
-      do k = 1, nSnp
-	if ((Phase(i, k, 1) == 0).or.(Phase(i, k, 1) == 1)) counterP = counterP + 1
-        if ((Phase(i, k, 2) == 0).or.(Phase(i, k, 2) == 1)) counterM = counterM + 1
-      end do
+      CounterP = c%getNCoreSnp() - c%hapNumMissing(i,1)
+      CounterM = c%getNCoreSnp() - c%hapNumMissing(i,2)
       CoreCount(1) = (float(counterP)/(nSnp) * 100)
       CoreCount(2) = (float(counterM)/(nSnp) * 100)
-      write (30, '(i10,2f7.2)') i, CoreCount(:)
+      write(30, '(a20,2f7.2)') p%getID(i), CoreCount(:)
+      !write (30, '(i10,2f7.2)') i, CoreCount(:)
     end do
   
     do i = 1, nAnisG
-      WorkOut(1) = hapAnis(i, 1)
-      WorkOut(2) = hapAnis(i, 2)
-      write (33, '(i10,2i5)') i, WorkOut(:)
+      WorkOut(1) = c%getHapAnis(i, 1)
+      WorkOut(2) = c%getHapAnis(i, 2)
+      write (33, '(a20,2i8)') p%getID(i), WorkOut(:)
+      !write (33, '(i10,2i5)') i, WorkOut(:)
     end do
+    
+    if (GenotypeFileFormat /= 2) then
+      do i = 1, nAnisG
+	write (44, '(a20,5000i2)') p%getID(i), c%getSwappable(i)
+      end do
+    end if
     
     close(15)
     close(28)
     close(30)
     close(33)
+    if (GenotypeFileFormat /= 2) then
+      close(44)
+    end if
   end subroutine writeOutCore
   
   function itoa(i) result(res)
@@ -208,6 +230,7 @@ contains
   subroutine CombineResults(nAnisG, CoreIndex, p)
     use Constants
     use PedigreeDefinition
+    use Parameters, only: GenotypeFileFormat
     implicit none    
         
     integer, intent(in) :: nAnisG
@@ -220,7 +243,7 @@ contains
     integer :: i, j, coreLength, inUnit
     character(:), allocatable :: coreIDtxt
     integer(kind=1), dimension(:), allocatable :: tempPhase
-    integer, dimension(2) :: tempHapInd
+    integer, dimension(2) :: tempHapInd, tempIndivSwap
     double precision, dimension(2) :: tempIndivPhase
     double precision :: tempSnpPhase
     character(len=20) :: id
@@ -233,12 +256,18 @@ contains
       open (unit = 28, file = ".\PhasingResults\SnpPhaseRate.txt", status = "unknown")
       open (unit = 30, file = ".\PhasingResults\IndivPhaseRate.txt", status = "unknown")
       open (unit = 33, file = ".\PhasingResults\FinalHapIndCarry.txt", status = "unknown")
+      if (GenotypeFileFormat /= 2) then
+	open (unit = 44, file = ".\PhasingResults\SwapPatMat.txt", status = "unknown")
+      end if
     else
       open (unit = 15, file = "./PhasingResults/FinalPhase.txt", status = "unknown")
       open (unit = 25, file = "./PhasingResults/CoreIndex.txt", status = "unknown")
       open (unit = 28, file = "./PhasingResults/SnpPhaseRate.txt", status = "unknown")
       open (unit = 30, file = "./PhasingResults/IndivPhaseRate.txt", status = "unknown")
       open (unit = 33, file = "./PhasingResults/FinalHapIndCarry.txt", status = "unknown")
+      if (GenotypeFileFormat /= 2) then
+	open (unit = 44, file = "./PhasingResults/SwapPatMat.txt", status = "unknown")
+      end if
     end if
 
     do i = 1, nCores
@@ -250,7 +279,7 @@ contains
     do i = 1, nCores
       coreIDtxt = itoa(i)
       if (WindowsLinux == 1) then
-	open (newunit = inUnits(i), file = ".\PhasingResults\FinalPhase" // coreIDtxt // ".txt", status = "unknown")
+	open (newunit = inUnits(i), file = ".\PhasingResults\FinalPhase" // coreIDtxt // ".txt", status = "old")
       else
 	open (newunit = inUnits(i), file = "./PhasingResults/FinalPhase" // coreIDtxt // ".txt", status = "old")
       end if      
@@ -284,7 +313,7 @@ contains
     do i = 1, nCores
       coreIDtxt = itoa(i)
       if (WindowsLinux == 1) then
-	open (newunit = inUnits(i), file = ".\PhasingResults\FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
+	open (newunit = inUnits(i), file = ".\PhasingResults\FinalHapIndCarry" // coreIDtxt // ".txt", status = "old")
       else
 	open (newunit = inUnits(i), file = "./PhasingResults/FinalHapIndCarry" // coreIDtxt // ".txt", status = "old")
       end if      
@@ -292,14 +321,14 @@ contains
     
     do i = 1, nAnisG
       do j = 1, nCores
-	read(inUnits(j),'(a10,2i5)') id, tempHapInd
+	read(inUnits(j),'(a20,2i8)') id, tempHapInd
 	if (j == 1) then
-	  write(33, '(a10)', advance = 'no') id
+	  write(33, '(a20)', advance = 'no') id
 	end if
 	if (j == nCores) then
-	  write(33, '(2i5)', advance='yes') tempHapInd
+	  write(33, '(2i8)', advance='yes') tempHapInd
 	else
-	  write(33, '(2i5)', advance='no') tempHapInd
+	  write(33, '(2i8)', advance='no') tempHapInd
 	end if
       end do
     end do
@@ -315,7 +344,7 @@ contains
     do i = 1, nCores
       coreIDtxt = itoa(i)
       if (WindowsLinux == 1) then
-	open (newunit = inUnits(i), file = ".\PhasingResults\IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
+	open (newunit = inUnits(i), file = ".\PhasingResults\IndivPhaseRate" // coreIDtxt // ".txt", status = "old")
       else
 	open (newunit = inUnits(i), file = "./PhasingResults/IndivPhaseRate" // coreIDtxt // ".txt", status = "old")
       end if      
@@ -323,9 +352,9 @@ contains
     
     do i = 1, nAnisG
       do j = 1, nCores
-	read(inUnits(j),'(a10,2f7.2)') id, tempIndivPhase
+	read(inUnits(j),'(a20,2f7.2)') id, tempIndivPhase
 	if (j == 1) then
-	  write(30, '(a10)', advance = 'no') id
+	  write(30, '(a20)', advance = 'no') id
 	end if
 	if (j == nCores) then
 	  write(30, '(2f7.2)', advance='yes') tempIndivPhase
@@ -346,7 +375,7 @@ contains
       coreLength  = CoreIndex(i,2) - CoreIndex(i,1) + 1
       coreIDtxt = itoa(i)
       if (WindowsLinux == 1) then
-	open (newunit = inUnit, file = ".\PhasingResults\SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
+	open (newunit = inUnit, file = ".\PhasingResults\SnpPhaseRate" // coreIDtxt // ".txt", status = "old")
       else
 	open (newunit = inUnit, file = "./PhasingResults/SnpPhaseRate" // coreIDtxt // ".txt", status = "old")
       end if
@@ -356,12 +385,48 @@ contains
       end do
       close(inUnit)
     end do
+ 
+    !!! SWAPHAPMAT !!!
+    if (GenotypeFileFormat /= 2) then
+      allocate(inUnits(nCores))
+      do i = 1, nCores
+	coreIDtxt = itoa(i)
+	if (WindowsLinux == 1) then
+	  open (newunit = inUnits(i), file = ".\PhasingResults\SwapPatMat" // coreIDtxt // ".txt", status = "old")
+	else
+	  open (newunit = inUnits(i), file = "./PhasingResults/SwapPatMat" // coreIDtxt // ".txt", status = "old")
+	end if      
+      end do
+
+      do i = 1, nAnisG
+	do j = 1, nCores
+	  read(inUnits(j),'(a20,2i2)') id, tempIndivSwap
+	  if (j == 1) then
+	    write(44, '(a20)', advance = 'no') id
+	  end if
+	  if (j == nCores) then
+	    write(44, '(2i2)', advance='yes') tempIndivSwap
+	  else
+	    write(44, '(2i2)', advance='no') tempIndivSwap
+	  end if
+	end do
+      end do
+    
+      do i = 1, nCores
+	close(inUnits(i))
+      end do
+    
+      deallocate(inUnits)
+    end if
     
     close(15)
     close(25)
     close(28)
     close(30)
     close(33)
+    if (GenotypeFileFormat /= 2) then
+      close(44)
+    end if
 
   end subroutine CombineResults
   

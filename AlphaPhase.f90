@@ -77,7 +77,6 @@ program Rlrplhi
   end if
   call ReadInParameterFile(specfile)
   
-  
   call MakeDirectories
   p = ParsePedigreeData()
   nAnisG = p%getNAnis()
@@ -208,7 +207,7 @@ program Rlrplhi
     end if
     
     if (readCoreAtTime .or. .not. combine) then
-      call WriteOutCore(c%getAllPhase(),c%hapAnis, h, CoreIndex(h,1), p)
+      call WriteOutCore(c, h, CoreIndex(h,1), p)
     else
       AllPhase(:,startCoreSnp:endCoreSnp,:) = c%getAllPhase()
       AllHapAnis(:,1,h) = c%hapAnis(:,1)
