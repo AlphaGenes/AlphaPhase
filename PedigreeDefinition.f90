@@ -5,8 +5,8 @@ module PedigreeDefinition
 
   type, public :: Pedigree
     private    
-    integer(kind = 4), dimension (:), allocatable :: sire, dam
-    character(lengan), dimension(:), allocatable :: id
+    integer(kind = 4), dimension(:), allocatable :: sire, dam
+    character(:), dimension(:), pointer :: id
     
   contains
     private
@@ -28,7 +28,7 @@ contains
     use Constants
     
     integer, dimension(:), intent(in) :: sire, dam
-    character(lengan), dimension(:), intent(in):: id(:)
+    character(*), dimension(:), intent(in):: id(:)
     type(Pedigree) :: p
     
     integer :: nAnisG
@@ -39,7 +39,7 @@ contains
     allocate(p%dam(size(dam,1)))
     p%dam = dam
     
-    allocate(p%id(size(id,1)))
+    allocate(character(len(id)) :: p%id(size(id,1)))
     p%id = id
   end function newPedigree
   
@@ -47,9 +47,10 @@ contains
     type(Pedigree) :: p
     
     if (allocated(p%sire)) then
-      deallocate(p%sire)
-      deallocate(p%dam)
-      deallocate(p%id)
+      !I have no idea why this causes it to crash since we just checked it's allocated but hey ho...
+!      deallocate(p%sire)
+!      deallocate(p%dam)
+!      deallocate(p%id)
     end if
   end subroutine destroy
   
@@ -74,7 +75,7 @@ contains
     
     class(Pedigree) :: p
     integer, intent(in) :: animal
-    character(lengan) :: id
+    character(len(p%id)) :: id
     
     id = p%id(animal)
   end function getID

@@ -41,8 +41,7 @@ module CoreSubsetDefinition
 contains
 
   function newCoreSubSet(parentCore, parentPedigree, members) result(set)
-    implicit none
-    
+       
     type(Core), target :: parentCore
     type(Pedigree), target :: parentPedigree
     integer, dimension(:), intent(in) :: members
@@ -105,8 +104,7 @@ contains
   end function getNCoreTailSnp
   
   subroutine setPhase(set, animal, snp, phase, val)
-    implicit none
-    
+        
     class(CoreSubset) :: set
     integer, intent(in) :: animal, snp, phase
     integer(kind=1) :: val
@@ -115,7 +113,6 @@ contains
   end subroutine setPhase
   
   function getPhase(set,animal,snp,phase) result(p)
-    implicit none
     class(CoreSubset) :: set
     integer, intent(in) :: animal, snp, phase
     integer(kind=1) :: p
@@ -124,8 +121,7 @@ contains
   end function getPhase
   
   function getSingleCoreAndTailGenos(set,i) result (ctGenos)
-    implicit none
-    
+        
     class(CoreSubset), target :: set
     integer, intent(in) :: i
     integer(kind=1), dimension(:), pointer :: ctGenos
@@ -136,8 +132,7 @@ contains
   end function getSingleCoreAndTailGenos
   
   function getSingleCoreGenos(set, i) result (cGenos)
-    implicit none
-    
+        
     class(CoreSubset), target :: set
     integer, intent(in) :: i
     integer(kind=1), dimension(:), pointer :: cGenos
@@ -148,7 +143,6 @@ contains
   end function getSingleCoreGenos
   
   function getPhaseGeno(set,animal,snp) result (p)
-    implicit none
     class(CoreSubset) :: set
     integer, intent(in) :: animal, snp
     integer(kind=1) :: p
@@ -157,8 +151,7 @@ contains
   end function getPhaseGeno
   
   function getCoreAndTailGenos(set) result (ctGenos)
-    implicit none
-    
+        
     class(CoreSubset) :: set
     integer(kind=1), dimension(:,:), pointer :: ctGenos
     integer :: i
@@ -173,8 +166,7 @@ contains
   end function getCoreAndTailGenos
   
   function getCoreGenos(set) result (cGenos)
-    implicit none
-    
+        
     class(CoreSubset) :: set
     integer(kind=1), dimension(:,:), pointer :: cGenos
     integer :: i
@@ -208,7 +200,6 @@ contains
   end function getDam
   
   function getYield(set,phase) result (yield)
-    implicit none
     class(CoreSubSet) :: set
     integer, intent(in) :: phase
     double precision :: yield

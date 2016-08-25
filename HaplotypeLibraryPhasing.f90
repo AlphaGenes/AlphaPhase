@@ -1,15 +1,17 @@
 module HaplotypeLibraryPhasing
+  use Constants
   implicit none
 
+  integer, parameter, private :: nMaxRounds = 100
+  
 contains
-  function MakeHapLib(c) result(library)
+  function MakeHapLib(c, consistent) result(library)
     use HaplotypeLibraryDefinition
     use CoreDefinition
     use Random
-    use Parameters
-    implicit none
-
-    type(Core) :: c
+    
+    type(Core), intent(in) :: c
+    logical, intent(in) :: consistent
     type(HaplotypeLibrary) :: library
 
     integer :: i, id
@@ -35,22 +37,23 @@ contains
 
   end function MakeHapLib
 
-  subroutine ImputeFromLib(library, c, nGlobalHapsIter)
+  subroutine ImputeFromLib(library, c, nGlobalHapsIter, PercGenoHaploDisagree, minHapFreq, consistent)
     ! Impute the phase for gametes that are not completely phased by LRP 
     ! by matching their phased loci to haplotypes in the Haplotype Library,
     ! following strategies listed in the section Step 2e of Hickey et al 2011.
 
-    use Parameters, only: percgenohaplodisagree, consistent, itteratetype, minhapfreq
     use HaplotypeLibraryDefinition
     use Constants
     use CoreDefinition
     use Clustering
     use Random
-    implicit none
-
+    
     type(HaplotypeLibrary), intent(in) :: library
     type(Core) :: c
     integer, intent(inout) :: nGlobalHapsIter
+    double precision, intent(in) :: PercGenoHaploDisagree
+    integer, intent(in) :: minHapFreq
+    logical, intent(in) :: consistent
 
     integer :: i, j, k, nHapsOld, ErrorAllow, HapM, HapP
     integer, pointer, dimension(:,:) :: CandPairs
@@ -79,7 +82,7 @@ contains
 
 	! If only one of the gametes is completely phased (Section Step 2e.i Hickey et al. 2011): PATERNAL HAPLOTYPE
 	if (c % getFullyPhased(i, 1) .and. (.not.c % getFullyPhased(i, 2))) then
-	  call processComplement(c, i, library, 1)
+	  call processComplement(c, i, library, 1, PercGenoHaploDisagree)
 	end if
 
 	! If only one of the gametes is completely phased (Section Step 2e.i Hickey et al. 2011): MATERNAL HAPLOTYPE
@@ -88,7 +91,7 @@ contains
 	! Affects results, likely due to error being allowed when phasing paternal from maternal in this step
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	if (c % getFullyPhased(i, 2) .and. (.not.c % getFullyPhased(i, 1))) then
-	  call processComplement(c, i, library, 2)
+	  call processComplement(c, i, library, 2, PercGenoHaploDisagree)
 	end if
 
 	! If neither of the gametes is completely phased (Section Step 2e.ii Hickey et al. 2011)
@@ -99,7 +102,7 @@ contains
 	      compatHaps(k) = k
 	    end do
 	  else
-	    compatHaps => library % getCompatHapsFreq(c % getSingleCoreGenos(i),minHapFreq)
+	    compatHaps => library % getCompatHapsFreq(c % getSingleCoreGenos(i),minHapFreq, PercGenoHaploDisagree)
 	  end if
 
 	  CandHapsPat => library % limitedMatchWithError(c % getHaplotype(i, 1), ErrorAllow, compatHaps)
@@ -300,14 +303,14 @@ contains
     a = (all(phases == 0) .or. (all(phases == 1)))
   end function agree
 
-  subroutine processComplement(c, animal, library, fully)
-    use Parameters, only: percgenohaplodisagree
+  subroutine processComplement(c, animal, library, fully, percgenohaplodisagree)
     use Constants
     use CoreDefinition
     use HaplotypeLibraryDefinition
 
     type(Core), intent(in) :: c
     integer, intent(in) :: animal, fully
+    double precision, intent(in) :: percgenohaplodisagree
     type(HaplotypeLibrary) :: library
 
     integer(kind = 1), dimension(:), pointer :: comp
@@ -541,7 +544,6 @@ contains
   subroutine abErrors(c)
     use CoreDefinition
     use Constants
-    use Parameters
 
     class(Core) :: c
 
@@ -556,7 +558,7 @@ contains
       CountB = 0
       do j = 1, c % getNCoreSnp()
 	if (c % getCoreGeno(i, j) /= MissingGenotypeCode) then
-	  if ((c % getPhase(i, j, 1) /= 9).and.(c % getPhase(i, j, 2) == 9)) then
+	  if ((c % getPhase(i, j, 1) /= MissingPhaseCode).and.(c % getPhase(i, j, 2) == MissingPhaseCode)) then
 	    val = c % getCoreGeno(i, j) - c % getPhase(i, j, 1)
 	    if ((val == 0).or.(val == 1)) then !here 7th april 2011
 	      call c % setPhase(i, j, 2, val)
@@ -564,7 +566,7 @@ contains
 	      CountA = CountA + 1
 	    endif
 	  endif
-	  if ((c % getPhase(i, j, 2) /= 9).and.(c % getPhase(i, j, 1) == 9)) then
+	  if ((c % getPhase(i, j, 2) /= MissingPhaseCode).and.(c % getPhase(i, j, 1) == MissingPhaseCode)) then
 	    val = c % getCoreGeno(i, j) - c % getPhase(i, j, 2)
 	    if ((val == 0).or.(val == 1)) then !here 7th april 2011
 	      call c % setPhase(i, j, 1, val)
@@ -602,26 +604,26 @@ contains
     do i = 1, c % getNAnisG()
       do j = 1, c % getNCoreSnp()
 	if (c % getCoreGeno(i, j) == 1) then
-	  if ((c % getPhase(i, j, 1) == 9).and.(c % getPhase(i, j, 2) /= 9)) then
+	  if ((c % getPhase(i, j, 1) == MissingPhaseCode).and.(c % getPhase(i, j, 2) /= MissingPhaseCode)) then
 	    call c % setPhase(i, j, 1, c % getCoreGeno(i, j) - c % getPhase(i, j, 2))
 	  end if
-	  if ((c % getPhase(i, j, 2) == 9).and.(c % getPhase(i, j, 1) /= 9)) then
+	  if ((c % getPhase(i, j, 2) == MissingPhaseCode).and.(c % getPhase(i, j, 1) /= MissingPhaseCode)) then
 	    call c % setPhase(i, j, 2, c % getCoreGeno(i, j) - c % getPhase(i, j, 1))
 	  end if
 	endif
 	if (c % getCoreGeno(i, j) == 0) then
-	  if ((c % getPhase(i, j, 1) == 9).and.(c % getPhase(i, j, 2) /= 9)) then
+	  if ((c % getPhase(i, j, 1) == MissingPhaseCode).and.(c % getPhase(i, j, 2) /= MissingPhaseCode)) then
 	    call c % setPhase(i, j, 1, 0)
 	  end if
-	  if ((c % getPhase(i, j, 2) == 9).and.(c % getPhase(i, j, 1) /= 9)) then
+	  if ((c % getPhase(i, j, 2) == MissingPhaseCode).and.(c % getPhase(i, j, 1) /= MissingPhaseCode)) then
 	    call c % setPhase(i, j, 2, 0)
 	  end if
 	endif
 	if (c % getCoreGeno(i, j) == 2) then
-	  if ((c % getPhase(i, j, 1) == 9).and.(c % getPhase(i, j, 2) /= 9)) then
+	  if ((c % getPhase(i, j, 1) == MissingPhaseCode).and.(c % getPhase(i, j, 2) /= MissingPhaseCode)) then
 	    call c % setPhase(i, j, 1, 1)
 	  end if
-	  if ((c % getPhase(i, j, 2) == 9).and.(c % getPhase(i, j, 1) /= 9)) then
+	  if ((c % getPhase(i, j, 2) == MissingPhaseCode).and.(c % getPhase(i, j, 1) /= MissingPhaseCode)) then
 	    call c % setPhase(i, j, 2, 1)
 	  end if
 	endif

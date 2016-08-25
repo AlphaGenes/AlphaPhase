@@ -1,18 +1,30 @@
+#IFDEF _win32
+#DEFINE SEP "\"
+#DEFINE MKDIR "md "
+#DEFINE RMDIR "RMDIR /S "
+#else
+#DEFINE SEP "/"
+#DEFINE MKDIR "mkdir "
+#DEFINE RMDIR "rm -r "
+#endif
+
 module InputOutput
+  implicit none
+
+  integer, parameter, private :: lengan = 20
   
 contains
 
   !subroutine WriteOutResults(phase, allHapAnis, coreIndex, p)
-  subroutine WriteOutResults(allCores, coreIndex, p)
+  subroutine WriteOutResults(allCores, coreIndex, p, writeSwappable)
     use Constants
     use PedigreeDefinition
     use CoreDefinition
-    use Parameters, only: GenotypeFileFormat
-    implicit none
-
+    
     type(Core), dimension(:), intent(in) :: allCores
     integer, dimension(:,:), intent(in) :: coreIndex
     type(Pedigree), intent(in) :: p
+    logical :: writeSwappable
     
     integer(kind=1), dimension(:), allocatable :: tempPhase
 
@@ -28,24 +40,13 @@ contains
       nSnp = nSnp + allCores(i)%getNCoreSnp()
     end do
 
-    if (WindowsLinux == 1) then
-      open (unit = 15, file = ".\PhasingResults\FinalPhase.txt", status = "unknown")
-      open (unit = 25, file = ".\PhasingResults\CoreIndex.txt", status = "unknown")
-      open (unit = 28, file = ".\PhasingResults\SnpPhaseRate.txt", status = "unknown")
-      open (unit = 30, file = ".\PhasingResults\IndivPhaseRate.txt", status = "unknown")
-      open (unit = 33, file = ".\PhasingResults\FinalHapIndCarry.txt", status = "unknown")
-      if (GenotypeFileFormat /= 2) then
-	open (unit = 44, file = ".\PhasingResults\SwapPatMat.txt", status = "unknown")
-      end if
-    else
-      open (unit = 15, file = "./PhasingResults/FinalPhase.txt", status = "unknown")
-      open (unit = 25, file = "./PhasingResults/CoreIndex.txt", status = "unknown")
-      open (unit = 28, file = "./PhasingResults/SnpPhaseRate.txt", status = "unknown")
-      open (unit = 30, file = "./PhasingResults/IndivPhaseRate.txt", status = "unknown")
-      open (unit = 33, file = "./PhasingResults/FinalHapIndCarry.txt", status = "unknown")
-      if (GenotypeFileFormat /= 2) then
-	open (unit = 44, file = "./PhasingResults/SwapPatMat.txt", status = "unknown")
-      end if
+    open (unit = 15, file = "."//SEP//"PhasingResults"//SEP//"FinalPhase.txt", status = "unknown")
+    open (unit = 25, file = "."//SEP//"PhasingResults"//SEP//"CoreIndex.txt", status = "unknown")
+    open (unit = 28, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate.txt", status = "unknown")
+    open (unit = 30, file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate.txt", status = "unknown")
+    open (unit = 33, file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry.txt", status = "unknown")
+    if (writeSwappable) then
+      open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat.txt", status = "unknown")
     end if
 
     allocate(tempPhase(nSnp))
@@ -107,7 +108,7 @@ contains
     end do
     deallocate(WorkOut)
     
-    if (GenotypeFileFormat /= 2) then
+    if (writeSwappable) then
       allocate(TempSwap(nCores))
       do i = 1, nAnisG
 	do j = 1, nCores
@@ -128,17 +129,16 @@ contains
 
   end subroutine WriteOutResults
 
-  subroutine writeOutCore(c, coreID, coreStart, p)
+  subroutine writeOutCore(c, coreID, coreStart, p, writeSwappable)
     use Constants
     use PedigreeDefinition
     use CoreDefinition
-    use Parameters, only: GenotypeFileFormat
-    implicit none
-    
+        
     type(Core), intent(in) :: c
     integer, intent(in) :: coreID
     integer, intent(in) :: coreStart
     type(Pedigree), intent(in) :: p
+    logical :: writeSwappable
   
     integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp
     integer, allocatable, dimension(:) :: WorkOut
@@ -154,22 +154,12 @@ contains
     
     coreIDtxt = itoa(coreID)
   
-    if (WindowsLinux == 1) then
-      open (unit = 15, file = ".\PhasingResults\FinalPhase" // coreIDtxt // ".txt", status = "unknown")
-      open (unit = 28, file = ".\PhasingResults\SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
-      open (unit = 30, file = ".\PhasingResults\IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
-      open (unit = 33, file = ".\PhasingResults\FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
-      if (GenotypeFileFormat /= 2) then
-	open (unit = 44, file = ".\PhasingResults\SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
-      end if
-    else
-      open (unit = 15, file = "./PhasingResults/FinalPhase" // coreIDtxt // ".txt", status = "unknown")
-      open (unit = 28, file = "./PhasingResults/SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
-      open (unit = 30, file = "./PhasingResults/IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
-      open (unit = 33, file = "./PhasingResults/FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
-      if (GenotypeFileFormat /= 2) then
-	open (unit = 44, file = "./PhasingResults/SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
-      end if
+    open (unit = 15, file = "."//SEP//"PhasingResults"//SEP//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
+    open (unit = 28, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
+    open (unit = 30, file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
+    open (unit = 33, file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
+    if (writeSwappable) then
+      open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
     end if
   
     do i = 1, nAnisG
@@ -204,7 +194,7 @@ contains
       !write (33, '(i10,2i5)') i, WorkOut(:)
     end do
     
-    if (GenotypeFileFormat /= 2) then
+    if (writeSwappable) then
       do i = 1, nAnisG
 	write (44, '(a20,5000i2)') p%getID(i), c%getSwappable(i)
       end do
@@ -214,7 +204,7 @@ contains
     close(28)
     close(30)
     close(33)
-    if (GenotypeFileFormat /= 2) then
+    if (writeSwappable) then
       close(44)
     end if
   end subroutine writeOutCore
@@ -227,15 +217,14 @@ contains
     res = trim(tmp)
   end function
   
-  subroutine CombineResults(nAnisG, CoreIndex, p)
+  subroutine CombineResults(nAnisG, CoreIndex, p, writeSwappable)
     use Constants
     use PedigreeDefinition
-    use Parameters, only: GenotypeFileFormat
-    implicit none    
-        
+            
     integer, intent(in) :: nAnisG
     integer, dimension(:,:), intent(in) :: CoreIndex
     type(Pedigree) :: p
+    logical :: writeSwappable
     
     integer :: nCores
     
@@ -250,24 +239,13 @@ contains
     
     nCores = size(CoreIndex,1)
 
-    if (WindowsLinux == 1) then
-      open (unit = 15, file = ".\PhasingResults\FinalPhase.txt", status = "unknown")
-      open (unit = 25, file = ".\PhasingResults\CoreIndex.txt", status = "unknown")
-      open (unit = 28, file = ".\PhasingResults\SnpPhaseRate.txt", status = "unknown")
-      open (unit = 30, file = ".\PhasingResults\IndivPhaseRate.txt", status = "unknown")
-      open (unit = 33, file = ".\PhasingResults\FinalHapIndCarry.txt", status = "unknown")
-      if (GenotypeFileFormat /= 2) then
-	open (unit = 44, file = ".\PhasingResults\SwapPatMat.txt", status = "unknown")
-      end if
-    else
-      open (unit = 15, file = "./PhasingResults/FinalPhase.txt", status = "unknown")
-      open (unit = 25, file = "./PhasingResults/CoreIndex.txt", status = "unknown")
-      open (unit = 28, file = "./PhasingResults/SnpPhaseRate.txt", status = "unknown")
-      open (unit = 30, file = "./PhasingResults/IndivPhaseRate.txt", status = "unknown")
-      open (unit = 33, file = "./PhasingResults/FinalHapIndCarry.txt", status = "unknown")
-      if (GenotypeFileFormat /= 2) then
-	open (unit = 44, file = "./PhasingResults/SwapPatMat.txt", status = "unknown")
-      end if
+    open (unit = 15, file = "."//SEP//"PhasingResults"//SEP//"FinalPhase.txt", status = "unknown")
+    open (unit = 25, file = "."//SEP//"PhasingResults"//SEP//"CoreIndex.txt", status = "unknown")
+    open (unit = 28, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate.txt", status = "unknown")
+    open (unit = 30, file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate.txt", status = "unknown")
+    open (unit = 33, file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry.txt", status = "unknown")
+    if (writeSwappable) then
+      open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat.txt", status = "unknown")
     end if
 
     do i = 1, nCores
@@ -278,11 +256,7 @@ contains
     allocate(inUnits(nCores))
     do i = 1, nCores
       coreIDtxt = itoa(i)
-      if (WindowsLinux == 1) then
-	open (newunit = inUnits(i), file = ".\PhasingResults\FinalPhase" // coreIDtxt // ".txt", status = "old")
-      else
-	open (newunit = inUnits(i), file = "./PhasingResults/FinalPhase" // coreIDtxt // ".txt", status = "old")
-      end if      
+      open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"FinalPhase" // coreIDtxt // ".txt", status = "old")    
     end do
     
     do i = 1, nAnisG * 2
@@ -312,11 +286,7 @@ contains
     allocate(inUnits(nCores))
     do i = 1, nCores
       coreIDtxt = itoa(i)
-      if (WindowsLinux == 1) then
-	open (newunit = inUnits(i), file = ".\PhasingResults\FinalHapIndCarry" // coreIDtxt // ".txt", status = "old")
-      else
-	open (newunit = inUnits(i), file = "./PhasingResults/FinalHapIndCarry" // coreIDtxt // ".txt", status = "old")
-      end if      
+      open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "old")
     end do
     
     do i = 1, nAnisG
@@ -343,11 +313,7 @@ contains
     allocate(inUnits(nCores))
     do i = 1, nCores
       coreIDtxt = itoa(i)
-      if (WindowsLinux == 1) then
-	open (newunit = inUnits(i), file = ".\PhasingResults\IndivPhaseRate" // coreIDtxt // ".txt", status = "old")
-      else
-	open (newunit = inUnits(i), file = "./PhasingResults/IndivPhaseRate" // coreIDtxt // ".txt", status = "old")
-      end if      
+      open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate" // coreIDtxt // ".txt", status = "old")
     end do
     
     do i = 1, nAnisG
@@ -374,11 +340,7 @@ contains
     do i = 1, nCores
       coreLength  = CoreIndex(i,2) - CoreIndex(i,1) + 1
       coreIDtxt = itoa(i)
-      if (WindowsLinux == 1) then
-	open (newunit = inUnit, file = ".\PhasingResults\SnpPhaseRate" // coreIDtxt // ".txt", status = "old")
-      else
-	open (newunit = inUnit, file = "./PhasingResults/SnpPhaseRate" // coreIDtxt // ".txt", status = "old")
-      end if
+      open (newunit = inUnit, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate" // coreIDtxt // ".txt", status = "old")
       do j = 1, coreLength
 	read(inUnit,'(a10,f7.2)') id, tempSnpPhase
 	write(28,'(a10,f7.2)') id, tempSnpPhase
@@ -387,15 +349,11 @@ contains
     end do
  
     !!! SWAPHAPMAT !!!
-    if (GenotypeFileFormat /= 2) then
+    if (writeSwappable) then
       allocate(inUnits(nCores))
       do i = 1, nCores
 	coreIDtxt = itoa(i)
-	if (WindowsLinux == 1) then
-	  open (newunit = inUnits(i), file = ".\PhasingResults\SwapPatMat" // coreIDtxt // ".txt", status = "old")
-	else
-	  open (newunit = inUnits(i), file = "./PhasingResults/SwapPatMat" // coreIDtxt // ".txt", status = "old")
-	end if      
+	open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat" // coreIDtxt // ".txt", status = "old")
       end do
 
       do i = 1, nAnisG
@@ -424,22 +382,22 @@ contains
     close(28)
     close(30)
     close(33)
-    if (GenotypeFileFormat /= 2) then
+    if (writeSwappable) then
       close(44)
     end if
 
   end subroutine CombineResults
   
-  function ParsePedigreeData() result(p)
-    use Parameters, only : PedigreeFile, GenotypeFile, nSnp, GenotypeFileFormat
+  function ParsePedigreeData(params) result(p)
     use Constants
+    use ParametersDefinition
     use PedigreeDefinition
     use NRMCode
     use Sorting
-    implicit none
-    
+        
+    type(Parameters), intent(in) :: params
     type(Pedigree) :: p
-
+    
     integer :: i, j, k, SumPseudoNrmS, SumPseudoNrmD, truth, counter, CountMissingGenotype, SireGen, DamGen, nAnisG
     real(kind = 4) :: value, valueS, valueD, SumNrm, SumDiag
     integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
@@ -457,23 +415,23 @@ contains
     integer(kind = 4), allocatable, dimension (:), target :: SireGenotyped, DamGenotyped
     character(lengan), dimension(:), allocatable :: GenotypeId
     
-    call CountInData(nAnisRawPedigree, nAnisG)
+    call CountInData(nAnisRawPedigree, nAnisG, params)
 
     allocate(GenotypeId(nAnisG))
     allocate(GenoInPed(nAnisG))
 !    allocate(RecodeGenotypeId(nAnisG))
     allocate(Ped(nAnisRawPedigree, 3))
-    allocate(WorkVec(nSnp * 2))
-    allocate(ReadingVector(nSnp))
+    allocate(WorkVec(params%nSnp * 2))
+    allocate(ReadingVector(params%nSnp))
     
-    if (trim(PedigreeFile) /= "NoPedigree") then
-      open (unit = 2, file = trim(PedigreeFile), status = "old")
+    if (trim(params%PedigreeFile) /= "NoPedigree") then
+      open (unit = 2, file = trim(params%PedigreeFile), status = "old")
       do i = 1, nAnisRawPedigree
 	read(2, *) ped(i,:)
       enddo
       close(2)
     else
-      open (unit = 3, file = trim(GenotypeFile), status = "old")
+      open (unit = 3, file = trim(params%GenotypeFile), status = "old")
       do i = 1, nAnisRawPedigree
 	ped(i, 2:3) = "0"
 	read (3, *) ped(i, 1)
@@ -483,7 +441,7 @@ contains
 
     GenoInPed = 0
 
-    open (unit = 3, file = trim(GenotypeFile), status = "old")
+    open (unit = 3, file = trim(params%GenotypeFile), status = "old")
     
     allocate(DanArray(size(ped, 1)))
     allocate(DanPos(size(ped,1)))
@@ -492,16 +450,16 @@ contains
     
     do i = 1, nAnisG
       truth = 0
-      if (GenotypeFileFormat == 1) then
+      if (params%GenotypeFileFormat == 1) then
 	read (3, *) GenotypeId(i), ReadingVector(:)
       end if
-      if (GenotypeFileFormat == 2) then
+      if (params%GenotypeFileFormat == 2) then
 	!read (3, *) GenotypeId(i), Phase(i,:, 1)
 	!read (3, *) GenotypeId(i), Phase(i,:, 2)
 	read (3, *) GenotypeId(i), ReadingVector(:)
 	read (3, *) GenotypeId(i), ReadingVector(:)
       end if
-      if (GenotypeFileFormat == 3) then
+      if (params%GenotypeFileFormat == 3) then
 	read (3, *) GenotypeId(i), WorkVec(:)
       endif
 !      do j = 1, nAnisRawPedigree
@@ -519,14 +477,14 @@ contains
     
     close(3)
 
-    if (trim(PedigreeFile) /= "NoPedigree") then
+    if (trim(params%PedigreeFile) /= "NoPedigree") then
       nAnisRawPedigree = nAnisRawPedigree + count(GenoInPed(:) == 1)
     else
       nAnisRawPedigree = nAnisG
     endif
     allocate(Ped(nAnisRawPedigree, 3))
-    if (trim(PedigreeFile) /= "NoPedigree") then
-      open (unit = 2, file = trim(PedigreeFile), status = "old")
+    if (trim(params%PedigreeFile) /= "NoPedigree") then
+      open (unit = 2, file = trim(params%PedigreeFile), status = "old")
       do i = 1, nAnisRawPedigree - count(GenoInPed(:) == 1)
 	read(2, *) ped(i,:)
       end do
@@ -622,16 +580,15 @@ contains
     
     p = Pedigree(sireGenotyped, damGenotyped, genotypeId)
     
-    deallocate(sireGenotyped, damGenotyped, genotypeID)
+    !deallocate(sireGenotyped, damGenotyped, genotypeID)
   end function ParsePedigreeData
   
-  function ParseGenotypeData(startSnp, endSnp, nAnisG) result(Genos)
-    use Parameters, only: GenotypeFile, nSnp, GenotypeFileFormat
+  function ParseGenotypeData(startSnp, endSnp, nAnisG, params) result(Genos)
+    use ParametersDefinition
     use Constants
-    implicit none
-
-    integer, intent(in) :: startSnp, endSnp
-    integer, intent(in) :: nAnisG
+    
+    integer, intent(in) :: startSnp, endSnp, nAnisG
+    type(Parameters), intent(in) :: params
     integer(kind=1), allocatable, dimension(:,:) :: Genos
 
     integer :: i, j, k
@@ -639,7 +596,7 @@ contains
     integer :: nReadSnp
     character(lengan) :: dummy
     
-    open (unit = 3, file = trim(GenotypeFile), status = "old")
+    open (unit = 3, file = trim(params%GenotypeFile), status = "old")
 
     nReadSnp = endSnp - startSnp + 1
 
@@ -647,8 +604,8 @@ contains
     Genos = MissingGenotypeCode
     
     !allocate(Phase(nAnisG, nReadSnp, 2))
-    allocate(WorkVec(nSnp * 2))
-    allocate(ReadingVector(nSnp))
+    allocate(WorkVec(params%nSnp * 2))
+    allocate(ReadingVector(params%nSnp))
 
     !allocate(HapLib(nAnisG * 2, nSnp))
 
@@ -656,7 +613,7 @@ contains
 
     Genos = MissingGenotypeCode
     do i = 1, nAnisG
-      if (GenotypeFileFormat == 1) then
+      if (params%GenotypeFileFormat == 1) then
 	read (3, *) dummy, ReadingVector(:)
 	!do j = 1, nSnp
 	do j = startSnp, endSnp
@@ -674,7 +631,7 @@ contains
 !	read (3, *) dummy, ReadingVector(:)
 !	Phase(i,:,2) = ReadingVector(startSnp:endSnp)
 !      end if
-      if (GenotypeFileFormat == 3) then
+      if (params%GenotypeFileFormat == 3) then
 	read (3, *) dummy, WorkVec(:)
 	k = 0
 	!do j = 1, nSnp * 2
@@ -693,13 +650,11 @@ contains
     close(3)
   end function ParseGenotypeData
   
-  function ParsePhaseData(startSnp, endSnp, nAnisG) result(Phase)
-    use Parameters, only: GenotypeFile, nSnp, GenotypeFileFormat
+  function ParsePhaseData(PhaseFile, startSnp, endSnp, nAnisG, nSnp) result(Phase)
     use Constants
-    implicit none
-
-    integer, intent(in) :: startSnp, endSnp
-    integer, intent(in) :: nAnisG
+    
+    character(len=300) :: PhaseFile
+    integer, intent(in) :: startSnp, endSnp, nAnisG, nSnp
     integer(kind=1), allocatable, dimension(:,:,:) :: Phase
 
     integer :: i, j, k
@@ -707,14 +662,12 @@ contains
     integer :: nReadSnp
     character(lengan) :: dummy
     
-    open (unit = 3, file = trim(GenotypeFile), status = "old")
+    open (unit = 3, file = trim(PHaseFile), status = "old")
 
     nReadSnp = endSnp - startSnp + 1
 
     allocate(Phase(nAnisG, nReadSnp, 2))
     allocate(ReadingVector(nSnp))
-
-    Phase = 9
 
     do i = 1, nAnisG
       read (3, *) dummy, ReadingVector(:)
@@ -726,27 +679,29 @@ contains
     close(3)
   end function ParsePhaseData
 
-  subroutine ReadInParameterFile(filename)
-    use Parameters
-    implicit none
-    
+  function ReadInParameterFile(filename) result (params)
+    use ParametersDefinition
+        
     character(*), intent(in) :: filename
+    type(Parameters) :: params
 
     double precision :: PercSurrDisagree
     integer :: i, TempInt, Graphics, status, cl
     character (len = 300) :: dumC, FileFormat, OffsetVariable, hold
+    
+    params = Parameters()
 
     !open (unit = 1, file = "AlphaPhaseSpec.txt", status = "old")
     open (unit = 1, file = filename, status = "old")
 
-    read (1, *) dumC, PedigreeFile
-    read (1, *) dumC, GenotypeFile, FileFormat
+    read (1, *) dumC, params%PedigreeFile
+    read (1, *) dumC, params%GenotypeFile, FileFormat
     if (trim(FileFormat) == 'GenotypeFormat') then
-      GenotypeFileFormat = 1
+      params%GenotypeFileFormat = 1
     elseif (trim(FileFormat) == 'PhaseFormat') then
-      GenotypeFileFormat = 2
+      params%GenotypeFileFormat = 2
     elseif (trim(FileFormat) == 'UnorderedFormat') then
-      GenotypeFileFormat = 3
+      params%GenotypeFileFormat = 3
     else
       print*, "The genotype file format is not correctly specified"
       stop
@@ -754,61 +709,63 @@ contains
 
     print *, " Parameter file read"
     print *, " "
-    print *, " Using ", trim(PedigreeFile), " as the pedigree file"
-    print *, " Using ", trim(GenotypeFile), " as the genotype file"
+    print *, " Using ", trim(params%PedigreeFile), " as the pedigree file"
+    print *, " Using ", trim(params%GenotypeFile), " as the genotype file"
     print *, " "
 
-    read (1, *) dumC, nSnp
-    read (1, *) dumC, CoreAndTailLength
-    if (CoreAndTailLength > nSnp) then
+    read (1, *) dumC, params%nSnp
+    read (1, *) dumC, params%CoreAndTailLength
+    if (params%CoreAndTailLength > params%nSnp) then
       print*, "GeneralCoreAndTailLength is too long"
       stop
     endif
-    read (1, *) dumC, Jump, OffsetVariable
-    if (Jump > nSnp) then
+    read (1, *) dumC, params%Jump, OffsetVariable
+    if (params%Jump > params%nSnp) then
       print*, "GeneralCoreLength is too long"
       stop
     endif
 
-    if (CoreAndTailLength < Jump) then
+    if (params%CoreAndTailLength < params%Jump) then
       print *, "GeneralCoreAndTailLength is shorted than GenralCoreLength"
       stop
     end if
 
     if (OffsetVariable == "Offset") then
-      Offset = 1
+      params%Offset = .true.
     endif
     if (OffsetVariable == "NotOffset") then
-      Offset = 0
+      params%Offset = .false.
     endif
 
     if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
       print*, "Offset variable is not properly parameterised"
       stop
     endif
-    read (1, *) dumC, UseSurrsN
+    read (1, *) dumC, params%UseSurrsN
     read (1, *) dumC, PercSurrDisagree
-    read (1, *) dumC, PercGenoHaploDisagree
-    read (1, *) dumC, GenotypeMissingErrorPercentage
-    read (1, *) dumC, NrmThresh
-    read (1, *) dumC, FullFileOutput
+    read (1, *) dumC, params%PercGenoHaploDisagree
+    read (1, *) dumC, params%GenotypeMissingErrorPercentage
+    read (1, *) dumC, params%NrmThresh
+    read (1, *) dumC, TempInt
+    params%FullFileOutput = (TempInt == 1)
     read (1, *) dumC, Graphics
-    read (1, *) dumC, Simulation
-    read (1, *) dumC, TruePhaseFile
+    read (1, *) dumC, TempInt
+    params%Simulation = (TempInt == 1)
+    read (1, *) dumC, params%TruePhaseFile
 
     read (1, *, iostat=status) dumC, tempInt
     if (status == 0) then
-      readCoreAtTime = (tempInt==1)
+      params%readCoreAtTime = (tempInt==1)
     else
-      readCoreAtTime = .false.
+      params%readCoreAtTime = .false.
     end if
 
-    read (1, *, iostat=status) dumC, itterateType
+    read (1, *, iostat=status) dumC, params%itterateType
     if (status == 0) then
-      consistent = ((itterateType .eq. "Off") .and. (.not. readCoreAtTime))
+      params%consistent = ((params%itterateType .eq. "Off") .and. (.not. params%readCoreAtTime))
     else
-      consistent = .true.
-      itterateType = "Off"
+      params%consistent = .true.
+      params%itterateType = "Off"
     end if
 
 !    read (1, *, iostat=status) dumC, itterateNumber
@@ -824,12 +781,12 @@ contains
       if (hold(1:1) == "*") then
 	read(hold,"(X,I2)") cl
 	call get_command_argument(cl,hold)
-	read(hold,*) itterateNumber
+	read(hold,*) params%itterateNumber
       else
-	read(hold,*) itterateNumber
+	read(hold,*) params%itterateNumber
       end if
     else
-      itterateNumber = 200
+      params%itterateNumber = 200
     end if
     
     read(1, *, iostat=status) dumC, hold
@@ -837,21 +794,21 @@ contains
       if (hold(1:1) == "*") then
 	read(hold,"(X,I2)") cl
 	call get_command_argument(cl,hold)
-	read(hold,*) numIter
+	read(hold,*) params%numIter
       else
-	read(hold,*) numIter
+	read(hold,*) params%numIter
       end if
     else
-      numIter = 1
+      params%numIter = 1
     end if
-    if (itterateType .eq. "Off") then
-      numIter = 1
+    if (params%itterateType .eq. "Off") then
+      params%numIter = 1
     end if
 
-    read (1, *, iostat=status) dumC, startCoreChar, endCoreChar
+    read (1, *, iostat=status) dumC, params%startCoreChar, params%endCoreChar
     if (status /= 0) then
-      startCoreChar = "1"
-      endCoreChar = "Combine"
+      params%startCoreChar = "1"
+      params%endCoreChar = "Combine"
     end if
     
     read (1, *, iostat=status) dumC, hold
@@ -859,18 +816,18 @@ contains
       if (hold(1:1) == "*") then
 	read(hold,"(X,I2)") cl
 	call get_command_argument(cl,hold)
-	read(hold,*) minHapFreq
+	read(hold,*) params%minHapFreq
       else
-	read(hold,*) minHapFreq
+	read(hold,*) params%minHapFreq
       end if
     else
-      minHapFreq = 1
+      params%minHapFreq = 1
     end if
 
     PercSurrDisagree = PercSurrDisagree/100
-    NumSurrDisagree = int(UseSurrsN * PercSurrDisagree)
-    PercGenoHaploDisagree = PercGenoHaploDisagree/100
-    GenotypeMissingErrorPercentage = GenotypeMissingErrorPercentage/100
+    params%NumSurrDisagree = int(params%UseSurrsN * PercSurrDisagree)
+    params%PercGenoHaploDisagree = params%PercGenoHaploDisagree/100
+    params%GenotypeMissingErrorPercentage = params%GenotypeMissingErrorPercentage/100
 
     close (1)
 
@@ -884,17 +841,18 @@ contains
     !        stop
     !end if
 
-  end subroutine ReadInParameterFile
+  end function ReadInParameterFile
 
-  subroutine HapCommonality(library, OutputPoint)
-    use Parameters, only: FullFileOutput
+  subroutine HapCommonality(library, OutputPoint, params)
+    !! This should probably be two routines - one to calculate, one to output
     use Constants
     use HaplotypeLibraryDefinition
-    implicit none
-
+    use ParametersDefinition
+    
     type(HaplotypeLibrary), intent(in) :: library
     integer, intent(in) :: OutputPoint
-
+    class(Parameters), intent(in) :: params
+    
     integer :: i, SizeCore, nHaps
     character(len = 300) :: filout
 
@@ -903,21 +861,14 @@ contains
     SizeCore = library%getNumSnps()
     nHaps = library%getSize()
 
-    if (FullFileOutput == 1) then
-      if (WindowsLinux == 1) then
-	write (filout, '(".\PhasingResults\HaplotypeLibrary\Extras\HapCommonality",i0,".txt")') OutputPoint
+    if (params%FullFileOutput) then
+	write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"Extras",a1,"HapCommonality",i0,".txt")') SEP, SEP, SEP, SEP, OutputPoint
 	open (unit = 27, FILE = filout, status = 'unknown')
-
-      else
-	write (filout, '("./PhasingResults/HaplotypeLibrary/Extras/HapCommonality",i0,".txt")') OutputPoint
-	open (unit = 27, FILE = filout, status = 'unknown')
-
-      endif
     endif
 
     HapRel = library%getHapRel()
 
-    if (FullFileOutput == 1) then
+    if (params%FullFileOutput) then
       do i = 1, nHaps
 	write (27, '(i10,20000F5.2,20000F5.2,20000F5.2,20000F5.2)') i, float(HapRel(i,:))/SizeCore
       enddo
@@ -932,10 +883,7 @@ contains
   subroutine WriteSurrogates(definition, threshold, OutputPoint, p)
     use SurrogateDefinition
     use PedigreeDefinition
-    use Parameters, only : FullFileOutput
     use Constants
-
-    implicit none
 
     character(len = 300) :: filout
     integer :: i, j, nSurrogates
@@ -949,53 +897,43 @@ contains
 
     nAnisG = size(definition%numOppose,1)
 
-    if (FullFileOutput == 1) then
-      if (WindowsLinux == 1) then
-	write (filout, '(".\Miscellaneous\Surrogates",i0,".txt")') OutputPoint
-	open (unit = 13, FILE = filout, status = 'unknown')
-	write (filout, '(".\Miscellaneous\SurrogatesSummary",i0,".txt")') OutputPoint
-	open (unit = 19, FILE = filout, status = 'unknown')
-
+    write (filout, '(".",a1,"Miscellaneous",a1,"Surrogates",i0,".txt")') SEP, SEP, OutputPoint
+    open (unit = 13, FILE = filout, status = 'unknown')
+    write (filout, '(".",a1,"Miscellaneous",a1,"SurrogatesSummary",i0,".txt")') SEP, SEP, OutputPoint
+    open (unit = 19, FILE = filout, status = 'unknown')
+    do i = 1, nAnisG
+      nSurrogates = 0
+      if (nAnisG < 20000) then
+	write (13, '(a20,20000i6,20000i6,20000i6,20000i6)') p%getID(i), definition%partition(i,:)
       else
-	write (filout, '("./Miscellaneous/Surrogates",i0,".txt")') OutputPoint
-	open (unit = 13, FILE = filout, status = 'unknown')
-	write (filout, '("./Miscellaneous/SurrogatesSummary",i0,".txt")') OutputPoint
-	open (unit = 19, FILE = filout, status = 'unknown')
-      endif
-      do i = 1, nAnisG
-	nSurrogates = 0
-	if (nAnisG < 20000) then
-	  write (13, '(a20,20000i6,20000i6,20000i6,20000i6)') p%getID(i), definition%partition(i,:)
-	else
-	  write (13, *) p%getID(i), definition%partition(i,:)
-	end if
-	do j = 1, nAnisG
-	  if (definition%numOppose(i, j) <= threshold) nSurrogates = nSurrogates + 1
-	enddo
-	write (19, '(a20,20000i6,20000i6,20000i6,20000i6)') &
-	p%getID(i), count(definition%partition(i,:) == 1), count(definition%partition(i,:) == 2)&
-	, count(definition%partition(i,:) == 3), nSurrogates, definition%method(i)
+	write (13, *) p%getID(i), definition%partition(i,:)
+      end if
+      do j = 1, nAnisG
+	if (definition%numOppose(i, j) <= threshold) nSurrogates = nSurrogates + 1
       enddo
-      close(13)
-      close(19)
-    end if
+      write (19, '(a20,20000i6,20000i6,20000i6,20000i6)') &
+      p%getID(i), count(definition%partition(i,:) == 1), count(definition%partition(i,:) == 2)&
+      , count(definition%partition(i,:) == 3), nSurrogates, definition%method(i)
+    enddo
+    close(13)
+    close(19)
 
   end subroutine WriteSurrogates
 
 !#################################################################################################################################################################
 
-  subroutine CountInData(nAnisRawPedigree, nAnisG)
-    use Parameters, only: PedigreeFile, GenotypeFile, GenotypeFileFormat
-    implicit none
-
+  subroutine CountInData(nAnisRawPedigree, nAnisG, params)
+    use ParametersDefinition
+    
+    type(Parameters), intent(in) :: params
     integer, intent(out) :: nAnisRawPedigree, nAnisG
 
     integer :: k
     character (len = 300) :: dumC
 
     nAnisRawPedigree = 0
-    if (trim(PedigreeFile) /= "NoPedigree") then
-      open (unit = 2, file = trim(PedigreeFile), status = "old")
+    if (trim(params%PedigreeFile) /= "NoPedigree") then
+      open (unit = 2, file = trim(params%PedigreeFile), status = "old")
       do
 	read (2, *, iostat = k) dumC
 	nAnisRawPedigree = nAnisRawPedigree + 1
@@ -1009,7 +947,7 @@ contains
     endif
 
     nAnisG = 0
-    open (unit = 3, file = trim(GenotypeFile), status = "old")
+    open (unit = 3, file = trim(params%GenotypeFile), status = "old")
     do
       read (3, *, iostat = k) dumC
       nAnisG = nAnisG + 1
@@ -1018,84 +956,52 @@ contains
 	exit
       endif
     enddo
-    if (GenotypeFileFormat == 2) then
+    if (params%GenotypeFileFormat == 2) then
       nAnisG = nAnisG /2
     end if
     close(3)
     print*, " ", nAnisG, " individuals in the genotype file"
 
-    if (trim(PedigreeFile) == "NoPedigree") nAnisRawPedigree = nAnisG
+    if (trim(params%PedigreeFile) == "NoPedigree") nAnisRawPedigree = nAnisG
 
   end subroutine CountInData
 
 !########################################################################################################################################################################################################
 
-  subroutine MakeDirectories
-    use Parameters, only: FullFileOutput, Simulation
+  subroutine MakeDirectories(params)
+    use ParametersDefinition
     use Constants
-    implicit none
-
-    print*, ""
-    if (WindowsLinux == 1) then
-      call system("rmdir /s /q Miscellaneous")
-      call system("rmdir /s /q PhasingResults")
-    else
-      call system("rm -r Miscellaneous")
-      call system("rm -r PhasingResults")
-    endif
-
-    call system("mkdir PhasingResults")
-    if (WindowsLinux == 1) then
-      call system("mkdir PhasingResults\HaplotypeLibrary")
-      if (FullFileOutput == 1) call system("mkdir PhasingResults\HaplotypeLibrary\Extras")
-      !open (unit = 29, file = ".\PhasingResults\PhasingYield.txt", status = "unknown")
-    else
-      call system("mkdir PhasingResults/HaplotypeLibrary")
-      if (FullFileOutput == 1) call system("mkdir PhasingResults/HaplotypeLibrary/Extras")
-      !open (unit = 29, file = "./PhasingResults/PhasingYield.txt", status = "unknown")
-    endif
-
-
-    if (WindowsLinux == 1) then
-      if (FullFileOutput == 1) then
-	call system("mkdir Miscellaneous")
-      endif
-    else
-      if (FullFileOutput == 1) then
-      call system("mkdir Miscellaneous")
-      endif
-    endif
     
-    if (Simulation == 1) then
-      if (WindowsLinux==1) then
-	call system("rmdir /s /q Simulation")
-      else
-	call system("rm -r Simulation")
-      endif
+    type(Parameters), intent(in) :: params
+    
+    print*, ""
+    call system(RMDIR // "Miscellaneous")
+    call system(RMDIR // "PhasingResults")
 
-      if (WindowsLinux==1) then
-	if (FullFileOutput==1) then
-	  call system("mkdir Simulation")
-	endif
-      else
-	if (FullFileOutput==1) then
-	  call system("mkdir Simulation")
-	endif
+    call system(MKDIR // "PhasingResults")
+    call system(MKDIR // "PhasingResults"//SEP//"HaplotypeLibrary")
+    if (params%FullFileOutput) call system(MKDIR // "PhasingResults"//SEP//"HaplotypeLibrary"//SEP//"Extras")
+    call system(MKDIR // "Miscellaneous")
+    
+    if (params%Simulation == 1) then
+      call system(RMDIR // "Simulation")
+      if (params%FullFileOutput) then
+	call system(MKDIR // "Simulation")
       endif
     end if
 
   end subroutine MakeDirectories  
   
-  subroutine WriteHapLib(library, currentcore, c)
-    use Parameters, only: fullfileoutput, ItterateType
+  subroutine WriteHapLib(library, currentcore, c, params)
+    use ParametersDefinition
     use HaplotypeLibraryDefinition
     use Constants
     use CoreDefinition
-    implicit none
-
+    
     type(HaplotypeLibrary), intent(in) :: library
     type(Core), intent(in) :: c
     integer, intent(in) :: currentcore
+    type(Parameters) :: params
 
     integer :: i, j, k, counter, SizeCore, nHaps !, nAnisG
     character(len = 300) :: filout
@@ -1104,55 +1010,51 @@ contains
 
     nHaps = library%getSize()
 
-    if (FullFileOutput == 1) then
-      if (WindowsLinux == 1) then
-	write (filout, '(".\PhasingResults\HaplotypeLibrary\HapLib",i0,".txt")') currentcore
-	open (unit = 24, FILE = filout, status = 'unknown')
-      else
-	write (filout, '("./PhasingResults/HaplotypeLibrary/HapLib",i0,".txt")') currentcore
-	open (unit = 24, FILE = filout, status = 'unknown')
-      endif
+    if (params%FullFileOutput) then
+      write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') SEP, SEP, SEP, currentcore
+      open (unit = 24, FILE = filout, status = 'unknown')
     endif
-    if (WindowsLinux == 1) then
-      write (filout, '(".\PhasingResults\HaplotypeLibrary\HapLib",i0,".bin")') currentcore
-      open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
-    else
-      write (filout, '("./PhasingResults/HaplotypeLibrary/HapLib",i0,".bin")') currentcore
-      open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
-    endif
-
+    write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') SEP, SEP, SEP, currentcore
+    open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
 
     write (34) nHaps, SizeCore
     do i = 1, nHaps
-      if (FullFileOutput == 1)&
+      if (params%FullFileOutput)&
       write (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
       i, library%getHapFreq(i), " ", library%getHap(i)
       write (34) library%getHap(i)
     end do
 
-    if (FullFileOutput == 1) then
+    if (params%FullFileOutput) then
       close(24)
     end if
     close(34)
 
-    if (ItterateType .eq. "Off") then
+    if (params%ItterateType .eq. "Off") then
       print*, "   ", "Final iteration found ", nHaps, "haplotypes"
     
       print*, ""
       write (*, '(a4,a30,f5.2,a1)') "   ", "Final yield for this core was ", c%getTotalYield(), "%"
     end if
     
-    if (WindowsLinux == 1) then
-      open (unit = 29, file = ".\PhasingResults\PhasingYield.txt", status = "unknown", position = "append")
-    else
-      open (unit = 29, file = "./PhasingResults/PhasingYield.txt", status = "unknown", position = "append")
-    endif
+    open (unit = 29, file = "."//SEP//"PhasingResults"//SEP//"PhasingYield.txt", status = "unknown", position = "append")
 
     write (29, '(i10,f7.2)') CurrentCore, c%getTotalYield()
 
     close(29)
 
   end subroutine WriteHapLib
+  
+  subroutine writeTimer(hours, minutes, seconds)
+    integer, intent(in) :: hours, minutes
+    real, intent(in) :: seconds
+    
+    open (unit = 32, file = "."//SEP//"PhasingResults"//SEP//"Timer.txt", status = "unknown")
+
+    write(32, '(A27,A7,I3,A9,I3,A9,F6.2)') "Time Elapsed", "Hours", INT(Hours), "Minutes", INT(Minutes), "Seconds", Seconds
+
+    close(32)
+  end subroutine writeTimer
   
   subroutine InsertionSort(array, pos)
     character(*), dimension(:), intent(inout) :: array

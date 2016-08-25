@@ -29,7 +29,6 @@ contains
   end function clusterD
   
   function RePartitionD(numClusters, input, assign, multi) result(change)
-    implicit none
     
     integer, intent(in) :: numClusters
     integer, dimension(:,:), intent(in) :: input
@@ -107,7 +106,6 @@ contains
   end function cluster1
   
   function RePartition1(numClusters, input, assign, multi) result(change)
-    implicit none
     
     integer, intent(in) :: numClusters
     integer(kind=1), dimension(:,:), intent(in) :: input

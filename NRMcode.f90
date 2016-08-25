@@ -1,3 +1,9 @@
+#IFDEF _win32
+#DEFINE SEP "\"
+#else
+#DEFINE SEP "/"
+#endif
+
 module NRMCode
   implicit none
   
@@ -13,12 +19,13 @@ module NRMCode
   integer, allocatable :: seqsire(:), seqdam(:), RecodeGenotypeId(:)
 contains
 
-  function createNRM(p) result(PseudoNRM)
-    use Parameters, only: FullFileOutput, NrmThresh
+  function createNRM(p, params) result(PseudoNRM)
+    use ParametersDefinition
     use Constants
     use PedigreeDefinition
     
     type(Pedigree), intent(in) :: p
+    type(Parameters), intent(in) :: params
     
     integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM
     integer :: i, j, nAnisP
@@ -57,13 +64,9 @@ contains
     xnumrelmatHold = -9.
     xnumrelmatHold(-1 * NRMmem: 0) = 0.
 
-    if (FullFileOutput == 1) then
+    if (params%FullFileOutput) then
 !      allocate(NRM(nAnisG, nAnisG))
-      if (WindowsLinux == 1) then
-	open (unit = 9, file = ".\Miscellaneous\GenotypedPseudoNRM.txt", status = "unknown")
-      else
-	open (unit = 9, file = "./Miscellaneous/GenotypedPseudoNRM.txt", status = "unknown")
-      endif
+      open (unit = 9, file = "."//SEP//"Miscellaneous"//SEP//"GenotypedPseudoNRM.txt", status = "unknown")
     end if
 
     print*, " "
@@ -71,7 +74,7 @@ contains
     PseudoNRM = 0
     do i = 1, nAnisG
       if (mod(i, 400) == 0) print*, "   NRM done for genotyped individual --- ", i
-      if (FullFileOutput == 1) then
+      if (params%FullFileOutput) then
 !	shellwarning = 0
 	do j = i, nAnisG
 	  shell = 0
@@ -86,11 +89,11 @@ contains
 	valueS = xnumrelmat(seqsire(RecodeGenotypeId(i)), RecodeGenotypeId(j))
 	shell = 0
 	valueD = xnumrelmat(seqdam(RecodeGenotypeId(i)), RecodeGenotypeId(j))
-	if ((valueS > NrmThresh).and.(valueD <= NrmThresh)) PseudoNRM(i, j) = 1
-	if ((valueS <= NrmThresh).and.(valueD > NrmThresh)) PseudoNRM(i, j) = 2
+	if ((valueS > params%NrmThresh).and.(valueD <= params%NrmThresh)) PseudoNRM(i, j) = 1
+	if ((valueS <= params% NrmThresh).and.(valueD > params%NrmThresh)) PseudoNRM(i, j) = 2
 	PseudoNRM(j, i) = PseudoNRM(i, j)
       enddo
-      if (FullFileOutput == 1) then
+      if (params%FullFileOutput) then
 !	if (nAnisG < 20000) then
 !	  write (8, "(a20,20000f5.2,20000f5.2,20000f5.2,20000f5.2,20000f5.2)") GenotypeId(i), NRM(i,:)
 !	else
@@ -113,8 +116,6 @@ contains
   end function createNRM
   
   recursive function xnumrelmat(i, j) result (xA)
-    implicit none
-
     integer :: i, j
     real :: xA
 
@@ -142,9 +143,7 @@ contains
   !########################################################################################################################################################################################################
 
   RECURSIVE function xnumrelmat_mem(i, j) RESULT (xA)
-    implicit none
-
-
+    
     INTEGER :: i, j, k
     REAL :: xA
 
@@ -181,8 +180,7 @@ contains
   end function xnumrelmat_mem
   
   subroutine PedigreeViewerRecode(nobs, nAnisPedigree, ped, id)
-    implicit none
-
+    
     integer :: nobs, nAnisPedigree
     character(20), dimension(:,:), intent(in) :: ped
     character(20), allocatable :: Id(:)

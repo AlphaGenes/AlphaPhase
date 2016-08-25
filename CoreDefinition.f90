@@ -1,4 +1,5 @@
 module CoreDefinition
+  use Constants
   implicit none
   private
 
@@ -59,7 +60,6 @@ module CoreDefinition
 contains
 
   function newCore(genos, startCoreSnp, endCoreSnp, endSurrSnp) result(c)
-    implicit none
     
     integer(kind = 1), dimension(:,:), intent(in) :: genos
     integer, intent(in) :: startCoreSnp, endCoreSnp
@@ -85,14 +85,13 @@ contains
     c%endCoreSnp = endCoreSnp
     c%endSurrSnp = endSurrSnp
     c%fullyPhased = .false.
-    c%phase = 9
-    c%hapAnis = -99
+    c%phase = MissingPhaseCode
+    c%hapAnis = MissingHaplotypeCode
     
     c%swappable = 0
   end function newCore
   
   function newPhaseCore(phase) result(c)
-    implicit none
     
     integer(kind = 1), dimension(:,:,:), intent(in) :: phase
     type(Core) :: c
@@ -111,7 +110,7 @@ contains
     c%endSurrSnp = 0
     c%fullyPhased = .false.
     c%phase = phase
-    c%hapAnis = -99
+    c%hapAnis = MissingHaplotypeCode
   end function newPhaseCore
   
   subroutine destroy(c)
@@ -126,8 +125,7 @@ contains
   end subroutine destroy
   
   function getCoreAndTailGenos(c) result (ctGenos)
-    implicit none
-    
+        
     class(Core), target :: c
     integer(kind=1), dimension(:,:), pointer :: ctGenos
     
@@ -141,8 +139,7 @@ contains
   end function getCoreAndTailGenos
   
   function getSingleCoreAndTailGenos(c,i) result (ctGenos)
-    implicit none
-    
+        
     class(Core), target :: c
     integer, intent(in) :: i
     integer(kind=1), dimension(:), pointer :: ctGenos
@@ -157,8 +154,7 @@ contains
   end function getSingleCoreAndTailGenos
   
   function getSingleCoreGenos(c, i) result (cGenos)
-    implicit none
-    
+        
     class(Core), target :: c
     integer, intent(in) :: i
     integer(kind=1), dimension(:), pointer :: cGenos
@@ -171,8 +167,7 @@ contains
   end function getSingleCoreGenos
   
   subroutine setPhase(c, animal, snp, phase, val)
-    implicit none
-    
+        
     class(Core) :: c
     integer, intent(in) :: animal, snp, phase
     integer(kind=1) :: val
@@ -181,7 +176,6 @@ contains
   end subroutine setPhase
   
   function getNAnisG(c) result(num)
-    implicit none
     class(Core) :: c
     integer :: num
     
@@ -189,7 +183,6 @@ contains
   end function getNAnisG
   
   function getNSnp(c) result(num)
-    implicit none
     class(Core) :: c
     integer :: num
     
@@ -197,7 +190,6 @@ contains
   end function getNSnp
   
   function getNCoreSnp(c) result(num)
-    implicit none
     class(Core) :: c
     integer :: num
     
@@ -205,7 +197,6 @@ contains
   end function getNCoreSnp
   
   function getNCoreTailSnp(c) result(num)
-    implicit none
     class(Core) :: c
     integer :: num
     
@@ -213,7 +204,6 @@ contains
   end function getNCoreTailSnp
   
   function getPhase(c,animal,snp,phase) result(p)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: animal, snp, phase
     integer(kind=1) :: p
@@ -222,7 +212,6 @@ contains
   end function getPhase
   
   function getAllPhase(c) result(phase)
-    implicit none
     class(Core) :: c
     integer(kind=1), dimension(:,:,:), allocatable :: phase
     
@@ -233,7 +222,6 @@ contains
   end function getAllPhase
   
   function getPhaseGeno(c,animal,snp) result (p)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: animal, snp
     integer(kind=1) :: p
@@ -242,7 +230,6 @@ contains
   end function getPhaseGeno
   
   function getYield(c,phase) result (yield)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: phase
     integer :: counter
@@ -254,7 +241,6 @@ contains
   end function getYield
   
   function getTotalYield(c) result(yield)
-    implicit none
     class(Core) :: c
     integer :: counter
     double precision :: yield
@@ -265,7 +251,6 @@ contains
   end function getTotalYield
   
   function getHaplotype(c,animal, phase) result(haplotype)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: animal, phase
     integer(kind=1), dimension(:), allocatable :: haplotype
@@ -275,7 +260,6 @@ contains
   end function getHaplotype
   
   subroutine setHaplotype(c, animal, phase, haplotype)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: animal, phase
     integer(kind=1), dimension(:) :: haplotype
@@ -284,7 +268,6 @@ contains
   end subroutine setHaplotype
   
   subroutine setHaplotypeToUnphased(c, animal, phase)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: animal, phase
     
@@ -292,14 +275,12 @@ contains
   end subroutine setHaplotypeToUnphased
   
   subroutine resetFullyPhased(c)
-    implicit none
     class(Core) :: c
     
     c%fullyPhased = .false.
   end subroutine resetFullyPhased
   
   subroutine setFullyPhased(c,animal,phase)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: animal, phase
     
@@ -307,23 +288,19 @@ contains
   end subroutine setFullyPhased
   
   function getFullyPhased(c,animal,phase) result(fully)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: animal, phase
     logical :: fully
     
     fully = c%fullyPhased(animal,phase)
-    !fully = all(c%phase(animal,:,phase) /= 9)
   end function getFullyPhased
   
   function getBothFullyPhased(c,animal) result(fully)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: animal
     logical :: fully
     
     fully = c%fullyPhased(animal,1) .and. c%fullyPhased(animal,2)
-    !fully = all(c%phase(animal,:,phase) /= 9)
   end function getBothFullyPhased
   
   function getPercentFullyPhased(c) result (percent)
@@ -335,14 +312,12 @@ contains
     
   
   subroutine resetHapAnis(c)
-    implicit none
     class(Core) :: c
     
-    c%hapAnis = -99
+    c%hapAnis = MissingHaplotypeCode
   end subroutine resetHapAnis
   
   subroutine setHapAnis(c,animal,phase,id)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: animal, phase, id
     
@@ -350,7 +325,6 @@ contains
   end subroutine setHapAnis
   
   function getHapAnis(c,animal,phase) result(id)
-    implicit none
     class(Core) :: c
     integer, intent(in) :: animal, phase
     integer :: id
@@ -383,7 +357,7 @@ contains
     integer, intent(in) :: animal, phase
     integer :: num
     
-    num = count(c%phase(animal,:,phase) == 9)
+    num = count(c%phase(animal,:,phase) == MissingPhaseCode)
   end function hapNumMissing
   
   subroutine setSwappable(c, animal, val)

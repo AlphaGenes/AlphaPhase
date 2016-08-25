@@ -6,15 +6,15 @@ module Sorting
     integer :: index
   end type
   
-  character(lengan), dimension(:), pointer :: sortArray
+  character(:), dimension(:), pointer :: sortArray
   
   contains
   
   subroutine sortWithIndex(array, indexes)
-    character(lengan), dimension(:), intent(inout), target :: array
+    character(*), dimension(:), intent(inout), target :: array
     integer, dimension(size(array)), intent(out) :: indexes
         
-    character(lengan), dimension(size(array)) :: tempArray
+    character(len(array)), dimension(size(array)) :: tempArray
     integer :: i
     integer(8) :: as, es
     
@@ -36,7 +36,7 @@ module Sorting
   end subroutine sortWithIndex
   
   function compare(a, b) result(i)
-    character(lengan), intent(in) :: a, b
+    character(*), intent(in) :: a, b
     integer(2) :: i
    
     if (a < b) then

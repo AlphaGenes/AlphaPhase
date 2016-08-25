@@ -1,10 +1,11 @@
 module Random
   
+  implicit none
+  
 contains
   
 subroutine RandomOrder(order, n, start, idum)
     !     Generate a random ordering of the integers 1 ... n.
-    implicit none
 
     integer, INTENT(IN) :: n, start
     !integer, INTENT(OUT) :: order(n)
@@ -43,7 +44,6 @@ FUNCTION ran1(idum)
     ! This Function returns a uniform random deviate between 0.0 and 1.0.
     ! Set IDUM to any negative value to initialize or reinitialize the sequence.
     !MODIFIED FOR REAL
-    IMPLICIT NONE
     INTEGER idum, IA, IM, IQ, IR, NTAB, NDIV
     DOUBLE PRECISION ran1, AM, EPS, RNMX
     PARAMETER (IA = 16807, IM = 2147483647, AM = 1./IM, IQ = 127773, IR = 2836, NTAB = 32, NDIV = 1 + (IM - 1)/NTAB, EPS = 1.2e-7, &

@@ -1,6 +1,5 @@
 module MemberManagerDefinition
   use CoreDefinition
-  use Parameters, only: itterateType, itterateNumber !, numIter
   
   implicit none
   private
@@ -15,6 +14,7 @@ module MemberManagerDefinition
     integer :: numIter
     integer :: completeIter
     logical :: noneLeft
+    logical :: random
   contains
     private
     procedure, public :: hasNext
@@ -28,9 +28,11 @@ module MemberManagerDefinition
   
 contains
 
-  function newMemberManager(c) result(manager)
+  function newMemberManager(c, itterateType, itterateNumber) result(manager)
     class(Core), intent(in) :: c
     type(MemberManager) :: manager
+    character (len = 300) :: itterateType
+    integer, intent(in) :: itterateNumber
     
     if (itterateType .eq. "Off") then
       call createAll(manager, c)
@@ -79,6 +81,7 @@ contains
     manager%curPos = 1
     manager%numIter = numIter
     manager%completeIter = 0
+    manager%random = .false.
   end subroutine createInputOrder
   
   subroutine createRandomOrder(manager, c, number, numIter)
@@ -104,6 +107,7 @@ contains
     manager%curPos = 1
     manager%numIter = numIter
     manager%completeIter = 0
+    manager%random = .true.
   end subroutine createRandomOrder
   
   subroutine createCluster(manager, c, number, numIter)
@@ -163,6 +167,7 @@ contains
     manager%curPos = 1
     manager%numIter = numIter
     manager%completeIter = 0
+    manager%random = .false.
     
   end subroutine createCluster
   
@@ -236,7 +241,7 @@ contains
       if (manager%curPos == size(manager%order,1)) then
 	manager%curPos = 1
 	manager%completeIter = manager%completeIter + 1
-	if (itterateType .eq. "RandomOrder") then
+	if (manager%random) then
 	  call system_clock(nCount)
 	  secs = mod(nCount, int(1e6))
 	  call RandomOrder(manager%order, size(manager%order,1), 1, -abs(secs))

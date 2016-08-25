@@ -1,40 +1,32 @@
+#IFDEF _win32
+#DEFINE SEP "\"
+#else
+#DEFINE SEP "/"
+#endif
+
 module Testing
+  use Constants
+  implicit none
 
 contains
 
-  subroutine Flipper(c, startSnp, endSnp, totalSnps)
-    use Parameters, only: TruePhaseFile
+  subroutine Flipper(c, TruePhase)
     use CoreDefinition
-    implicit none
 
     type(Core) :: c
-    integer, intent(in) :: startSnp, endSnp, totalSnps
+    integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase
 
     integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth
-    integer(kind = 1), allocatable, dimension(:,:,:) :: TruePhase
     integer(kind = 1), allocatable, dimension(:) :: W1, W2
     character(len = 300) :: dumC
-    integer(kind = 1), allocatable, dimension(:) :: holdPhase
 
     integer :: nAnisG, nSnp
 
     nAnisG = c%getNAnisG()
     nSnp = c%getNCoreSnp()
 
-    allocate(TruePhase(nAnisG, nSnp, 2))
     allocate(W1(nSnp))
     allocate(W2(nSnp))
-    allocate(holdPhase(totalSnps))
-
-
-    open (unit = 16, file = trim(TruePhaseFile), status = "old")
-    do i = 1, nAnisG
-      read (16, *) dumC, holdPhase
-      TruePhase(i,:, 1) = holdPhase(startSnp:endSnp)
-      read (16, *) dumC, holdPhase
-      TruePhase(i,:, 2) = holdPhase(startSnp:endSnp)
-    end do
-    close(16)
 
     do i = 1, nAnisG
       CountAgreeStay1 = 0
@@ -62,24 +54,25 @@ contains
 
   !########################################################################################################################################################################
 
-  subroutine Checker(c, Surrogates, p, OutputPoint, startSnp, endSnp, totalSnps)
-    !!! THIS COULD DO WITH SOME MAJOR WORK!
-    use Parameters, only: FullFileOutput, TruePhaseFile, itterateType, numIter
+  subroutine Checker(c, Surrogates, p, TruePhase, OutputToFile, OutputPoint, OutputSurrogates)
+    !! Should split in two - one subroutine / function here to create stats, another in InputOutput to write out
+    !! But that would be a big job given the number of variables here!
+    
     use Constants
     use SurrogateDefinition
     use PedigreeDefinition
     use CoreDefinition
-    implicit none
 
     type(Core), intent(in) :: c
     type(Surrogate), intent(in) :: surrogates
     type(Pedigree), intent(in) :: p
     !! Probably should be consistent about what we call this
+    integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase
+    logical, intent(in) :: OutputToFile, OutputSurrogates
     integer, intent(in) :: OutputPoint
-    integer, intent(in) :: startSnp, endSnp, totalSnps
 
     integer :: i, j, k, nSurrogates
-    integer(kind = 1), allocatable, dimension(:,:,:) :: TruePhase, MistakePhase
+    integer(kind = 1), allocatable, dimension(:,:,:) :: MistakePhase
     integer, allocatable, dimension(:) :: HetCountPatWrong, HetCountPatNotPhased, HetCountPatCorrect, ErrCountMatWrong, ErrCountMatNotPhased
     integer, allocatable, dimension(:) :: ErrCountMatCorrect, MissCountMatWrong, MissCountMatNotPhased, MissCountMatCorrect, HetCountMatWrong
     integer, allocatable, dimension(:) :: HetCountMatNotPhased, HetCountMatCorrect, CountMatWrong, CountMatNotPhased
@@ -127,7 +120,6 @@ contains
     allocate(PercErrCountMatWrong(nAnisG))
     allocate(PercErrCountMatNotPhased(nAnisG))
     allocate(PercErrCountMatCorrect(nAnisG))
-    allocate(TruePhase(nAnisG, nSnp, 2))
     allocate(MistakePhase(nAnisG, nSnp, 2))
     allocate(HetCountPatWrong(nAnisG))
     allocate(HetCountPatNotPhased(nAnisG))
@@ -153,44 +145,23 @@ contains
     allocate(ErrCountPatWrong(nAnisG))
     allocate(ErrCountPatNotPhased(nAnisG))
     allocate(ErrCountPatCorrect(nAnisG))
-    allocate(holdPhase(totalSnps))
 
     print*, " "
     print*, " Checking simulation"
     print*, " "
 
-    if (FullFileOutput == 1) then
-      if (WindowsLinux == 1) then
-	write (filout, '(".\Simulation\IndivMistakes",i0,".txt")') OutputPoint
-	open (unit = 17, FILE = filout, status = 'unknown')
-	write (filout, '(".\Simulation\Mistakes",i0,".txt")') OutputPoint
-	open (unit = 18, FILE = filout, status = 'unknown')
-	write (filout, '(".\Simulation\IndivMistakesPercent",i0,".txt")') OutputPoint
-	open (unit = 20, FILE = filout, status = 'unknown')
-	write (filout, '(".\Simulation\CoreMistakesPercent.txt")')
-	open (unit = 31, FILE = filout, status = 'unknown', position = 'append')
-      else
-	write (filout, '("./Simulation/IndivMistakes",i0,".txt")') OutputPoint
-	open (unit = 17, FILE = filout, status = 'unknown')
-	write (filout, '("./Simulation/Mistakes",i0,".txt")') OutputPoint
-	open (unit = 18, FILE = filout, status = 'unknown')
-	write (filout, '("./Simulation/IndivMistakesPercent",i0,".txt")') OutputPoint
-	open (unit = 20, FILE = filout, status = 'unknown')
-	write (filout, '("./Simulation/CoreMistakesPercent.txt")')
-	open (unit = 31, FILE = filout, status = 'unknown', position = 'append')
-      endif
+    if (OutputToFile) then
+      write (filout, '(".",a1,"Simulation",a1,"IndivMistakes",i0,".txt")') SEP, SEP, OutputPoint
+      open (unit = 17, FILE = filout, status = 'unknown')
+      write (filout, '(".",a1,"Simulation",a1,"Mistakes",i0,".txt")') SEP, SEP, OutputPoint
+      open (unit = 18, FILE = filout, status = 'unknown')
+      write (filout, '(".",a1,"Simulation",a1,"IndivMistakesPercent",i0,".txt")') SEP, SEP, OutputPoint
+      open (unit = 20, FILE = filout, status = 'unknown')
+      write (filout, '(".",a1,"Simulation",a1,"CoreMistakesPercent.txt")') SEP, SEP
+      open (unit = 31, FILE = filout, status = 'unknown', position = 'append')
     end if
 
-    open (unit = 16, file = trim(TruePhaseFile), status = "old")
-    do i = 1, nAnisG
-      read (16, *) dumC, holdPhase
-      TruePhase(i,:, 1) = holdPhase(startSnp:endSnp)
-      read (16, *) dumC, holdPhase
-      TruePhase(i,:, 2) = holdPhase(startSnp:endSnp)
-    end do
-    close(16)
-
-    MistakePhase = 9
+    MistakePhase = MissingPhaseCode
     do i = 1, nAnisG
       CountPatNotPhased(i) = 0
       CountPatCorrect(i) = 0
@@ -219,8 +190,8 @@ contains
       ErrCountMatWrong(i) = 0
 
       do j = 1, nSnp
-	if (c % getPhase(i, j, 1) == 9) then
-	  MistakePhase(i, j, 1) = 9
+	if (c % getPhase(i, j, 1) == MissingPhaseCode) then
+	  MistakePhase(i, j, 1) = MissingPhaseCode
 	  CountPatNotPhased(i) = CountPatNotPhased(i) + 1
 	  if (c % getCoreGeno(i, j) == 1) then
 	    HetCountPatNotPhased(i) = HetCountPatNotPhased(i) + 1
@@ -262,8 +233,8 @@ contains
 	  end if
 	endif
 
-	if (c % getPhase(i, j, 2) == 9) then
-	  MistakePhase(i, j, 2) = 9
+	if (c % getPhase(i, j, 2) == MissingPhaseCode) then
+	  MistakePhase(i, j, 2) = MissingPhaseCode
 	  CountMatNotPhased(i) = CountMatNotPhased(i) + 1
 	  if (c % getCoreGeno(i, j) == 1) then
 	    HetCountMatNotPhased(i) = HetCountMatNotPhased(i) + 1
@@ -346,8 +317,8 @@ contains
       PercErrCountMatWrong(i) = 100 * (float(ErrCountMatWrong(i))&
       /(ErrCountMatCorrect(i) + ErrCountMatNotPhased(i) + ErrCountMatWrong(i) + 0.00000000001))
 
-      if (FullFileOutput == 1) then
-	if ((itterateType .eq. "Off") .and. (numIter == 1)) then
+      if (OutputToFile == 1) then
+	if (outputSurrogates) then
 	  nSurrogates = 0
 	  do k = i, nAnisG
 	    if (surrogates % numOppose(i, k) <= surrogates % threshold) nSurrogates = nSurrogates + 1
@@ -424,7 +395,7 @@ contains
     write (*, '(a51,a1,2f8.1)') "Percent incorrectly phased    Heterozygous Snps", " ", sum(PercHetCountPatWrong(:))/nAnisG&
     , sum(PercHetCountMatWrong(:))/nAnisG
 
-    if (FullFileOutput == 1) then
+    if (OutputToFile) then
       write (31, '(6f9.4)') (sum(PercCountPatCorrect(:)) + sum(PercCountMatCorrect(:)))/(2 * nAnisG), &
       (sum(PercHetCountPatCorrect(:)) + sum(PercHetCountMatCorrect(:)))/(2 * nAnisG), &
       (sum(PercCountPatNotPhased(:)) + sum(PercCountMatNotPhased(:)))/(2 * nAnisG), &
@@ -442,30 +413,24 @@ contains
   end subroutine Checker
 
   subroutine CheckerCombine(nCores)
-    use Parameters, only: FullFileOutput
     use Constants
 
     integer, intent(in) :: nCores
 
     character(len = 300) :: filout
     double precision, allocatable, dimension(:,:) :: AverageMatrix
+    
+    integer :: i
 
     allocate(AverageMatrix(nCores, 6))
-
-    if (FullFileOutput == 1) then
-      if (WindowsLinux == 1) then
-	write (filout, '(".\Simulation\CoreMistakesPercent.txt")')
-	open (unit = 31, FILE = filout, status = 'unknown')
-      else
-	write (filout, '("./Simulation/CoreMistakesPercent.txt")')
-	open (unit = 31, FILE = filout, status = 'unknown')
-      endif
-      do i = 1, nCores
-	read (31, *) AverageMatrix(i,:)
-      end do
-      write (31, *) " "
-      write (31, '(6f9.4)') sum(AverageMatrix(:, 1))/nCores, sum(AverageMatrix(:, 2))/nCores, sum(AverageMatrix(:, 3))/nCores, &
-      sum(AverageMatrix(:, 4))/nCores, sum(AverageMatrix(:, 5))/nCores, sum(AverageMatrix(:, 6))/nCores
-    endif
+    write (filout, '(".",a1,"Simulation",a1,"CoreMistakesPercent.txt")') SEP, SEP
+    open (unit = 31, FILE = filout, status = 'unknown')
+    do i = 1, nCores
+      read (31, *) AverageMatrix(i,:)
+    end do
+    write (31, *) " "
+    write (31, '(6f9.4)') sum(AverageMatrix(:, 1))/nCores, sum(AverageMatrix(:, 2))/nCores, sum(AverageMatrix(:, 3))/nCores, &
+    sum(AverageMatrix(:, 4))/nCores, sum(AverageMatrix(:, 5))/nCores, sum(AverageMatrix(:, 6))/nCores
+    deallocate(AverageMatrix)
   end subroutine CheckerCombine
 end module Testing

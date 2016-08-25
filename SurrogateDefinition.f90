@@ -19,15 +19,15 @@ module SurrogateDefinition
   end interface Surrogate
 
 contains
-  function newSurrogate(cs, threshold, useNRM, pseudoNRM) result(definition)
+  function newSurrogate(cs, threshold, useNRM, pseudoNRM, writeProgress) result(definition)
     use Clustering
     use CoreSubSetDefinition
-    use Parameters, only : ItterateType
     
     class(CoreSubSet), intent(in) :: cs    
     integer, intent(in) :: threshold
     logical, intent(in) :: useNRM
     integer(kind = 1), dimension (:,:), intent(in) :: PseudoNRM
+    logical, intent(in) :: writeProgress
     type(Surrogate) :: definition
     
     !integer(kind = 1), dimension (:,:), allocatable :: genos
@@ -132,7 +132,7 @@ contains
 !      stop
 !    end if
 
-    if (ItterateType .eq. "Off") then
+    if (writeProgress) then
       print*, " "
       print*, " Identifying surrogates"
     end if
@@ -169,7 +169,7 @@ contains
 	end if
       end do
       definition%numoppose(i, i) = 0
-      if ((mod(i, 400) == 0) .and. (ItterateType .eq. "Off")) then
+      if ((mod(i, 400) == 0) .and. writeProgress) then
 	print*, "   Surrogate identification done for genotyped individual --- ", i
       end if
     end do
@@ -184,7 +184,7 @@ contains
       end if
     end do
 
-    if (ItterateType .eq. "Off") then
+    if (writeProgress) then
       print*, " "
       print*, " Partitioning surrogates"
     end if
@@ -409,7 +409,7 @@ contains
 	endif
 	definition%method(i) = 6
       endif
-      if ((mod(i, 400) == 0) .and. (ItterateType .eq. "Off")) then
+      if ((mod(i, 400) == 0) .and. writeProgress) then
 	print*, "   Partitioning done for genotyped individual --- ", i
       end if
       definition%partition(i, i) = 0

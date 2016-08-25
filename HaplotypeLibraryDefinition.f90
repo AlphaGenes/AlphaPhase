@@ -1,4 +1,5 @@
 module HaplotypeLibraryDefinition
+  use Constants
   implicit none
   private
 
@@ -182,7 +183,7 @@ contains
     
     invalid = 0
     do i = 1, size(haplotype)
-      if ((haplotype(i) /= 0) .and. (haplotype(i) /= 1) .and. (haplotype(i) /= 9)) then
+      if ((haplotype(i) /= 0) .and. (haplotype(i) /= 1) .and. (haplotype(i) /= MissingPhaseCode)) then
 	invalid = invalid + 1
       end if
     end do 
@@ -259,7 +260,7 @@ contains
     
     invalid = 0
     do i = 1, size(haplotype)
-      if ((haplotype(i) /= 0) .and. (haplotype(i) /= 1) .and. (haplotype(i) /= 9)) then
+      if ((haplotype(i) /= 0) .and. (haplotype(i) /= 1) .and. (haplotype(i) /= MissingPhaseCode)) then
 	invalid = invalid + 1
       end if
     end do 
@@ -484,20 +485,20 @@ contains
     freq = library%hapFreq(id)
   end function getHapFreq
   
-  function getCompatHaps(library, genos) result (compatHaps)
+  function getCompatHaps(library, genos, percgenohaplodisagree) result (compatHaps)
     class(HaplotypeLibrary) :: library
     integer(kind=1), dimension(:), intent(in) :: genos
+    double precision, intent(in) :: percgenohaplodisagree
     integer, dimension(:), pointer :: compatHaps
     
-    compatHaps = getCompatHapsFreq(library, genos, 1)    
+    compatHaps = getCompatHapsFreq(library, genos, 1, percgenohaplodisagree)    
   end function getCompatHaps
   
-  function getCompatHapsFreq(library, genos, freq) result (compatHaps)
-    use parameters, only : percgenohaplodisagree
-    
+  function getCompatHapsFreq(library, genos, freq, percgenohaplodisagree) result (compatHaps)
     class(HaplotypeLibrary) :: library
     integer(kind=1), dimension(:), intent(in) :: genos
     integer, intent(in) :: freq
+    double precision, intent(in) :: percgenohaplodisagree
     integer, dimension(:), pointer :: compatHaps
     
     integer, dimension(:), allocatable :: tempCompatHaps

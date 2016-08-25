@@ -1,17 +1,17 @@
 module LongRangePhasing
+  use Constants
   implicit none
   
 contains
   
-  subroutine Erdos(surrogates, threshold, c)
+  subroutine Erdos(surrogates, c, threshold, numsurrdisagree, useSurrsN, consistent, printProgress)
     use SurrogateDefinition
     use CoreSubsetDefinition
-    use Parameters, only: useSurrsN, consistent, numsurrdisagree, ItterateType
-    implicit none
-
+    
     type(Surrogate), intent(in) :: surrogates
     type(CoreSubSet) :: c
-    integer, intent(in) :: threshold
+    integer, intent(in) :: threshold, numsurrdisagree, useSurrsN
+    logical, intent(in) :: consistent, printProgress
 
     integer(kind=1), dimension(:,:), pointer :: genos
     integer, dimension(:,:), allocatable :: surrList
@@ -74,7 +74,8 @@ contains
     end do
 
     do side = 1, 2
-      if (ItterateType .eq. "Off") then
+!      if (ItterateType .eq. "Off") then
+      if (printProgress) then
 	print*, " "
 	select case (side)
 	  case (1)
@@ -85,11 +86,11 @@ contains
       end if
       highestErdos = 0
       do i = 1, nAnisG
-	if ((mod(i, 400) == 0) .and. (ItterateType .eq. "Off")) then
+	if ((mod(i, 400) == 0) .and. printProgress) then
 	  print*, "   Phasing done for genotyped individual --- ", i
 	end if
 	do j = 1, nSnp
-	  if (c%getPhase(i, j, side) == 9) then
+	  if (c%getPhase(i, j, side) == MissingPhaseCode) then
 	    visited = .false.
 	    toVisit = 0
 	    toVisit(1) = i
@@ -155,7 +156,7 @@ contains
 	      end if
 	    end do
 
-	    iAllele = 9
+	    iAllele = MissingPhaseCode
 	    if (sum(AlleleCount(:)) < UseSurrsN) then
 	      if ((AlleleCount(2) <= NumSurrDisagree).and.(AlleleCount(1) > AlleleCount(2))) iAllele = 0
 	      if ((AlleleCount(1) <= NumSurrDisagree).and.(AlleleCount(2) > AlleleCount(1))) iAllele = 1
@@ -175,7 +176,7 @@ contains
 	  end if
 	end do
       end do
-      if (ItterateType .eq. "Off") then
+      if (printProgress) then
 	print*, " "
 	select case (side)
 	  case (1)
@@ -251,13 +252,13 @@ contains
       cmp = a1-a2
   end function
 
-  subroutine CheckCompatHapGeno(c)
-    use Parameters, only: PercGenoHaploDisagree, ItterateType
+  subroutine CheckCompatHapGeno(c, PercGenoHaploDisagree, printProgress)
     use Constants
     use CoreSubsetDefinition
-    implicit none
-
+    
     class(CoreSubset) :: c
+    double precision, intent(in) :: PercGenoHaploDisagree
+    logical, intent(in) :: printProgress
 
     integer(kind=1), dimension(:,:), pointer :: genos
 
@@ -275,7 +276,7 @@ contains
       CountError = 0
       counterMissing = 0
       do j = 1, nCoreSnp
-	if ((c%getPhase(i, j, 1) /= 9).and.(c%getPhase(i, j, 2) /= 9)) then
+	if ((c%getPhase(i, j, 1) /= MissingPhaseCode).and.(c%getPhase(i, j, 2) /= MissingPhaseCode)) then
 	  counterMissing = counterMissing + 1
 	  if ((Genos(i, j) /= MissingGenotypeCode).and.(c%getPhaseGeno(i,j)  /= Genos(i, j))) CountError = CountError + 1
 	end if
@@ -284,9 +285,9 @@ contains
       if (CountError >= ErrorAllow) then
 	do j = 1, nCoreSnp
 	  if (Genos(i, j) /= MissingGenotypeCode) then
-	    if ((c%getPhase(i, j, 1) /= 9).and.(c%getPhase(i, j, 2) /= 9).and.(c%getPhaseGeno(i, j) /= Genos(i, j))) then
-	      if (Genos(i, j) == 1) call c%setPhase(i, j, 2, 9)
-	      if (Genos(i, j) == MissingGenotypeCode) call c%setPhase(i, j, 2, 9)
+	    if ((c%getPhase(i, j, 1) /= MissingPhaseCode).and.(c%getPhase(i, j, 2) /= MissingPhaseCode).and.(c%getPhaseGeno(i, j) /= Genos(i, j))) then
+	      if (Genos(i, j) == 1) call c%setPhase(i, j, 2, MissingPhaseCode)
+	      if (Genos(i, j) == MissingGenotypeCode) call c%setPhase(i, j, 2, MissingPhaseCode)
 	      if (Genos(i, j) == 0) then
 		call c%setPhase(i, j, 1, 0)
 		call c%setPhase(i, j, 2, 0)
@@ -301,7 +302,9 @@ contains
       endif
     end do
 
-    if (ItterateType .eq. "Off") then
+    
+    !! THIS REALLY SHOULDN'T BE HERE!!
+    if (printProgress) then
       print*, " "
       write (*, '(a3,f6.2,a45)') "  ", c%getYield(1), "% was the Paternal allele yield for this core"
       write (*, '(a3,f6.2,a45)') "  ", c%getYield(2), "% was the Maternal allele yield for this core"
