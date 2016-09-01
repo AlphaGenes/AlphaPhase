@@ -823,6 +823,11 @@ contains
     else
       params%minHapFreq = 1
     end if
+    
+    read(1, *, iostat=status) dumC, params%library
+    if (status /= 0) then
+      params%library = "None"
+    end if
 
     PercSurrDisagree = PercSurrDisagree/100
     params%NumSurrDisagree = int(params%UseSurrsN * PercSurrDisagree)
@@ -1110,5 +1115,53 @@ contains
     
     pos = 0
   end function
+  
+
+  function getCoresFromHapLib(directory) result (CoreIndex)
+    character(*), intent(in) :: directory
+    integer, dimension(:,:), pointer :: CoreIndex
+
+    integer :: i, numLibraries, start, nHaps, nSnps, ltail, rtail
+    character(4096) :: filename
+    logical :: ex
+
+    i = 1
+    write (filename, '(a, a, "HapLib", i0, ".bin")') trim(directory), SEP, i 
+    inquire(FILE=filename, EXIST=ex)
+    do while (ex)
+      i = i + 1
+      write (filename, '(a, a, "HapLib", i0, ".bin")') trim(directory), SEP, i
+      inquire(FILE=filename, EXIST=ex)
+    end do
+    numLibraries = i - 1
+    
+    allocate(CoreIndex(numLibraries,2))
+    start = 1
+    
+    do i = 1, numLibraries
+      write (filename, '(a, a, "HapLib", i0, ".bin")') trim(directory), SEP, i
+      open (unit=2001,file=trim(filename),status="old",form="unformatted")
+      read(2001) nHaps,nSnps
+      close(2001)
+      
+      CoreIndex(i,1) = start
+      CoreIndex(i,2) = start + nSnps - 1
+      
+      start = start + nSnps
+    end do
+  end function getCoresFromHapLib
+  
+  function getHaplotypeLibrary(directory, index) result (library)
+    use HaplotypeLibraryDefinition
+    
+    character(*), intent(in) :: directory
+    integer, intent(in) :: index
+    type(HaplotypeLibrary) :: library
+    
+    character(4096) :: filename
+    
+    write (filename, '(a, a, "HapLib", i0, ".bin")') trim(directory), SEP, index
+    library = HaplotypeLibrary(filename,500)
+  end function getHaplotypeLibrary
   
 end module InputOutput

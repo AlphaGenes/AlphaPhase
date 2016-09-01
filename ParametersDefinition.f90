@@ -18,7 +18,7 @@ module ParametersDefinition
     double precision :: NrmThresh
     logical :: FullFileOutput
     logical :: Simulation
-    character (len = 300) :: PedigreeFile, TruePhaseFile ! Used in a really weird way that should probably be refactored
+    character (len = 300) :: PedigreeFile, TruePhaseFile, Library ! Used in a really weird way that should probably be refactored
 
     logical :: readCoreAtTime
     character (len = 300) :: itterateType

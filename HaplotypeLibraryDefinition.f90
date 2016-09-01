@@ -37,17 +37,15 @@ module HaplotypeLibraryDefinition
   
   interface HaplotypeLibrary
     module procedure newHaplotypeLibrary
+    module procedure haplotypeLibraryFromFile
   end interface HaplotypeLibrary
 
 contains
   function newHaplotypeLibrary(nSnps, storeSize, stepSize) result(library)
-    use Random
     type(HaplotypeLibrary) :: library
     integer, intent(in) :: nSnps
     integer, intent(in) :: storeSize
     integer, intent(in) :: stepSize
-
-    integer :: nCount, secs
 
     library % nSnps = nSnps
     library % size = 0
@@ -57,14 +55,46 @@ contains
     allocate(library % hapFreq(storeSize))
     library % store = 0
     library % hapFreq = 0
-    call system_clock(nCount)
-    secs = mod(nCount, int(1e6))
     
     library%numsections = nSnps / 64 + 1
     library%bitoverhang = 64 - (nSnps - (library%numsections - 1) * 64)
     allocate(library%bitstore(storeSize,library%numsections))
     library%bitstore = 0
   end function newHaplotypeLibrary
+  
+  function haplotypeLibraryFromFile(filename, stepsize) result(library)
+    type(HaplotypeLibrary) :: library
+    character(*), intent(in) :: filename
+    integer, intent(in) :: stepSize
+    
+    integer(kind=1), dimension(:), allocatable ::holdHap
+    integer :: i, j
+    
+    open (unit=2001,file=trim(filename),status="old",form="unformatted")
+
+    ! Read the number of Hap in the library and how long they are
+    read(2001) library%storeSize,library%nSnps
+    
+    library%size = 0
+    library%stepSize = stepSize
+    allocate(library % store(library%storeSize, library%nSnps))
+    allocate(library % hapFreq(library%storeSize))
+    library % store = 0
+    library % hapFreq = 0
+    
+    library%numsections = library%nSnps / 64 + 1
+    library%bitoverhang = 64 - (library%nSnps - (library%numsections - 1) * 64)
+    allocate(library%bitstore(library%storeSize,library%numsections))
+    library%bitstore = 0
+
+    allocate(holdHap(library%nSnps))
+    do i=1,library%storeSize
+      read(2001) holdHap
+      j = library%matchAddHap(holdHap)
+    enddo
+    close (2001)
+    
+  end function haplotypeLibraryFromFile
   
   subroutine destroy(library)
     type(HaplotypeLibrary) :: library
