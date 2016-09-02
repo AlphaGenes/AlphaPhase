@@ -983,7 +983,7 @@ contains
     if (params%FullFileOutput) call system(MKDIR // "PhasingResults"//SEP//"HaplotypeLibrary"//SEP//"Extras")
     call system(MKDIR // "Miscellaneous")
     
-    if (params%Simulation == 1) then
+    if (params%Simulation) then
       call system(RMDIR // "Simulation")
       if (params%FullFileOutput) then
 	call system(MKDIR // "Simulation")
@@ -1055,6 +1055,162 @@ contains
 
     close(32)
   end subroutine writeTimer
+  
+  subroutine WriteTestResults(results, c, Surrogates, p, TruePhase, OutputPoint, OutputSurrogates)
+    use Constants
+    use SurrogateDefinition
+    use PedigreeDefinition
+    use CoreDefinition
+    use TestResultDefinition
+
+    type(TestResults), intent(in) :: results
+    type(Core), intent(in) :: c
+    type(Surrogate), intent(in) :: surrogates
+    type(Pedigree), intent(in) :: p
+    !! Probably should be consistent about what we call this
+    integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase
+    logical, intent(in) :: OutputSurrogates
+    integer, intent(in) :: OutputPoint
+
+    integer :: i, j, k, nSurrogates
+    integer(kind = 1), allocatable, dimension(:,:,:) :: MistakePhase
+    character(len = 300) :: filout
+
+    integer(kind = 1), allocatable, dimension(:) :: holdPhase
+
+    integer :: nAnisG, nSnp
+
+    nAnisG = c % getNAnisG()
+    nSNp = c % getNCoreSnp()
+
+    write (filout, '(".",a1,"Simulation",a1,"IndivMistakes",i0,".txt")') SEP, SEP, OutputPoint
+    open (unit = 17, FILE = filout, status = 'unknown')
+    write (filout, '(".",a1,"Simulation",a1,"IndivMistakesPercent",i0,".txt")') SEP, SEP, OutputPoint
+    open (unit = 20, FILE = filout, status = 'unknown')
+    write (filout, '(".",a1,"Simulation",a1,"CoreMistakesPercent.txt")') SEP, SEP
+    open (unit = 31, FILE = filout, status = 'unknown', position = 'append')
+
+    do i = 1, nAnisG
+      if (outputSurrogates) then
+	nSurrogates = 0
+	do k = i, nAnisG
+	  if (surrogates % numOppose(i, k) <= surrogates % threshold) nSurrogates = nSurrogates + 1
+	enddo
+	write (17, '(a20,a3,3i5,a3)', advance='no') p % getID(i), "|", &
+	count(surrogates % partition(i,:) == 1), count(surrogates % partition(i,:) == 2), nSurrogates, "|"
+	write (20, '(a20,a3,3i5,a3)',advance='no') p % getId(i), "|", &
+	count(surrogates % partition(i,:) == 1), count(surrogates % partition(i,:) == 2), nSurrogates, "|"
+      else
+	write (17, '(a20,a3,3i5,a3)', advance='no') p % getID(i), "|", &
+	-1, -1, -1, "|"
+	write (20, '(a20,a3,3i5,a3)', advance='no') p % getID(i), "|", &
+	-1, -1, -1, "|"
+      end if
+      write(17, '(6i6,a6,6i6,a6,6i6,a6,6i6)') &
+      results%counts(i,1,ALL_,CORRECT_), results%counts(i,2,ALL_,CORRECT_), &
+      results%counts(i,1,ALL_,NOTPHASED_), results%counts(i,2,ALL_,NOTPHASED_), &
+      results%counts(i,1,ALL_,INCORRECT_), results%counts(i,2,ALL_,INCORRECT_), "|", &
+      results%counts(i,1,HET_,CORRECT_), results%counts(i,2,HET_,CORRECT_), &
+      results%counts(i,1,HET_,NOTPHASED_), results%counts(i,2,HET_,NOTPHASED_), &
+      results%counts(i,1,HET_,INCORRECT_), results%counts(i,2,HET_,INCORRECT_), "|", &
+      results%counts(i,1,MISS_,CORRECT_), results%counts(i,2,MISS_,CORRECT_), &
+      results%counts(i,1,MISS_,NOTPHASED_), results%counts(i,2,MISS_,NOTPHASED_), &
+      results%counts(i,1,MISS_,INCORRECT_), results%counts(i,2,MISS_,INCORRECT_), "|", &
+      results%counts(i,1,ERROR_,CORRECT_), results%counts(i,2,ERROR_,CORRECT_), &
+      results%counts(i,1,ERROR_,NOTPHASED_), results%counts(i,2,ERROR_,NOTPHASED_), &
+      results%counts(i,1,ERROR_,INCORRECT_), results%counts(i,2,ERROR_,INCORRECT_)
+      write (20, '(6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') &
+      results%percent(i,1,ALL_,CORRECT_), results%percent(i,2,ALL_,CORRECT_), &
+      results%percent(i,1,ALL_,NOTPHASED_), results%percent(i,2,ALL_,NOTPHASED_), &
+      results%percent(i,1,ALL_,INCORRECT_), results%percent(i,2,ALL_,INCORRECT_), "|", &
+      results%percent(i,1,HET_,CORRECT_), results%percent(i,2,HET_,CORRECT_), &
+      results%percent(i,1,HET_,NOTPHASED_), results%percent(i,2,HET_,NOTPHASED_), &
+      results%percent(i,1,HET_,INCORRECT_), results%percent(i,2,HET_,INCORRECT_), "|", &
+      results%percent(i,1,MISS_,CORRECT_), results%percent(i,2,MISS_,CORRECT_), &
+      results%percent(i,1,MISS_,NOTPHASED_), results%percent(i,2,MISS_,NOTPHASED_), &
+      results%percent(i,1,MISS_,INCORRECT_), results%percent(i,2,MISS_,INCORRECT_), "|", &
+      results%percent(i,1,ERROR_,CORRECT_), results%percent(i,2,ERROR_,CORRECT_), &
+      results%percent(i,1,ERROR_,NOTPHASED_), results%percent(i,2,ERROR_,NOTPHASED_), &
+      results%percent(i,1,ERROR_,INCORRECT_), results%percent(i,2,ERROR_,INCORRECT_)
+    end do
+    
+    write (31, '(6f9.4)') &
+    (results%percentAll(1,ALL_,CORRECT_) + results%percentAll(2,ALL_,CORRECT_)) / 2, &
+    (results%percentAll(1,HET_,CORRECT_) + results%percentAll(2,HET_,CORRECT_)) / 2, &
+    (results%percentAll(1,ALL_,NOTPHASED_) + results%percentAll(2,ALL_,NOTPHASED_)) / 2, &
+    (results%percentAll(1,HET_,NOTPHASED_) + results%percentAll(2,HET_,NOTPHASED_)) / 2, &
+    (results%percentAll(1,ALL_,INCORRECT_) + results%percentAll(2,ALL_,INCORRECT_)) / 2, &
+    (results%percentAll(1,HET_,INCORRECT_) + results%percentAll(2,HET_,INCORRECT_)) / 2
+
+    close(17)
+    close(20)
+    close(31)
+  end subroutine WriteTestResults
+
+  subroutine CombineTestResults(nCores)
+    use Constants
+
+    integer, intent(in) :: nCores
+
+    character(len = 300) :: filout
+    double precision, allocatable, dimension(:,:) :: AverageMatrix
+    
+    integer :: i
+
+    allocate(AverageMatrix(nCores, 6))
+    write (filout, '(".",a1,"Simulation",a1,"CoreMistakesPercent.txt")') SEP, SEP
+    open (unit = 31, FILE = filout, status = 'unknown')
+    do i = 1, nCores
+      read (31, *) AverageMatrix(i,:)
+    end do
+    write (31, *) " "
+    write (31, '(6f9.4)') sum(AverageMatrix(:, 1))/nCores, sum(AverageMatrix(:, 2))/nCores, sum(AverageMatrix(:, 3))/nCores, &
+    sum(AverageMatrix(:, 4))/nCores, sum(AverageMatrix(:, 5))/nCores, sum(AverageMatrix(:, 6))/nCores
+    deallocate(AverageMatrix)
+  end subroutine CombineTestResults
+  
+  subroutine WriteMistakes(c, TruePhase, p, OutputPoint)
+    use Constants
+    use CoreDefinition
+    use PedigreeDefinition
+    
+    type(Core), intent(in) :: c
+    !! Probably should be consistent about what we call this
+    integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase
+    type(Pedigree), intent(in) :: p
+    integer, intent(in) :: OutputPoint
+    
+    integer :: i, j, k
+    integer(kind = 1), allocatable, dimension(:) :: MistakePhase
+    character(len = 300) :: dumC, filout
+    
+    allocate(MistakePhase(c%getNCoreSnp()))
+
+    write (filout, '(".",a1,"Simulation",a1,"Mistakes",i0,".txt")') SEP, SEP, OutputPoint
+    open (unit = 18, FILE = filout, status = 'unknown') 
+    
+    do i = 1, c%getNAnisG()
+      do k = 1, 2
+	do j = 1, c%getNCoreSnp()
+	  if (c % getPhase(i, j, k) == MissingPhaseCode) then
+	    MistakePhase(j) = MissingPhaseCode
+	  else
+	    if (TruePhase(i, j, k) == c % getPhase(i, j, k)) then
+	      MistakePhase(j) = 1
+	    else
+	      MistakePhase(j) = 5
+	    end if
+	  endif
+	end do
+      
+	write (18, '(a20,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3)') p % getID(i),&
+	MistakePhase
+      end do
+    end do
+    
+    close(18)
+    
+  end subroutine WriteMistakes
   
   subroutine InsertionSort(array, pos)
     character(*), dimension(:), intent(inout) :: array

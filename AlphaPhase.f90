@@ -6,10 +6,10 @@ program Rlrplhi
   use CoreDefinition
   use MemberManagerDefinition
   use ParametersDefinition
+  use TestResultDefinition
   
   use LongRangePhasing
   use HaplotypeLibraryPhasing
-  use Testing
   
   use InputOutput
   
@@ -25,6 +25,7 @@ program Rlrplhi
   type(CoreSubset) :: cs
   type(Pedigree) :: p
   type(Parameters) :: params
+  type(TestResults) :: results
   
   integer, allocatable, dimension (:,:,:) :: AllHapAnis
   integer(kind=1), allocatable, dimension(:,:,:) :: AllPhase, Phase, AllTruePhase, TruePhase
@@ -232,7 +233,11 @@ program Rlrplhi
       end if
       
       call Flipper(c,TruePhase)
-      call Checker(c,surrogates,p,TruePhase,params%FullFileOutput,h,outputSurrogates)
+      results = TestResults(c,TruePhase)
+      if (params%FullFileOutput) then
+	call WriteTestResults(results,c,surrogates,p,TruePhase,h,outputSurrogates)
+	call WriteMistakes(c,TruePhase,p,h)
+      end if
       
       deallocate(TruePhase)
     end if
@@ -258,7 +263,7 @@ program Rlrplhi
     end if
   end if
   if ((params%Simulation) .and. combine .and. (params%FullFileOutput)) then
-    call CheckerCombine(nCores)
+    call CombineTestResults(nCores)
   end if
   
   deallocate(CoreIndex,TailIndex)

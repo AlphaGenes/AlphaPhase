@@ -375,6 +375,14 @@ contains
     
     val = c%swappable(animal)
   end function getSwappable
+  
+  function getGeno(c,animal,snp) result(g)
+    class(Core) :: c
+    integer, intent(in) :: animal, snp
+    integer(kind=1) :: g
+    
+    g = c%genos(animal,snp)
+  end function getGeno
     
 end module CoreDefinition
 
