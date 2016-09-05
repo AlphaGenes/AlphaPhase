@@ -1,1 +1,3 @@
-ifort  -openmp -static-intel -fpp -openmp-link=static -O3 -m64 -o alphaphase Constants.f90 Parameters.f90 Random.f90 PedigreeDefinition.f90 NRMcode.f90 CoreDefinition.f90 CoreSubsetDefinition.f90 Clustering.f90 HaplotypeLibrary.f90 SurrogateDefinition.f90 Phasing.f90 MemberManagerDefinition.f90 InputOutput.f90 Testing.f90 AlphaPhase.f90
+rm alphaphase
+rm *.mod
+ifort -fpp -static-intel -O3 -m64 -o alphaphase -DCOMMIT=" 9b55995" Constants.f90 ParametersDefinition.f90 Random.f90 Sorting.f90 PedigreeDefinition.f90 NRMcode.f90 CoreDefinition.f90 CoreSubsetDefinition.f90 Clustering.f90 HaplotypeLibraryDefinition.f90 SurrogateDefinition.f90 LongRangePhasing.f90 MemberManagerDefinition.f90 TestResultDefinition.f90 InputOutput.f90 HaplotypeLibraryPhasing.f90 AlphaPhase.f90
