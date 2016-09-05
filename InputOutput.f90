@@ -828,6 +828,7 @@ contains
     if (status /= 0) then
       params%library = "None"
     end if
+    params%consistent = params%consistent .and. (params%library .eq. "None")
 
     PercSurrDisagree = PercSurrDisagree/100
     params%NumSurrDisagree = int(params%UseSurrsN * PercSurrDisagree)
@@ -1060,34 +1061,6 @@ contains
 
     close(32)
   end subroutine writeTimer
-  
-  subroutine InsertionSort(array, pos)
-    character(*), dimension(:), intent(inout) :: array
-    integer, dimension(size(array)), intent(out) :: pos
-    
-    integer :: i, j, tempP
-    character(len(array)) :: tempA
-    
-    do i = 1, size(array)
-      pos(i) = i
-    end do
-    
-    do i = 2, size(array)
-      j = i
-      do while (array(j-1) > array(j))
-	tempA = array(j-1)
-	array(j-1) = array(j)
-	array(j) = tempA
-	
-	tempP = pos(j-1)
-	pos(j-1) = pos(j)
-	pos(j) = tempP
-	
-	j = j - 1
-	if (j == 1) exit
-      end do
-    end do
-  end subroutine InsertionSort
   
   function BinarySearch(array, val) result(pos)
     character(*), dimension(:), intent(in) :: array

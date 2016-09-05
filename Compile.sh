@@ -1,3 +1,3 @@
 rm alphaphase
 rm *.mod
-ifort -fpp -static-intel -O3 -m64 -o alphaphase -DCOMMIT=" 9b55995" Constants.f90 ParametersDefinition.f90 Random.f90 Sorting.f90 PedigreeDefinition.f90 NRMcode.f90 CoreDefinition.f90 CoreSubsetDefinition.f90 Clustering.f90 HaplotypeLibraryDefinition.f90 SurrogateDefinition.f90 LongRangePhasing.f90 MemberManagerDefinition.f90 InputOutput.f90 Testing.f90 HaplotypeLibraryPhasing.f90 AlphaPhase.f90
+ifort -fpp -static-intel -O3 -m64 -o alphaphase -DCOMMIT=" b2eceec" Constants.f90 ParametersDefinition.f90 Random.f90 Sorting.f90 PedigreeDefinition.f90 NRMcode.f90 CoreDefinition.f90 CoreSubsetDefinition.f90 Clustering.f90 HaplotypeLibraryDefinition.f90 SurrogateDefinition.f90 LongRangePhasing.f90 MemberManagerDefinition.f90 Testing.f90 InputOutput.f90 HaplotypeLibraryPhasing.f90 AlphaPhase.f90

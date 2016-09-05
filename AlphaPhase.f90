@@ -163,6 +163,12 @@ program Rlrplhi
       
       ! Fudge below
       c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
+      
+      if (params%library .eq. "None") then
+	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+      else
+	library = getHaplotypeLibrary(params%library, h)
+      end if
 
       do i = 1, params%NumIter	
 	manager = MemberManager(c, params%itterateType, params%itterateNumber)
@@ -186,11 +192,10 @@ program Rlrplhi
 	end do
 
 	nGlobalHapsIter = 1
-	if ((params%library .eq. "None") .or. (i > 1)) then
-	  library = MakeHapLib(c, params%consistent)
-	else
-	  library = getHaplotypeLibrary(params%library, h)
+	if (params%consistent) then
+	  library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
 	end if
+	call MakeHapLib(c, library, params%consistent)
 	nGlobalHapsOld = library%getSize()
 	if (params%ItterateType .eq. "Off") then
 	  print*, " "
@@ -198,7 +203,10 @@ program Rlrplhi
 	end if
 	do j = 1, 20
 	  call ImputeFromLib(library, c, nGlobalHapsIter, params%PercGenoHaploDisagree, params%minHapFreq, params%consistent)
-	  library = MakeHapLib(c,params%consistent)
+	  if (params%consistent) then
+	    library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+	  end if
+	  call MakeHapLib(c,library,params%consistent)
 	  if (nGlobalHapsOld == library%getSize()) exit
 	  nGlobalHapsOld = library%getSize()
 	end do
@@ -224,7 +232,8 @@ program Rlrplhi
 	call c%setHaplotype(i,1,Phase(i,:,1))
 	call c%setHaplotype(i,2,Phase(i,:,2))
       end do
-      library = MakeHapLib(c,params%consistent)
+      library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+      call MakeHapLib(c,library,params%consistent)
       deallocate(Phase)
     end if
    
