@@ -5,19 +5,17 @@ module HaplotypeLibraryPhasing
   integer, parameter, private :: nMaxRounds = 100
   
 contains
-  function MakeHapLib(c, consistent) result(library)
+  subroutine MakeHapLib(c, library, consistent)
     use HaplotypeLibraryDefinition
     use CoreDefinition
     use Random
     
     type(Core), intent(in) :: c
     logical, intent(in) :: consistent
-    type(HaplotypeLibrary) :: library
+    type(HaplotypeLibrary), intent(in) :: library
 
     integer :: i, id
 
-    library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
-    
     do i = 1, c % getNAnisG()
       !Paternal Haps
       if (fullyPhased(c % getHaplotype(i, 1))) then
@@ -35,7 +33,7 @@ contains
       endif
     enddo
 
-  end function MakeHapLib
+  end subroutine MakeHapLib
 
   subroutine ImputeFromLib(library, c, nGlobalHapsIter, PercGenoHaploDisagree, minHapFreq, consistent)
     ! Impute the phase for gametes that are not completely phased by LRP 

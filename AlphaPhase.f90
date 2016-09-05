@@ -31,7 +31,7 @@ program Rlrplhi
   integer(kind=1), allocatable, dimension(:,:,:) :: AllPhase, Phase, AllTruePhase, TruePhase
   integer(kind=1), allocatable, dimension(:,:) :: AllGenos, Genos
   integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
-  integer, allocatable, dimension (:,:) :: CoreIndex, TailIndex
+  integer, dimension (:,:), pointer :: CoreIndex, TailIndex
   integer :: nCores
   integer :: nGlobalHapsIter
   integer :: nAnisG
@@ -40,7 +40,7 @@ program Rlrplhi
   type(Core), allocatable, dimension(:) :: AllCores
   
   !Linux max path length is 4096 which is more than windows or mac (all according to google)
-  character(len=4096) specfile
+  character(len=4096) :: specfile
   character(len=4096) :: cmd
   
   integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM
@@ -51,14 +51,25 @@ program Rlrplhi
   type(MemberManager) :: manager
   
   interface calculateCores
-    subroutine calculateCores(CoreIndex, TailIndex, nSnp, Jump, CoreAndTailLength, offset, consistent)
+    function calculateCores(nSnp, Jump, CoreAndTailLength, offset, consistent) result(CoreIndex)
       implicit none
 
-      integer, dimension(:,:), allocatable :: CoreIndex, TailIndex
       integer, intent(in) :: nSnp, Jump, CoreAndTailLength
       logical, intent(in) :: offset, consistent
-    end subroutine calculateCores
+      integer, dimension(:,:), pointer :: CoreIndex
+    end function calculateCores
   end interface calculateCores
+  
+  interface calculateTails
+    function calculateTails(CoreIndex, nSnp, Jump, CoreAndTailLength, offset, consistent) result(TailIndex)
+      implicit none
+
+      integer, dimension(:,:), intent(in) :: CoreIndex
+      integer, intent(in) :: nSnp, Jump, CoreAndTailLength
+      logical, intent(in) :: offset, consistent
+      integer, dimension(:,:), pointer:: TailIndex
+    end function calculateTails
+  end interface calculateTails
   
   if (Command_Argument_Count() > 0) then
     call get_command_argument(1,cmd)
@@ -80,7 +91,13 @@ program Rlrplhi
   call MakeDirectories(params)
   p = ParsePedigreeData(params)
   nAnisG = p%getNAnis()
-  call CalculateCores(CoreIndex, TailIndex, params%nSnp, params%Jump, params%CoreAndTailLength, params%offset, params%consistent)
+
+  if (params%library .eq. "None") then
+    CoreIndex => CalculateCores(params%nSnp, params%Jump, params%CoreAndTailLength, params%offset, params%consistent)    
+  else
+    CoreIndex => getCoresFromHapLib(params%library)
+  end if
+  TailIndex => calculateTails(CoreIndex, params%nSnp, params%Jump, params%CoreAndTailLength, params%offset, params%consistent)
   nCores = size(CoreIndex,1)  
     
   if (.not. params%readCoreAtTime) then
@@ -147,8 +164,14 @@ program Rlrplhi
       
       ! Fudge below
       c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
+      
+      if (params%library .eq. "None") then
+	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+      else
+	library = getHaplotypeLibrary(params%library, h)
+      end if
 
-      do i = 1, params%NumIter
+      do i = 1, params%NumIter	
 	manager = MemberManager(c, params%itterateType, params%itterateNumber)
 
 	subsetCount = 0
@@ -170,7 +193,10 @@ program Rlrplhi
 	end do
 
 	nGlobalHapsIter = 1
-	library = MakeHapLib(c, params%consistent)
+	if (params%consistent) then
+	  library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+	end if
+	call MakeHapLib(c, library, params%consistent)
 	nGlobalHapsOld = library%getSize()
 	if (params%ItterateType .eq. "Off") then
 	  print*, " "
@@ -178,7 +204,10 @@ program Rlrplhi
 	end if
 	do j = 1, 20
 	  call ImputeFromLib(library, c, nGlobalHapsIter, params%PercGenoHaploDisagree, params%minHapFreq, params%consistent)
-	  library = MakeHapLib(c,params%consistent)
+	  if (params%consistent) then
+	    library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+	  end if
+	  call MakeHapLib(c,library,params%consistent)
 	  if (nGlobalHapsOld == library%getSize()) exit
 	  nGlobalHapsOld = library%getSize()
 	end do
@@ -204,7 +233,8 @@ program Rlrplhi
 	call c%setHaplotype(i,1,Phase(i,:,1))
 	call c%setHaplotype(i,2,Phase(i,:,2))
       end do
-      library = MakeHapLib(c,params%consistent)
+      library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+      call MakeHapLib(c,library,params%consistent)
       deallocate(Phase)
     end if
    
@@ -274,12 +304,12 @@ end program Rlrplhi
 
 !####################################################################################################################################################################
 
-subroutine calculateCores(CoreIndex, TailIndex, nSnp, Jump, CoreAndTailLength, offset, consistent)
+function calculateCores(nSnp, Jump, CoreAndTailLength, offset, consistent) result(CoreIndex)
   implicit none
   
-  integer, dimension(:,:), allocatable :: CoreIndex, TailIndex
   integer, intent(in) :: nSnp, Jump, CoreAndTailLength
   logical, intent(in) :: offset, consistent
+  integer, dimension(:,:), pointer :: CoreIndex
   
   integer :: resid
   double precision :: corelength
@@ -290,20 +320,13 @@ subroutine calculateCores(CoreIndex, TailIndex, nSnp, Jump, CoreAndTailLength, o
     if (.not. Offset) then
       nCores = int(nSnp)/Jump
       allocate(CoreIndex(nCores, 2))
-      allocate(TailIndex(nCores, 2))
 
       resid = int((CoreAndTailLength - Jump)/2)
       CoreIndex(1, 1) = 1
       CoreIndex(1, 2) = 1 + Jump - 1
-      TailIndex(1, 1) = 1
-      TailIndex(1, 2) = 1 + CoreAndTailLength - 1
       do i = 2, nCores
 	CoreIndex(i, 1) = CoreIndex(i - 1, 1) + Jump
 	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + Jump
-	TailIndex(i, 1) = CoreIndex(i, 1) - resid
-	TailIndex(i, 2) = CoreIndex(i, 2) + resid
-	if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
-	if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
       end do
       CoreIndex(nCores, 2) = nSnp
     endif
@@ -313,23 +336,14 @@ subroutine calculateCores(CoreIndex, TailIndex, nSnp, Jump, CoreAndTailLength, o
 
       nCores = (int(nSnp)/Jump) + 1
       allocate(CoreIndex(nCores, 2))
-      allocate(TailIndex(nCores, 2))
 
       CoreIndex(1, 1) = 1
       CoreIndex(1, 2) = int(Jump/2)
-      TailIndex(1, 1) = 1
-      TailIndex(1, 2) = nSnp
       do i = 2, nCores
 	CoreIndex(i, 1) = CoreIndex(i - 1, 2) + 1
 	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + Jump
-	TailIndex(i, 1) = CoreIndex(i, 1) - resid
-	TailIndex(i, 2) = CoreIndex(i, 2) + resid
-	if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
-	if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
       end do
       CoreIndex(nCores, 2) = nSnp
-      TailIndex(nCores, 1) = 1   
-      TailIndex(nCores, 2) = nSnp
     endif
   else
     nCores = nSnp / Jump
@@ -340,7 +354,6 @@ subroutine calculateCores(CoreIndex, TailIndex, nSnp, Jump, CoreAndTailLength, o
     
     if (.not. Offset) then
       allocate(CoreIndex(nCores, 2))
-      allocate(TailIndex(nCores, 2))
       CoreIndex(1, 1) = 1
       if (left /= 0) then
 	CoreIndex(1, 2) = 1 + corelength
@@ -350,7 +363,6 @@ subroutine calculateCores(CoreIndex, TailIndex, nSnp, Jump, CoreAndTailLength, o
     else
       nCores = nCores + 1
       allocate(CoreIndex(nCores, 2))
-      allocate(TailIndex(nCores, 2))
       CoreIndex(1, 1) = 1
       if (left /= 0) then
 	CoreIndex(1, 2) = 1 + floor(dble(corelength) / 2.0)
@@ -371,14 +383,67 @@ subroutine calculateCores(CoreIndex, TailIndex, nSnp, Jump, CoreAndTailLength, o
     if (Offset /= 0) then
       CoreIndex(nCores,2) = nSnp
     end if
+  endif
+end function CalculateCores
+
+function CalculateTails(CoreIndex, nSnp, Jump, CoreAndTailLength, offset, consistent) result(TailIndex)
+  implicit none
+  
+  integer, dimension(:,:), intent(in) :: CoreIndex
+  integer, intent(in) :: nSnp, Jump, CoreAndTailLength
+  logical, intent(in) :: offset, consistent
+  integer, dimension(:,:), pointer :: TailIndex
+  
+  integer :: resid
+  double precision :: corelength
+  integer :: left, ltail, rtail, nCores
+  integer :: i
+  
+  nCores = size(CoreIndex,1)
+  allocate(TailIndex(nCores,2))
+  
+  if (consistent) then
+    if (.not. Offset) then
+      allocate(TailIndex(nCores, 2))
+
+      resid = int((CoreAndTailLength - Jump)/2)
+      TailIndex(1, 1) = 1
+      TailIndex(1, 2) = 1 + CoreAndTailLength - 1
+      do i = 2, nCores
+	TailIndex(i, 1) = CoreIndex(i, 1) - resid
+	TailIndex(i, 2) = CoreIndex(i, 2) + resid
+	if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
+	if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
+      end do
+    endif
+
+    if (Offset) then
+      resid = int((CoreAndTailLength - Jump)/2)
+
+      allocate(TailIndex(nCores, 2))
+
+      TailIndex(1, 1) = 1
+      TailIndex(1, 2) = nSnp
+      do i = 2, nCores
+	TailIndex(i, 1) = CoreIndex(i, 1) - resid
+	TailIndex(i, 2) = CoreIndex(i, 2) + resid
+	if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
+	if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
+      end do
+      TailIndex(nCores, 1) = 1   
+      TailIndex(nCores, 2) = nSnp
+    endif
+  else
+    ltail = floor(dble(CoreAndTailLength - Jump) / 2.0)
+    rtail = ceiling(dble(CoreAndTailLength - Jump) / 2.0)
+
     
     do i = 1, nCores
       TailIndex(i,1) = max(1,CoreIndex(i,1) - ltail)
       TailIndex(i,2) = min(nSnp,CoreIndex(i,2) + rtail)
     end do
-
   endif
-end subroutine CalculateCores
+end function CalculateTails
 
 !####################################################################################################################################################################
 subroutine Header
