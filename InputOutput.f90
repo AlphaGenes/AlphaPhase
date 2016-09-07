@@ -32,6 +32,7 @@ contains
     integer, allocatable, dimension(:) :: WorkOut
     double precision, allocatable, dimension(:) :: CoreCount
     integer(kind=1), allocatable, dimension(:) :: TempSwap
+    character(len=100) :: fmt
 
     nAnisG = allCores(1)%getNAnisG()
     nCores = size(allCores)
@@ -50,16 +51,17 @@ contains
     end if
 
     allocate(tempPhase(nSnp))
+    write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
     do i = 1, nAnisG
       do j = 1, nCores
 	TempPhase(coreIndex(j,1):coreIndex(j,2)) = allCores(j)%getHaplotype(i,1)
       end do
-      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getId(i), &
+      write(15, fmt) p%getId(i), &
       TempPhase
       do j = 1, nCores
 	TempPhase(coreIndex(j,1):coreIndex(j,2)) = allCores(j)%getHaplotype(i,2)
       end do
-      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getId(i), &
+      write(15, fmt) p%getId(i), &
       TempPhase
     end do
     deallocate(tempPhase)
@@ -80,6 +82,7 @@ contains
     end do
 
     allocate(CoreCount(nCores * 2))
+    write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'f7.2)'
     do i = 1, nAnisG
       l = 0
       do j = 1, nCores
@@ -90,12 +93,12 @@ contains
 	l = l + 1
 	CoreCount(l) = (float(counterM)/allCores(j)%getNCoreSnp()) * 100
       end do
-      write (30, '(a20,20000f7.2,20000f7.2,20000f7.2,20000f7.2)') p%getID(i), CoreCount(:)
-      !write (30, '(i10,20000f7.2,20000f7.2,20000f7.2,20000f7.2)') i, CoreCount(:)
+      write (30, fmt) p%getID(i), CoreCount(:)
     end do
     deallocate(CoreCount)
 
     allocate(WorkOut(nCores * 2))
+    write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'i8)'
     do i = 1, nAnisG
       k = 0
       do j = 1, nCores
@@ -103,18 +106,18 @@ contains
 	WorkOut(k - 1) = AllCores(j)%getHapAnis(i,1)
 	WorkOut(k) = AllCores(j)%getHapAnis(i,2)
       end do
-      write (33, '(a20,20000i8,20000i8,20000i8,20000i8,20000i8)') p%getID(i), WorkOut(:)
-      !write (33, '(i10,20000i5,20000i5,20000i5,20000i5,20000i5)') i, WorkOut(:)
+      write (33, fmt) p%getID(i), WorkOut(:)
     end do
     deallocate(WorkOut)
     
     if (writeSwappable) then
       allocate(TempSwap(nCores))
+      write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
       do i = 1, nAnisG
 	do j = 1, nCores
 	  TempSwap(j) = AllCores(j)%getSwappable(i)
 	end do
-	write (44, '(a20,5000i2)') p%getID(i), TempSwap
+	write (44, fmt) p%getID(i), TempSwap
       end do
       deallocate(TempSwap)
     end if
@@ -143,6 +146,7 @@ contains
     integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp
     integer, allocatable, dimension(:) :: WorkOut
     double precision, allocatable, dimension(:) :: CoreCount
+    character(len=100) :: fmt
     
     character(:), allocatable :: coreIDtxt
   
@@ -162,10 +166,11 @@ contains
       open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
     end if
   
+    write(fmt, '(a,i10,a)') '(a20,', c%getNSnp(), 'i2)'
     do i = 1, nAnisG
-      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getID(i), &
+      write(15, fmt) p%getID(i), &
       c%getHaplotype(i,1)
-      write(15, '(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)') p%getID(i), &
+      write(15, fmt) p%getID(i), &
       c%getHaplotype(i,2)
     end do
   
@@ -184,19 +189,17 @@ contains
       CoreCount(1) = (float(counterP)/(nSnp) * 100)
       CoreCount(2) = (float(counterM)/(nSnp) * 100)
       write(30, '(a20,2f7.2)') p%getID(i), CoreCount(:)
-      !write (30, '(i10,2f7.2)') i, CoreCount(:)
     end do
   
     do i = 1, nAnisG
       WorkOut(1) = c%getHapAnis(i, 1)
       WorkOut(2) = c%getHapAnis(i, 2)
       write (33, '(a20,2i8)') p%getID(i), WorkOut(:)
-      !write (33, '(i10,2i5)') i, WorkOut(:)
     end do
     
     if (writeSwappable) then
       do i = 1, nAnisG
-	write (44, '(a20,5000i2)') p%getID(i), c%getSwappable(i)
+	write (44, '(a20,i2)') p%getID(i), c%getSwappable(i)
       end do
     end if
     
@@ -900,6 +903,7 @@ contains
     type(Pedigree), intent(in) :: p
 
     integer :: nAnisG
+    character(len=100) :: fmt
 
     nAnisG = size(definition%numOppose,1)
 
@@ -907,17 +911,14 @@ contains
     open (unit = 13, FILE = filout, status = 'unknown')
     write (filout, '(".",a1,"Miscellaneous",a1,"SurrogatesSummary",i0,".txt")') SEP, SEP, OutputPoint
     open (unit = 19, FILE = filout, status = 'unknown')
+    write(fmt, '(a,i10,a)') '(a20,', size(definition%partition,2), 'i6)'
     do i = 1, nAnisG
       nSurrogates = 0
-      if (nAnisG < 20000) then
-	write (13, '(a20,20000i6,20000i6,20000i6,20000i6)') p%getID(i), definition%partition(i,:)
-      else
-	write (13, *) p%getID(i), definition%partition(i,:)
-      end if
+      write (13, fmt) p%getID(i), definition%partition(i,:)
       do j = 1, nAnisG
 	if (definition%numOppose(i, j) <= threshold) nSurrogates = nSurrogates + 1
       enddo
-      write (19, '(a20,20000i6,20000i6,20000i6,20000i6)') &
+      write (19, '(a20,5i8)') &
       p%getID(i), count(definition%partition(i,:) == 1), count(definition%partition(i,:) == 2)&
       , count(definition%partition(i,:) == 3), nSurrogates, definition%method(i)
     enddo
