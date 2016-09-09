@@ -455,8 +455,6 @@ subroutine Header
   print*, "                              **********************                         "
   print*, "                                                                              "
   print*, "                    Software For Phasing and Imputing Genotypes               "
-  print*, ""
-  print*, "                     Written by John Hickey and Brian Kinghorn                "
 end subroutine Header
 
 !####################################################################################################################################################################
@@ -487,7 +485,6 @@ subroutine PrintTimerTitles
   call Header
   PRINT*, ""
   PRINT*, "                                  No Liability"
-  PRINT*, "                          Bugs to John.Hickey@une.edu.au"
   PRINT*, ""
   PRINT*, "                Analysis Finished                         "
 
