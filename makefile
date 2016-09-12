@@ -26,30 +26,43 @@ ifeq ($(OS), Windows_NT)
 	DEL:= del
 else
 	OSFLAG := "OS_UNIX"
-	# FFLAGS:= $(FFLAGS) -openmp -static-intel -fpp -openmp-link=static  -D $(OSFLAG) -D CLUSTER=$(CLUSTER)
+	# FFLAGS:= $(FFLAGS) -qopenmp -static-intel -fpp -qopenmp-link=static  -D $(OSFLAG) -D CLUSTER=$(CLUSTER)
 	FFLAGS:= $(FFLAGS) -fpp -D $(OSFLAG)
 
 	obj:= .o
-	exe:= 
+	exe:=
 
 	DEL:= rm -rf
 endif
 
 all: executable
 
-debug: FFLAGS = -DDEBUG=${DEBUG} -g -O0 -openmp -check bounds -fpp -traceback -D $(OSFLAG)
+debug: FFLAGS = -DDEBUG=${DEBUG} -g -O0 -check format -check bounds -fpp -traceback -D $(OSFLAG)
 debug: executable
 
-ifort  -openmp -static-intel -fpp -openmp-link=static -O3 -m64 -o alphaphase Constants.f90 Parameters.f90 Random.f90 PedigreeDefinition.f90 NRMcode.f90 CoreDefinition.f90 CoreSubsetDefinition.f90 Clustering.f90 HaplotypeLibrary.f90 SurrogateDefinition.f90 Phasing.f90 MemberManagerDefinition.f90 InputOutput.f90 Testing.f90 AlphaPhase.f90
-
-OBJS:=Clustering$(obj) Constants$(obj) CoreDefinition$(obj) CoreSubsetDefinition$(obj) HaplotypeLibrary$(obj) InputOutput$(obj) MemberManagerDefinition$(obj) NRMcode$(obj) Parameters$(obj) PedigreeDefinition$(obj) Phasing$(obj) Random$(obj) SurrogateDefinition$(obj) Testing$(obj)
+OBJS:= Constants$(obj) \
+	   ParametersDefinition$(obj) \
+	   Random$(obj) \
+	   Sorting$(obj) \
+	   PedigreeDefinition$(obj) \
+	   NRMcode$(obj) \
+	   CoreDefinition$(obj) \
+	   CoreSubsetDefinition$(obj) \
+	   Clustering$(obj) \
+	   HaplotypeLibraryDefinition$(obj) \
+	   SurrogateDefinition$(obj) \
+	   LongRangePhasing$(obj) \
+	   MemberManagerDefinition$(obj) \
+	   TestResultDefinition$(obj) \
+	   InputOutput$(obj) \
+	   HaplotypeLibraryPhasing$(obj)
 
 %$(obj):%.f90
 	$(FC) $(FFLAGS) -c $<
 
 executable: $(OBJS)
 	$(FC) AlphaPhase.f90 $(OBJS) $(FFLAGS) -o $(PROGRAM)$(exe)
-	
+
 clean:
 	$(DEL) *$(obj) *.mod *~
 
