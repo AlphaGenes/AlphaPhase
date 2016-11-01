@@ -16,7 +16,6 @@ module ParametersDefinition
     double precision :: PercGenoHaploDisagree
     double precision :: GenotypeMissingErrorPercentage
     double precision :: NrmThresh
-    logical :: FullFileOutput
     logical :: Simulation
     character (len = 300) :: PedigreeFile, TruePhaseFile, Library ! Used in a really weird way that should probably be refactored
 
@@ -28,6 +27,26 @@ module ParametersDefinition
     integer :: minHapFreq
 
     logical :: consistent
+       
+    logical :: outputFinalPhase
+    logical :: outputCoreIndex
+    logical :: outputSnpPhaseRate
+    logical :: outputIndivPhaseRate
+    logical :: outputHapIndex
+    logical :: outputSwappable
+    logical :: outputHapCommonality
+    logical :: outputSurrogates
+    logical :: outputSurrogatesSummary
+    logical :: outputHaplotypeLibraryText
+    logical :: outputHaplotypeLibraryBinary
+    logical :: outputPhasingYield
+    logical :: outputTimer
+    logical :: outputIndivMistakes
+    logical :: outputIndivMistakesPercent
+    logical :: outputCoreMistakesPercent
+    logical :: outputMistakes
+    logical :: outputNRM
+    
   end type Parameters
 
   interface Parameters

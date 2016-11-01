@@ -64,7 +64,7 @@ contains
     xnumrelmatHold = -9.
     xnumrelmatHold(-1 * NRMmem: 0) = 0.
 
-    if (params%FullFileOutput) then
+    if (params%outputNRM) then
 !      allocate(NRM(nAnisG, nAnisG))
       open (unit = 9, file = "."//SEP//"Miscellaneous"//SEP//"GenotypedPseudoNRM.txt", status = "unknown")
     end if
@@ -74,7 +74,7 @@ contains
     PseudoNRM = 0
     do i = 1, nAnisG
       if (mod(i, 400) == 0) print*, "   NRM done for genotyped individual --- ", i
-      if (params%FullFileOutput) then
+      if (params%outputNRM) then
 !	shellwarning = 0
 	do j = i, nAnisG
 	  shell = 0
@@ -93,7 +93,7 @@ contains
 	if ((valueS <= params% NrmThresh).and.(valueD > params%NrmThresh)) PseudoNRM(i, j) = 2
 	PseudoNRM(j, i) = PseudoNRM(i, j)
       enddo
-      if (params%FullFileOutput) then
+      if (params%outputNRM) then
 !	if (nAnisG < 20000) then
 !	  write (8, "(a20,20000f5.2,20000f5.2,20000f5.2,20000f5.2,20000f5.2)") GenotypeId(i), NRM(i,:)
 !	else

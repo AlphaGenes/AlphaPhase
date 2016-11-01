@@ -7,6 +7,8 @@ program Rlrplhi
   use MemberManagerDefinition
   use ParametersDefinition
   use TestResultDefinition
+  use CoreUtils
+  use InputOutput
   
   use LongRangePhasing
   use HaplotypeLibraryPhasing
@@ -50,27 +52,6 @@ program Rlrplhi
   
   type(MemberManager) :: manager
   
-  interface calculateCores
-    function calculateCores(nSnp, Jump, CoreAndTailLength, offset, consistent) result(CoreIndex)
-      implicit none
-
-      integer, intent(in) :: nSnp, Jump, CoreAndTailLength
-      logical, intent(in) :: offset, consistent
-      integer, dimension(:,:), pointer :: CoreIndex
-    end function calculateCores
-  end interface calculateCores
-  
-  interface calculateTails
-    function calculateTails(CoreIndex, nSnp, Jump, CoreAndTailLength, offset, consistent) result(TailIndex)
-      implicit none
-
-      integer, dimension(:,:), intent(in) :: CoreIndex
-      integer, intent(in) :: nSnp, Jump, CoreAndTailLength
-      logical, intent(in) :: offset, consistent
-      integer, dimension(:,:), pointer:: TailIndex
-    end function calculateTails
-  end interface calculateTails
-  
   if (Command_Argument_Count() > 0) then
     call get_command_argument(1,cmd)
     if (cmd(1:2) .eq. "-v") then
@@ -87,13 +68,13 @@ program Rlrplhi
     specfile="AlphaPhaseSpec.txt"
   end if
   params = ReadInParameterFile(specfile)
-  
+
   call MakeDirectories(params)
   p = ParsePedigreeData(params)
   nAnisG = p%getNAnis()
 
   if (params%library .eq. "None") then
-    CoreIndex => CalculateCores(params%nSnp, params%Jump, params%CoreAndTailLength, params%offset, params%consistent)    
+    CoreIndex => CalculateCores(params%nSnp, params%Jump, params%offset, params%consistent)    
   else
     CoreIndex => getCoresFromHapLib(params%library)
   end if
@@ -143,7 +124,7 @@ program Rlrplhi
   printOldProgress = (params%ItterateType .eq. "Off")
   outputSurrogates = (params%ItterateType .eq. "Off") .and. (params%numIter == 1)
   writeSwappable = (params%GenotypeFileFormat /= 2)
-    
+  
   do h = startCore, endCore
     StartCoreSnp = CoreIndex(h, 1)
     EndCoreSnp = CoreIndex(h, 2)
@@ -180,7 +161,7 @@ program Rlrplhi
 
 	  surrogates = Surrogate(cs, threshold, params%consistent, pseudoNRM, printOldProgress)
 	  if (outputSurrogates) then
-	    call writeSurrogates(surrogates,threshold, h, p)
+	    call writeSurrogates(surrogates,threshold, h, p, params)
 	  end if
 	  call Erdos(surrogates, cs, threshold, params%numsurrdisagree, params%useSurrsN, params%consistent, printOldProgress)
 	  call CheckCompatHapGeno(cs, params%percgenohaplodisagree, printOldProgress)     
@@ -245,7 +226,7 @@ program Rlrplhi
     end if
     
     if (params%readCoreAtTime .or. .not. combine) then
-      call WriteOutCore(c, h, CoreIndex(h,1), p, writeSwappable)
+      call WriteOutCore(c, h, CoreIndex(h,1), p, writeSwappable, params)
     else
       AllPhase(:,startCoreSnp:endCoreSnp,:) = c%getAllPhase()
       AllHapAnis(:,1,h) = c%hapAnis(:,1)
@@ -264,20 +245,17 @@ program Rlrplhi
       
       call Flipper(c,TruePhase)
       results = TestResults(c,TruePhase)
-      if (params%FullFileOutput) then
-	call WriteTestResults(results,c,surrogates,p,TruePhase,h,outputSurrogates)
-	call WriteMistakes(c,TruePhase,p,h)
-      end if
+      call WriteTestResults(results,c,surrogates,p,TruePhase,h,outputSurrogates,params)
+      call WriteMistakes(c,TruePhase,p,h,params)
       
       deallocate(TruePhase)
     end if
   end do
   
   if (params%readCoreAtTime .and. combine) then
-    call CombineResults(nAnisG,CoreIndex,p,writeSwappable)
+    call CombineResults(nAnisG,CoreIndex,p,writeSwappable,params)
   else
-    !call WriteOutResults(AllPhase,AllHapAnis,CoreIndex,p)
-    call WriteOutResults(AllCores,CoreIndex,p,writeSwappable)
+    call WriteOutResults(AllCores,CoreIndex,p,writeSwappable, params)
   end if
   if ((params%consistent) .and. (params%GenotypeFileFormat /= 2)) then
     deallocate(PseudoNRM)
@@ -292,220 +270,12 @@ program Rlrplhi
       deallocate(AllTruePhase)
     end if
   end if
-  if ((params%Simulation) .and. combine .and. (params%FullFileOutput)) then
-    call CombineTestResults(nCores)
+  if (params%Simulation) then
+    call CombineTestResults(nCores,params)
   end if
   
   deallocate(CoreIndex,TailIndex)
   
-  call PrintTimerTitles
+  call PrintTimerTitles(params)
 
 end program Rlrplhi
-
-!####################################################################################################################################################################
-
-function calculateCores(nSnp, Jump, CoreAndTailLength, offset, consistent) result(CoreIndex)
-  implicit none
-  
-  integer, intent(in) :: nSnp, Jump, CoreAndTailLength
-  logical, intent(in) :: offset, consistent
-  integer, dimension(:,:), pointer :: CoreIndex
-  
-  integer :: resid
-  double precision :: corelength
-  integer :: left, ltail, rtail, nCores
-  integer :: i
-  
-  if (consistent) then
-    if (.not. Offset) then
-      nCores = int(nSnp)/Jump
-      allocate(CoreIndex(nCores, 2))
-
-      resid = int((CoreAndTailLength - Jump)/2)
-      CoreIndex(1, 1) = 1
-      CoreIndex(1, 2) = 1 + Jump - 1
-      do i = 2, nCores
-	CoreIndex(i, 1) = CoreIndex(i - 1, 1) + Jump
-	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + Jump
-      end do
-      CoreIndex(nCores, 2) = nSnp
-    endif
-
-    if (Offset) then
-      resid = int((CoreAndTailLength - Jump)/2)
-
-      nCores = (int(nSnp)/Jump) + 1
-      allocate(CoreIndex(nCores, 2))
-
-      CoreIndex(1, 1) = 1
-      CoreIndex(1, 2) = int(Jump/2)
-      do i = 2, nCores
-	CoreIndex(i, 1) = CoreIndex(i - 1, 2) + 1
-	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + Jump
-      end do
-      CoreIndex(nCores, 2) = nSnp
-    endif
-  else
-    nCores = nSnp / Jump
-    corelength = nSnp / nCores
-    left = nSnp - nCores * corelength
-    ltail = floor(dble(CoreAndTailLength - Jump) / 2.0)
-    rtail = ceiling(dble(CoreAndTailLength - Jump) / 2.0)
-    
-    if (.not. Offset) then
-      allocate(CoreIndex(nCores, 2))
-      CoreIndex(1, 1) = 1
-      if (left /= 0) then
-	CoreIndex(1, 2) = 1 + corelength
-      else
-	CoreIndex(1, 2) = corelength
-      end if
-    else
-      nCores = nCores + 1
-      allocate(CoreIndex(nCores, 2))
-      CoreIndex(1, 1) = 1
-      if (left /= 0) then
-	CoreIndex(1, 2) = 1 + floor(dble(corelength) / 2.0)
-      else
-	CoreIndex(1, 2) = floor(dble(corelength) / 2.0)
-      end if
-    end if
-      
-    do i = 2, nCores
-      CoreIndex(i,1) = CoreIndex(i - 1, 2) + 1
-      if (i < left) then
-	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + corelength + 1
-      else
-	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + corelength
-      end if
-    end do
-    
-    if (Offset /= 0) then
-      CoreIndex(nCores,2) = nSnp
-    end if
-  endif
-end function CalculateCores
-
-function CalculateTails(CoreIndex, nSnp, Jump, CoreAndTailLength, offset, consistent) result(TailIndex)
-  implicit none
-  
-  integer, dimension(:,:), intent(in) :: CoreIndex
-  integer, intent(in) :: nSnp, Jump, CoreAndTailLength
-  logical, intent(in) :: offset, consistent
-  integer, dimension(:,:), pointer :: TailIndex
-  
-  integer :: resid
-  double precision :: corelength
-  integer :: left, ltail, rtail, nCores
-  integer :: i
-  
-  nCores = size(CoreIndex,1)
-  allocate(TailIndex(nCores,2))
-  
-  if (consistent) then
-    if (.not. Offset) then
-      allocate(TailIndex(nCores, 2))
-
-      resid = int((CoreAndTailLength - Jump)/2)
-      TailIndex(1, 1) = 1
-      TailIndex(1, 2) = 1 + CoreAndTailLength - 1
-      do i = 2, nCores
-	TailIndex(i, 1) = CoreIndex(i, 1) - resid
-	TailIndex(i, 2) = CoreIndex(i, 2) + resid
-	if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
-	if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
-      end do
-    endif
-
-    if (Offset) then
-      resid = int((CoreAndTailLength - Jump)/2)
-
-      allocate(TailIndex(nCores, 2))
-
-      TailIndex(1, 1) = 1
-      TailIndex(1, 2) = nSnp
-      do i = 2, nCores
-	TailIndex(i, 1) = CoreIndex(i, 1) - resid
-	TailIndex(i, 2) = CoreIndex(i, 2) + resid
-	if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
-	if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
-      end do
-      TailIndex(nCores, 1) = 1   
-      TailIndex(nCores, 2) = nSnp
-    endif
-  else
-    ltail = floor(dble(CoreAndTailLength - Jump) / 2.0)
-    rtail = ceiling(dble(CoreAndTailLength - Jump) / 2.0)
-
-    
-    do i = 1, nCores
-      TailIndex(i,1) = max(1,CoreIndex(i,1) - ltail)
-      TailIndex(i,2) = min(nSnp,CoreIndex(i,2) + rtail)
-    end do
-  endif
-end function CalculateTails
-
-!####################################################################################################################################################################
-subroutine Header
-  print*, ""
-  print*, "                              **********************                         "
-  print*, "                              *                    *                         "
-  print*, "                              *   AlphaPhase 1.1   *                         "
-  print*, "                              *                    *                         "
-  print*, "                              **********************                         "
-  print*, "                                                                              "
-  print*, "                    Software For Phasing and Imputing Genotypes               "
-end subroutine Header
-
-!####################################################################################################################################################################
-
-subroutine Titles
-
-  call Header
-  print*, ""
-  print*, ""
-  print*, ""
-  print*, ""
-
-end subroutine Titles
-
-!###################################################################################################################################################
-
-subroutine PrintTimerTitles
-  use Constants
-  use InputOutput
-
-  implicit none
-  real :: etime ! Declare the type of etime()
-  real :: elapsed(2) ! For receiving user and system time
-  real :: total, Minutes, Hours, Seconds
-
-  print*, ""
-  print*, ""
-  call Header
-  PRINT*, ""
-  PRINT*, "                                  No Liability"
-  PRINT*, ""
-  PRINT*, "                Analysis Finished                         "
-
-  total = etime(elapsed)
-  Minutes = total/60
-  Seconds = Total - (INT(Minutes) * 60)
-  Hours = Minutes/60
-  Minutes = INT(Minutes)-(INT(Hours) * 60)
-
-  PRINT '(A107,A7,I3,A9,I3,A9,F6.2)', "Time Elapsed", "Hours", INT(Hours), "Minutes", INT(Minutes), "Seconds", Seconds
-  call writeTimer(INT(Hours),INT(Minutes),Seconds)
-end subroutine PrintTimerTitles
-
-!###################################################################################################################################################
-
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
-subroutine PrintVersion
-  call Header
-  print *
-  print *, "                              Commit:   "//TOSTRING(COMMIT)
-  print *, "                              Compiled: "//__DATE__//", "//__TIME__  
-end subroutine PrintVersion
