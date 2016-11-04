@@ -1,7 +1,6 @@
 
 # Alphaphase-2.0 library
 SET(ALPHAPHASE_src
-            ${SRCALPHAPHASE}/AlphaPhase.f90 
             ${SRCALPHAPHASE}/Constants.f90
             ${SRCALPHAPHASE}/CoreDefinition.f90
             ${SRCALPHAPHASE}/CoreUtils.f90
@@ -19,6 +18,7 @@ SET(ALPHAPHASE_src
             ${SRCALPHAPHASE}/SurrogateDefinition.f90
             ${SRCALPHAPHASE}/TestResultDefinition.f90        
             ${SRCALPHAPHASE}/Clustering.f90
+            ${SRCALPHAPHASE}/AlphaPhase.f90 
             
 )
 ADD_EXECUTABLE(${ALPHAPHASEEXE} ${ALPHAPHASE_src})
