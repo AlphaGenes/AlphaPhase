@@ -1,6 +1,7 @@
 
 # Alphaphase-2.0 library
-SET(ALPHAPHASE_src 
+SET(ALPHAPHASE_src
+            ${SRCALPHAPHASE}/AlphaPhase.f90 
             ${SRCALPHAPHASE}/Constants.f90
             ${SRCALPHAPHASE}/CoreDefinition.f90
             ${SRCALPHAPHASE}/CoreUtils.f90
@@ -16,12 +17,14 @@ SET(ALPHAPHASE_src
             ${SRCALPHAPHASE}/Random.f90
             ${SRCALPHAPHASE}/Sorting.f90
             ${SRCALPHAPHASE}/SurrogateDefinition.f90
-            ${SRCALPHAPHASE}/TestResultDefinition.f90
-           ${SRCALPHAPHASE}/AlphaPhase.f90
+            ${SRCALPHAPHASE}/TestResultDefinition.f90        
             ${SRCALPHAPHASE}/Clustering.f90
+            
 )
 ADD_EXECUTABLE(${ALPHAPHASEEXE} ${ALPHAPHASE_src})
-ADD_LIBRARY(${APLIB} STATIC ${ALPHAPHASE_src})
+if (${APLIB})
+      ADD_LIBRARY(${APLIB} STATIC ${ALPHAPHASE_src})
+endif()
 # SET(HDF5TEST_src ${SRCALPHAIMPUTE}/hdf5test.f90 ${SRCALPHAIMPUTE}/hdf5module.f90)
 # ADD_EXECUTABLE(hdf5test ${HDF5TEST_src})
 
