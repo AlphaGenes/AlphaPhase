@@ -8,7 +8,7 @@
 #else
 #DEFINE SEP "\"
 #DEFINE MKDIR "md "
-#DEFINE RMDIR "RMDIR /S "
+#DEFINE RMDIR "RMDIR /S /Q"
 
 #endif
 
