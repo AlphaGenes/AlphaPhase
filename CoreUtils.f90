@@ -43,7 +43,6 @@ contains
       nCores = nSnp / Jump
       corelength = nSnp / nCores
       left = nSnp - nCores * corelength
-      print *, left
 
       if (.not. Offset) then
 	allocate(CoreIndex(nCores, 2))
@@ -73,7 +72,7 @@ contains
 	end if
       end do
 
-      if (Offset /= 0) then
+      if (Offset) then
 	CoreIndex(nCores,2) = nSnp
       end if
     endif
@@ -254,6 +253,6 @@ contains
     end do
   end function TransitionP
       
-    
+   
 end module CoreUtils
 

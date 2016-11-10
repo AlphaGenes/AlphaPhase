@@ -49,7 +49,7 @@ program Rlrplhi
   
   integer :: startCore, endCore
   logical :: combine, printOldProgress, writeSwappable, outputSurrogates
-  
+    
   type(MemberManager) :: manager
   
   if (Command_Argument_Count() > 0) then
