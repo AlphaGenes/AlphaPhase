@@ -1,0 +1,38 @@
+
+# Alphaphase library
+SET(ALPHAPHASE_src
+            ${SRCALPHAPHASE}/Constants.f90
+            ${SRCALPHAPHASE}/ChipsDefinition.f90
+            ${SRCALPHAPHASE}/CoreDefinition.f90
+            ${SRCALPHAPHASE}/CoreUtils.f90
+            ${SRCALPHAPHASE}/CoreSubsetDefinition.f90
+            ${SRCALPHAPHASE}/HaplotypeLibraryDefinition.f90
+            ${SRCALPHAPHASE}/HaplotypeLibraryPhasing.f90
+            ${SRCALPHAPHASE}/InputOutput.f90
+            ${SRCALPHAPHASE}/LongRangePhasing.f90
+            ${SRCALPHAPHASE}/MemberManagerDefinition.f90
+            ${SRCALPHAPHASE}/NRMcode.f90
+            ${SRCALPHAPHASE}/ParametersDefinition.f90
+            ${SRCALPHAPHASE}/PedigreeDefinition.f90
+            ${SRCALPHAPHASE}/Random.f90
+            ${SRCALPHAPHASE}/Sorting.f90
+            ${SRCALPHAPHASE}/SurrogateDefinition.f90
+            ${SRCALPHAPHASE}/TestResultDefinition.f90        
+            ${SRCALPHAPHASE}/Clustering.f90
+            ${SRCALPHAPHASE}/AlphaPhase.f90 
+            
+)
+
+if (ALPHAPHASEEXE)
+    ADD_EXECUTABLE(${ALPHAPHASEEXE} ${ALPHAPHASE_src})
+endif()
+if(APLIB)
+    ADD_LIBRARY(${APLIB} STATIC ${ALPHAPHASE_src})
+endif()
+# SET(HDF5TEST_src ${SRCALPHAIMPUTE}/hdf5test.f90 ${SRCALPHAIMPUTE}/hdf5module.f90)
+# ADD_EXECUTABLE(hdf5test ${HDF5TEST_src})
+
+# add external links here
+# TARGET_LINK_LIBRARIES(${ALPHASIMEXE} ${AHLIB})
+
+INSTALL(TARGETS ${ALPHAPHASEEXE} RUNTIME DESTINATION bin)
