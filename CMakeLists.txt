@@ -15,7 +15,7 @@ OPTION(USE_HDF5 "Use hdf"
        false)
 
 # Add our local modlues to the module path
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../alphacmakefiles/cmake/modules")
 set(CMAKE_MACOSX_RPATH 0)
 
 ############################################################
@@ -77,7 +77,7 @@ ADD_SUBDIRECTORY(${SRCALPHAPHASE} ${BIN})
 
 # Add a distclean target to the Makefile
 ADD_CUSTOM_TARGET(distclean 
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/distclean.cmake
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_MODULE_PATH}/distclean.cmake
 )
 
 if (${RUN_TESTS})

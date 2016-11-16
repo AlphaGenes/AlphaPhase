@@ -1,5 +1,5 @@
 
-# Alphaphase-2.0 library
+# Alphaphase library
 SET(ALPHAPHASE_src
             ${SRCALPHAPHASE}/Constants.f90
             ${SRCALPHAPHASE}/CoreDefinition.f90
