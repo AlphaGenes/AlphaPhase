@@ -5,7 +5,7 @@ SET(ALPHAPHASE_src
             ${SRCALPHAPHASE}/CoreDefinition.f90
             ${SRCALPHAPHASE}/CoreUtils.f90
             ${SRCALPHAPHASE}/CoreSubsetDefinition.f90
-            ${SRCALPHAPHASE}/HaploTypeLibraryDefinition.f90
+            ${SRCALPHAPHASE}/HaplotypeLibraryDefinition.f90
             ${SRCALPHAPHASE}/HaplotypeLibraryPhasing.f90
             ${SRCALPHAPHASE}/InputOutput.f90
             ${SRCALPHAPHASE}/LongRangePhasing.f90
