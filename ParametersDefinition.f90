@@ -25,6 +25,9 @@ module ParametersDefinition
     integer :: numIter
     character (len = 10) :: startCoreChar, endCoreChar
     integer :: minHapFreq
+    
+    integer :: nChips
+    character(len = 300) :: ChipsSnps, ChipsAnimals
 
     logical :: consistent
        

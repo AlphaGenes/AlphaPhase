@@ -6,6 +6,7 @@ program Rlrplhi
   use CoreDefinition
   use MemberManagerDefinition
   use ParametersDefinition
+  use ChipsDefinition
   use TestResultDefinition
   use CoreUtils
   use InputOutput
@@ -38,6 +39,8 @@ program Rlrplhi
   integer :: nGlobalHapsIter
   integer :: nAnisG
   integer :: subsetCount
+  integer :: chip
+  type(Chips) :: allChips
   
   type(Core), allocatable, dimension(:) :: AllCores
   
@@ -125,6 +128,8 @@ program Rlrplhi
   outputSurrogates = (params%ItterateType .eq. "Off") .and. (params%numIter == 1)
   writeSwappable = (params%GenotypeFileFormat /= 2)
   
+  allChips = getChips(params,nAnisG)
+ 
   do h = startCore, endCore
     StartCoreSnp = CoreIndex(h, 1)
     EndCoreSnp = CoreIndex(h, 2)
@@ -134,7 +139,7 @@ program Rlrplhi
     print*, " "
     print*, " "
     print*, " Starting Core", h, "/", nCores
-    
+
     if (params%GenotypeFileFormat /= 2) then
       allocate(Genos(nAnisG, max(EndSurrSnp,EndCoreSnp)-startSurrSnp+1))
       if (params%readCoreAtTime) then
@@ -145,7 +150,7 @@ program Rlrplhi
       
       ! Fudge below
       c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
-      
+	
       if (params%library .eq. "None") then
 	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
       else
