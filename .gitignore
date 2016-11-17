@@ -4,3 +4,12 @@ bin/
 *.obj
 *.pdf
 AlphaPhase*1*
+CMakeFiles/
+lib/
+CMakeCache.txt
+MakeFile
+cmake_install.cmake
+compile_commands.json
+nbproject/
+Makefile
+
