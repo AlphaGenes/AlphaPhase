@@ -39,7 +39,7 @@ program Rlrplhi
   integer :: nGlobalHapsIter
   integer :: nAnisG
   integer :: subsetCount
-  integer :: chip
+!  integer :: chip
   type(Chips) :: allChips
   
   type(Core), allocatable, dimension(:) :: AllCores
@@ -168,7 +168,7 @@ program Rlrplhi
 	  if (outputSurrogates) then
 	    call writeSurrogates(surrogates,threshold, h, p, params)
 	  end if
-	  call Erdos(surrogates, cs, threshold, params%numsurrdisagree, params%useSurrsN, params%consistent, printOldProgress)
+	  call Erdos(surrogates, cs, threshold, params%numsurrdisagree, params%useSurrsN, printOldProgress)
 	  call CheckCompatHapGeno(cs, params%percgenohaplodisagree, printOldProgress)     
 
 	  subsetCount = subsetCount + 1
@@ -250,7 +250,7 @@ program Rlrplhi
       
       call Flipper(c,TruePhase)
       results = TestResults(c,TruePhase)
-      call WriteTestResults(results,c,surrogates,p,TruePhase,h,outputSurrogates,params)
+      call WriteTestResults(results,c,surrogates,p,h,outputSurrogates,params)
       call WriteMistakes(c,TruePhase,p,h,params)
       
       deallocate(TruePhase)
@@ -258,7 +258,7 @@ program Rlrplhi
   end do
   
   if (params%readCoreAtTime .and. combine) then
-    call CombineResults(nAnisG,CoreIndex,p,writeSwappable,params)
+    call CombineResults(nAnisG,CoreIndex,writeSwappable,params)
   else
     call WriteOutResults(AllCores,CoreIndex,p,writeSwappable, params)
   end if

@@ -155,7 +155,7 @@ contains
     logical :: writeSwappable
     class(Parameters) :: params
   
-    integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp
+    integer :: i, j, counter, CounterM, CounterP, nAnisG, nSnp
     integer, allocatable, dimension(:) :: WorkOut
     double precision, allocatable, dimension(:) :: CoreCount
     character(len=100) :: fmt
@@ -234,14 +234,13 @@ contains
     res = trim(tmp)
   end function
   
-  subroutine CombineResults(nAnisG, CoreIndex, p, writeSwappable, params)
+  subroutine CombineResults(nAnisG, CoreIndex, writeSwappable, params)
     use Constants
     use PedigreeDefinition
     use ParametersDefinition
             
     integer, intent(in) :: nAnisG
     integer, dimension(:,:), intent(in) :: CoreIndex
-    type(Pedigree) :: p
     logical :: writeSwappable
     type(Parameters) :: params
     
@@ -421,8 +420,7 @@ contains
     type(Parameters), intent(in) :: params
     type(Pedigree) :: p
     
-    integer :: i, j, k, SumPseudoNrmS, SumPseudoNrmD, truth, counter, CountMissingGenotype, SireGen, DamGen, nAnisG
-    real(kind = 4) :: value, valueS, valueD, SumNrm, SumDiag
+    integer :: i, truth, counter, nAnisG
     integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
     
     integer, allocatable, dimension (:) :: DanRecode, DanPos !, DanDamGenotyped, DanSireGenotyped
@@ -680,8 +678,8 @@ contains
     integer, intent(in) :: startSnp, endSnp, nAnisG, nSnp
     integer(kind=1), allocatable, dimension(:,:,:) :: Phase
 
-    integer :: i, j, k
-    integer, allocatable, dimension (:) :: WorkVec, ReadingVector
+    integer :: i
+    integer, allocatable, dimension (:) :: ReadingVector
     integer :: nReadSnp
     character(lengan) :: dummy
     
@@ -709,7 +707,7 @@ contains
     type(Parameters) :: params
 
     double precision :: PercSurrDisagree
-    integer :: i, TempInt, Graphics, status, cl
+    integer :: TempInt, Graphics, status, cl
     character (len = 300) :: dumC, FileFormat, OffsetVariable, hold
     
     params = Parameters()
@@ -1111,7 +1109,7 @@ contains
     integer, intent(in) :: currentcore
     type(Parameters) :: params
 
-    integer :: i, j, k, counter, SizeCore, nHaps !, nAnisG
+    integer :: i, SizeCore, nHaps
     character(len = 300) :: filout
 
     SizeCore = library%getNumSnps()
@@ -1175,7 +1173,7 @@ contains
     end if
   end subroutine writeTimer
   
-  subroutine WriteTestResults(results, c, Surrogates, p, TruePhase, OutputPoint, OutputSurrogates, params)
+  subroutine WriteTestResults(results, c, Surrogates, p, OutputPoint, OutputSurrogates, params)
     use Constants
     use SurrogateDefinition
     use PedigreeDefinition
@@ -1189,17 +1187,12 @@ contains
     type(Pedigree), intent(in) :: p
     type(Parameters), intent(in) :: params
     !! Probably should be consistent about what we call this
-    integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase
     logical, intent(in) :: OutputSurrogates
     integer, intent(in) :: OutputPoint
 
-    integer :: i, j, k, nSurrogates
-    integer(kind = 1), allocatable, dimension(:,:,:) :: MistakePhase
-    character(len = 300) :: filout
-
-    integer(kind = 1), allocatable, dimension(:) :: holdPhase
-
+    integer :: i, k, nSurrogates
     integer :: nAnisG, nSnp
+    character(len = 300) :: filout
 
     nAnisG = c % getNAnisG()
     nSNp = c % getNCoreSnp()
@@ -1325,7 +1318,7 @@ contains
     
     integer :: i, j, k
     integer(kind = 1), allocatable, dimension(:) :: MistakePhase
-    character(len = 300) :: dumC, filout
+    character(len = 300) :: filout
     
     if (params%outputMistakes) then
     
@@ -1391,7 +1384,7 @@ contains
     character(*), intent(in) :: directory
     integer, dimension(:,:), pointer :: CoreIndex
 
-    integer :: i, numLibraries, start, nHaps, nSnps, ltail, rtail
+    integer :: i, numLibraries, start, nHaps, nSnps
     character(4096) :: filename
     logical :: ex
 

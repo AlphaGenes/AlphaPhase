@@ -91,7 +91,7 @@ contains
     class(Core), intent(in), target :: c
     integer, intent(in) :: number, numIter
     
-    integer :: nAnisG, i, secs, nCount
+    integer :: nAnisG, secs, nCount
 
     manager%c => c
     
@@ -213,7 +213,7 @@ contains
     integer :: maxNumber, unPhased
     integer :: c, i
     
-    integer :: nCount, secs, nAnisG
+    integer :: nCount, secs
     
     unPhased = 0
     do i = 1, manager%c%getNAnisG()

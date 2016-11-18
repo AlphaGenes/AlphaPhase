@@ -8,10 +8,8 @@ contains
     logical, intent(in) :: offset, consistent
     integer, dimension(:,:), pointer :: CoreIndex
 
-    integer :: resid
     double precision :: corelength
-    integer :: left, ltail, rtail, nCores
-    integer :: i
+    integer :: i, nCores, left
 
     if (consistent) then
       if (.not. Offset) then
@@ -87,8 +85,7 @@ contains
     integer, dimension(:,:), pointer :: TailIndex
 
     integer :: resid
-    double precision :: corelength
-    integer :: left, ltail, rtail, nCores
+    integer :: ltail, rtail, nCores
     integer :: i
 
     nCores = size(CoreIndex,1)
@@ -173,7 +170,7 @@ contains
     integer :: i, j
     
     double precision, dimension(size(maf)) :: cumulative
-    double precision :: poppose, m
+    double precision :: poppose, m, t
     
     num = size(maf) + 1
     cumulative = 1.0

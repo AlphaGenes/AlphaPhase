@@ -193,9 +193,9 @@ contains
     integer, allocatable :: SortedIdIndex(:), SortedSireIndex(:), SortedDamIndex(:)
     integer, allocatable :: OldN(:), NewN(:), holdsire(:), holddam(:)
     integer :: mode ! mode=1 to generate dummy ids where one parent known.  Geneprob->1  Matesel->0
-    integer :: i, j, k, kk, newid, itth, itho, ihun, iten, iunit
+    integer :: i, j, newid, itth, itho, ihun, iten, iunit
     integer :: nsires, ndams, newsires, newdams, nbisexuals, flag
-    integer :: ns, nd, iextra, oldnobs, kn, kb, oldkn, ks, kd
+    integer :: iextra, oldnobs, kn, kb, oldkn, ks, kd
     integer :: Noffset, Limit, Switch, ihold, ipoint
 
     mode = 1

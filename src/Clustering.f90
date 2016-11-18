@@ -38,7 +38,7 @@ contains
     double precision, allocatable, dimension (:,:) :: Medoids
     logical change
 
-    integer :: i, j, k, l
+    integer :: i, j, k
     
     double precision :: Dist(numClusters)
     double precision minclust, d
@@ -115,7 +115,7 @@ contains
     double precision, allocatable, dimension (:,:) :: Medoids
     logical change
 
-    integer :: i, j, k, l
+    integer :: i, j, k
     
     double precision :: Dist(numClusters)
     double precision minclust, d

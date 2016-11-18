@@ -30,8 +30,6 @@ contains
     integer, dimension(:), intent(in) :: sire, dam
     character(*), dimension(:), intent(in):: id(:)
     type(Pedigree) :: p
-    
-    integer :: nAnisG
 
     allocate(p%sire(size(sire,1)))
     p%sire = sire

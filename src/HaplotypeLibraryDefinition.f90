@@ -205,7 +205,7 @@ contains
     integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
-    integer :: i, j, e, num, eo, invalid
+    integer :: i, j, e, num, invalid
     logical :: match
     integer(kind=8), dimension(:), pointer :: bits, present
 

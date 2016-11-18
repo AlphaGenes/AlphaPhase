@@ -151,7 +151,6 @@ contains
 
     integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth
     integer(kind = 1), allocatable, dimension(:) :: W1, W2
-    character(len = 300) :: dumC
 
     integer :: nAnisG, nSnp
 

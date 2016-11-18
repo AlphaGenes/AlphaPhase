@@ -38,26 +38,19 @@ contains
 
     integer :: nAnisG, nSnp
     
-    integer :: i, j, k, Counter, truth, PseudoDam, PseudoSire, PseudoSireOld, nSnpCommon
+    integer :: i, j, k, Counter, truth, nSnpCommon
     integer, allocatable, dimension(:) :: SurrogateList, ProgCount
-    integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam, temp
-    character(len = 300) :: filout
+    integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam
 
-    integer :: ii, jj, kk, l, Noffset, Limit, Switch, CurrentGroup, ChangeThreshold, flag, FirstGroup0
-    integer, allocatable :: SumsOld(:), Rank(:), SumDiff(:), SumSame(:), Group(:)
-    double precision, allocatable :: Sums(:)
-    logical :: NoCommonGroup
-
-    integer :: ai, aj, ak
+    integer :: aj, ak
 
     integer, parameter :: SortOrMedoid = 0 !if 1 it uses Brians Sort, If Zero it uses k-medoids
 
-    integer :: nSurrogates
 
     integer :: numsections, overhang, cursection, curpos
     integer(kind = 8), allocatable, dimension(:,:) :: homo, additional
 
-    integer :: thres, pass
+    integer :: pass
     
     
     integer, allocatable, dimension (:,:) :: TempSurrArray

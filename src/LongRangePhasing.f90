@@ -4,14 +4,14 @@ module LongRangePhasing
   
 contains
   
-  subroutine Erdos(surrogates, c, threshold, numsurrdisagree, useSurrsN, consistent, printProgress)
+  subroutine Erdos(surrogates, c, threshold, numsurrdisagree, useSurrsN, printProgress)
     use SurrogateDefinition
     use CoreSubsetDefinition
     
     type(Surrogate), intent(in) :: surrogates
     type(CoreSubSet) :: c
     integer, intent(in) :: threshold, numsurrdisagree, useSurrsN
-    logical, intent(in) :: consistent, printProgress
+    logical, intent(in) :: printProgress
 
     integer(kind=1), dimension(:,:), pointer :: genos
     integer, dimension(:,:), allocatable :: surrList
@@ -262,8 +262,7 @@ contains
 
     integer(kind=1), dimension(:,:), pointer :: genos
 
-    integer :: i, j, CountError, ErrorAllow, counter, counterMissing, nAnisG, nCoreSnp
-    double precision :: value, Yield
+    integer :: i, j, CountError, ErrorAllow, counterMissing, nAnisG, nCoreSnp
 
     nAnisG  = c%getNAnisG()
     nCoreSnp = c%getNCoreSnp()
