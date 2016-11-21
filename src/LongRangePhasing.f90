@@ -4,13 +4,13 @@ module LongRangePhasing
   
 contains
   
-  subroutine Erdos(surrogates, c, threshold, numsurrdisagree, useSurrsN, printProgress)
+  subroutine Erdos(surrogates, c, numsurrdisagree, useSurrsN, printProgress)
     use SurrogateDefinition
     use CoreSubsetDefinition
     
     type(Surrogate), intent(in) :: surrogates
     type(CoreSubSet) :: c
-    integer, intent(in) :: threshold, numsurrdisagree, useSurrsN
+    integer, intent(in) :: numsurrdisagree, useSurrsN
     logical, intent(in) :: printProgress
 
     integer(kind=1), dimension(:,:), pointer :: genos
@@ -46,7 +46,8 @@ contains
 
     do i = 1, nAnisG
       do j = 1, nAnisG
-	if (surrogates%numOppose(i,j) <= threshold) then
+	if ((surrogates%numOppose(i,j) <= surrogates%threshold) .and. &
+	(surrogates%numIncommon(i,j) >= surrogates%incommonThreshold)) then
 	  if (i /= j) then
 	    nSurrList(i) = nSurrList(i) + 1
 	    surrList(i,nSurrList(i)) = j
@@ -59,7 +60,7 @@ contains
       total = 0
       counter = 0
       do j = 1, nAnisG
-	if (surrogates%numOppose(i, j) > threshold) then
+	if (surrogates%numOppose(i, j) > surrogates%threshold) then
 	  total = total+surrogates%numOppose(i, j)
 	  counter = counter + 1
 	endif
@@ -120,7 +121,7 @@ contains
 	      do while ((k <= nSurrList(current)) .and. (found < useSurrsN))
 		next = surrList(current,k)
 		if (goodToVisit(next, depth, side, surrogates, visited,  &
-		  toVisit, visiting, threshold, SurrAveDiff)) then
+		  toVisit, visiting, SurrAveDiff)) then
 		  select case (Genos(next, j))
 		    case (0)
 		      if (mod(depth(Visiting) + 1, 2) == 0) then
@@ -198,10 +199,10 @@ contains
   end subroutine Erdos
 
   function goodToVisit(next, depths, sideon, surrogates, visited, &
-	tovisit, visiting, threshold, surravediff) result(good)
+	tovisit, visiting, surravediff) result(good)
     use SurrogateDefinition
 
-    integer, intent(in) :: next, sideon, threshold, visiting
+    integer, intent(in) :: next, sideon, visiting
     type(Surrogate), intent(in) :: surrogates
     logical, dimension(:), intent(in) :: visited
     integer, dimension(:), intent(in) :: surravediff
@@ -224,8 +225,9 @@ contains
     if (good) then
       do i = 1, visiting - 1
 	if ( &
-	  (surrogates%numOppose(next, tovisit(i)) > threshold) .and. &
-	  (surrogates%numOppose(next, tovisit(i)) <= SurrAveDiff(next))) then
+	  ((surrogates%numOppose(next, tovisit(i)) > surrogates%threshold) .and. &
+	  (surrogates%numOppose(next, tovisit(i)) <= SurrAveDiff(next))) .or. &
+	  (surrogates%numIncommon(next,toVisit(i)) < surrogates%incommonThreshold)) then
 	  good = .false.
 	end if
       end do

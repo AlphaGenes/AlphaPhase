@@ -767,14 +767,7 @@ contains
     read (1, *) dumC, params%PercGenoHaploDisagree
     read (1, *) dumC, params%GenotypeMissingErrorPercentage
     read (1, *) dumC, params%NrmThresh
-    !read (1, *) dumC, TempInt
-    !params%FullFileOutput = (TempInt == 1)
     read(1, *) dumC, hold
-!    if ((hold .eq. "1") .or. (hold .eq. "Full")) then
-!      params%FullFileOutput = .true.
-!    else
-!      params%FullFileOutput = .false.
-!    end if
     if (hold .eq. "Impute") then
       params%outputFinalPhase = .false. 
       params%outputCoreIndex = .true. 
@@ -855,14 +848,6 @@ contains
       params%itterateType = "Off"
     end if
 
-!    read (1, *, iostat=status) dumC, itterateNumber
-!    if (status /= 0) then
-!      itterateNumber = 200
-!    end if
-!    read (1, *, iostat=status) dumC, numIter
-!    if (status /= 0) then
-!      numIter = 1
-!    end if
     read(1, *, iostat=status) dumC, hold
     if (status == 0) then
       if (hold(1:1) == "*") then
@@ -977,7 +962,7 @@ contains
 
   !########################################################################################################################################################################
 
-  subroutine WriteSurrogates(definition, threshold, OutputPoint, p, params)
+  subroutine WriteSurrogates(definition, OutputPoint, p, params)
     use SurrogateDefinition
     use PedigreeDefinition
     use ParametersDefinition
@@ -987,7 +972,6 @@ contains
     integer :: i, j, nSurrogates
 
     type(Surrogate), intent(in) :: definition
-    integer, intent(in) :: threshold
     integer, intent(in) :: OutputPoint
     type(Pedigree), intent(in) :: p
     type(Parameters), intent(in) :: params
@@ -1014,7 +998,10 @@ contains
       do i = 1, nAnisG
 	nSurrogates = 0
 	do j = 1, nAnisG
-	  if (definition%numOppose(i, j) <= threshold) nSurrogates = nSurrogates + 1
+	  if ((definition%numOppose(i, j) <= definition%threshold) .and. &
+	    (definition%numIncommon(i,j) >= definition%incommonThreshold)) then
+	    nSurrogates = nSurrogates + 1
+	  end if
 	enddo
 	write (19, '(a20,5i8)') &
 	p%getID(i), count(definition%partition(i,:) == 1), count(definition%partition(i,:) == 2)&
@@ -1200,11 +1187,14 @@ contains
     if (params%outputIndivMistakes) then
       write (filout, '(".",a1,"Simulation",a1,"IndivMistakes",i0,".txt")') SEP, SEP, OutputPoint
       open (unit = 17, FILE = filout, status = 'unknown')
-	  do i = 1, nAnisG
+      do i = 1, nAnisG
 	if (outputSurrogates) then
 	  nSurrogates = 0
 	  do k = i, nAnisG
-	    if (surrogates % numOppose(i, k) <= surrogates % threshold) nSurrogates = nSurrogates + 1
+	    if ((surrogates%numOppose(i, k) <= surrogates%threshold) .and. &
+	      (surrogates%numIncommon(i, k) >= surrogates%incommonThreshold)) then
+	      nSurrogates = nSurrogates + 1
+	    end if
 	  enddo
 	  write (17, '(a20,a3,3i5,a3)', advance='no') p % getID(i), "|", &
 	  count(surrogates % partition(i,:) == 1), count(surrogates % partition(i,:) == 2), nSurrogates, "|"
@@ -1237,7 +1227,10 @@ contains
 	if (outputSurrogates) then
 	  nSurrogates = 0
 	  do k = i, nAnisG
-	    if (surrogates % numOppose(i, k) <= surrogates % threshold) nSurrogates = nSurrogates + 1
+	    if ((surrogates%numOppose(i,k) <= surrogates%threshold) .and. &
+	      (surrogates%numIncommon(i,k) >= surrogates%incommonThreshold)) then
+	      nSurrogates = nSurrogates + 1
+	    end if
 	  enddo
 	  write (20, '(a20,a3,3i5,a3)',advance='no') p % getId(i), "|", &
 	  count(surrogates % partition(i,:) == 1), count(surrogates % partition(i,:) == 2), nSurrogates, "|"

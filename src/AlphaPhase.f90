@@ -166,9 +166,9 @@ program Rlrplhi
 
 	  surrogates = Surrogate(cs, threshold, params%consistent, pseudoNRM, printOldProgress)
 	  if (outputSurrogates) then
-	    call writeSurrogates(surrogates,threshold, h, p, params)
+	    call writeSurrogates(surrogates, h, p, params)
 	  end if
-	  call Erdos(surrogates, cs, threshold, params%numsurrdisagree, params%useSurrsN, printOldProgress)
+	  call Erdos(surrogates, cs, params%numsurrdisagree, params%useSurrsN, printOldProgress)
 	  call CheckCompatHapGeno(cs, params%percgenohaplodisagree, printOldProgress)     
 
 	  subsetCount = subsetCount + 1

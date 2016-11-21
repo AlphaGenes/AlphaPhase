@@ -6,9 +6,11 @@ module SurrogateDefinition
     private
     !Almost definitely shouldn't be public but for now...
     integer(kind = 2), allocatable, dimension(:,:), public :: numOppose
+    integer(kind = 2), allocatable, dimension(:,:), public :: numIncommon
     integer(kind = 1), allocatable, dimension(:,:), public :: partition
     integer(kind = 1), allocatable, dimension(:), public :: method
     integer, public :: threshold
+    integer, public :: incommonThreshold
   contains
     private
     final :: destroy
@@ -25,12 +27,12 @@ contains
     
     class(CoreSubSet), intent(in) :: cs    
     integer, intent(in) :: threshold
+    integer :: incommonThreshold = 0
     logical, intent(in) :: useNRM
     integer(kind = 1), dimension (:,:), intent(in) :: PseudoNRM
     logical, intent(in) :: writeProgress
     type(Surrogate) :: definition
     
-    !integer(kind = 1), dimension (:,:), allocatable :: genos
     integer(kind = 1), dimension (:,:), pointer :: genos
     
     integer, allocatable, dimension(:,:) :: passThres
@@ -133,14 +135,17 @@ contains
     if (allocated(definition%partition)) then
       deallocate(definition%partition)
       deallocate(definition%numoppose)
+      deallocate(definition%numIncommon)
       deallocate(definition%method)
     end if
     allocate(definition%partition(nAnisG,nAnisG))
     allocate(definition%numoppose(nAnisG,nAnisG))
+    allocate(definition%numIncommon(nAnisG,nAnisG))
     allocate(definition%method(nAnisG))
 
     definition%partition = 0
     definition%numoppose = 0
+    definition%numIncommon = 0
     definition%method = 0
 
     do i = 1, nAnisG
@@ -150,11 +155,14 @@ contains
 	nSnpCommon = 0
 
 	Counter = mismatches(homo, additional, i, j, numsections)
+	nSnpCommon = incommon(homo, additional, i, j, numsections, overhang)
 
 	definition%numoppose(i, j) = Counter
 	definition%numoppose(j, i) = Counter
+	definition%numIncommon(i,j) = nSnpCommon
+	definition%numIncommon(j,i) = nSnpCommon
 
-	if (Counter <= threshold) then
+	if ((Counter <= threshold) .and. (nSnpCommon >= incommonThreshold)) then
 	  numPassThres(i) = numPassThres(i) + 1
 	  passThres(i, numPassThres(i)) = j
 	  numPassThres(j) = numPassThres(j) + 1
@@ -193,18 +201,28 @@ contains
 	  truth = 0
 	  if ((definition%numoppose((cs%getSire(i)), j) <=  threshold) &
 	    .and.(definition%numoppose((cs%getDam(i)), j) > threshold)) then
-	    definition%partition(i, j) = 1
+	    if ((definition%numIncommon(cs%getSire(i), j) >= incommonThreshold) &
+	      .and. (definition%numIncommon(cs%getDam(i), j) >= incommonThreshold)) then
+	      definition%partition(i, j) = 1
+	    end if
 	  endif
 	  if ((definition%numoppose((cs%getDam(i)), j) <= threshold)&
 	    .and.(definition%numoppose((cs%getSire(i)), j) > threshold)) then
-	    definition%partition(i, j) = 2
+	    if ((definition%numIncommon(cs%getSire(i), j) >= incommonThreshold) &
+	      .and. (definition%numIncommon(cs%getDam(i), j) >= incommonThreshold)) then
+	      definition%partition(i, j) = 2
+	    end if
 	  endif
 	end do
 	if (definition%numoppose(i, cs%getSire(i)) <= threshold) then
-	  definition%partition(i, cs%getSire(i)) = 1
+	  if (definition%numIncommon(cs%getSire(i), j) >= incommonThreshold) then
+	    definition%partition(i, cs%getSire(i)) = 1
+	  end if
 	end if
 	if (definition%numoppose(i, cs%getDam(i)) <= threshold) then
-	  definition%partition(i, cs%getDam(i)) = 2
+	  if (definition%numIncommon(cs%getDam(i), j) >= incommonThreshold) then
+	    definition%partition(i, cs%getDam(i)) = 2
+	  end if
 	end if
 	definition%method(i) = 1
       end if
@@ -214,7 +232,9 @@ contains
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
 	  if (definition%numoppose(cs%getSire(i), j) <= threshold) then
-	    definition%partition(i, j) = 1
+	    if (definition%numIncommon(cs%getSire(i), j) >= incommonThreshold) then
+	      definition%partition(i, j) = 1
+	    end if
 	  endif
 	enddo
 	definition%method(i) = 2
@@ -225,7 +245,9 @@ contains
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
 	  if (definition%numoppose(cs%getDam(i), j) <= threshold) then
-	    definition%partition(i, j) = 2
+	    if (definition%numIncommon(cs%getDam(i), j) >= incommonThreshold) then
+	      definition%partition(i, j) = 2
+	    end if
 	  endif
 	enddo
 	definition%method(i) = 3
@@ -291,9 +313,11 @@ contains
 	    j = passThres(i, aj)
 	    if ((i == cs%getSire(j)).or.(i == cs%getDam(j))) then
 	      if (definition%numoppose(j, DumSire) > threshold) then
-		definition%partition(i, j) = 2
-		truth = 1
-		exit
+		if (definition%numIncommon(j, DumSire) >= incommonThreshold) then
+		  definition%partition(i, j) = 2
+		  truth = 1
+		  exit
+		end if
 	      endif
 	    end if
 	  end do
@@ -353,27 +377,26 @@ contains
       end if
       
       if (definition%method(i) == 0) then
-	SurrCounter = 0
-	do j = 1, nAnisG
-	  if ((definition%numoppose(i, j) <= threshold).and.(i /= j)) then
-	    SurrCounter = SurrCounter + 1
-	  endif
-	end do
+	SurrCounter = numPassThres(i)
 	if (SurrCounter > 0) then
 	  allocate(TempSurrArray(SurrCounter, SurrCounter))
 	  allocate(TempSurrVector(SurrCounter))
 	  SurrCounter = 0
 	  do j = 1, nAnisG
 	    if ((definition%numoppose(i, j) <= threshold).and.(i /= j)) then
-	      SurrCounter = SurrCounter + 1
-	      TempSurrVector(SurrCounter) = j
+	      if (definition%numIncommon(i, j) >= incommonThreshold) then
+		SurrCounter = SurrCounter + 1
+		TempSurrVector(SurrCounter) = j
+	      end if
 	    endif
 	  end do
 	  TempSurrArray = 0
 	  do j = 1, SurrCounter
 	    do k = 1, SurrCounter
 	      if (definition%numoppose(TempSurrVector(j), TempSurrVector(k)) <= threshold) then
-		TempSurrArray(j, k) = 1
+		if (definition%numIncommon(TempSurrVector(j), TempSurrVector(k)) >= incommonThreshold) then
+		  TempSurrArray(j, k) = 1
+		end if
 	      end if
 	    end do
 	    TempSurrArray(j, j) = 1
@@ -426,6 +449,20 @@ contains
 	IEOR(additional(first, i), additional(second, i))))
     end do
   end function mismatches
+  
+  function incommon(homo, additional, first, second, numsections, overhang) result(c)
+    integer(kind = 8), dimension(:,:), intent(in) :: homo, additional
+    integer, intent(in) :: first, second, numsections, overhang
+    integer :: c, i
+
+    c = 0
+    do i = 1, numsections
+	c = c + POPCNT(IAND(IOR(homo(first, i), NOT(additional(first, i))), &
+	IOR(homo(second, i), NOT(additional(second, i)))))
+    end do
+    
+    c = c - overhang
+  end function incommon
   
   subroutine destroy(definition)
     type(Surrogate) :: definition
