@@ -10,7 +10,7 @@ module HaplotypeLibraryDefinition
     integer(kind = 8), dimension (:,:), allocatable :: bitstore
     integer :: bitoverhang
     integer :: numsections
-    type(Haplotype), dimension(:), pointer :: newstore
+    type(HaplotypeType), dimension(:), pointer :: newstore
     integer, dimension(:), allocatable :: hapFreq
     integer :: size
     integer :: nSnps
@@ -112,9 +112,10 @@ contains
   end subroutine destroy
 
   function hasHap(library, hap) result(id)
+    use haplotypemodule
     class(HaplotypeLibrary) :: library
     integer(kind = 1), dimension(:), intent(in) :: hap
-    type(Haplotype) :: h
+    type(HaplotypeType) :: h
     integer(kind = 8), dimension(:), pointer :: bits
     integer :: id
 
@@ -139,14 +140,16 @@ contains
 !    deallocate(bits)
     
     id = 0
-    h = newHaplotypeInt(hap)
-    do i = 1, library%size
+    print *, h%compareHaplotype(h)
+!    call newHaplotypeN(hap,h)
+!    print *, h%sections
+!    do i = 1, library%size
 !      if (library%newstore(i) == h) then
-      if (h%compareHaplotype(library%newstore(i))) then
-	id = i
-	exit
-      end if
-    end do
+!      if (h%compareHaplotype(library%newstore(i))) then
+!	id = i
+!	exit
+!      end if
+!    end do
   end function hasHap
 
   function addHap(library, hap) result(id)
@@ -210,22 +213,22 @@ contains
     id = library%size
   end function addHap
   
-  function matchAddHap(library, haplotype) result (id)
+  function matchAddHap(library, hap) result (id)
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: haplotype
+    integer(kind = 1), dimension(:), intent(in) :: hap
     integer :: id
     
-    id = library%hasHap(haplotype)
+    id = library%hasHap(hap)
     if (id == 0) then
-      id = library%addHap(haplotype)
+      id = library%addHap(hap)
     else
       library%hapfreq(id) = library%hapfreq(id) + 1
     end if    
   end function matchAddHap
 
-  function matchWithError(library, haplotype, allowedError) result(matches)
+  function matchWithError(library, hap, allowedError) result(matches)
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: haplotype
+    integer(kind = 1), dimension(:), intent(in) :: hap
     integer, intent(in) :: allowedError
     integer, dimension(:), pointer :: matches
 
@@ -237,8 +240,8 @@ contains
     allocate(tempMatches(library % size))
     
     invalid = 0
-    do i = 1, size(haplotype)
-      if ((haplotype(i) /= 0) .and. (haplotype(i) /= 1) .and. (haplotype(i) /= MissingPhaseCode)) then
+    do i = 1, size(hap)
+      if ((hap(i) /= 0) .and. (hap(i) /= 1) .and. (hap(i) /= MissingPhaseCode)) then
 	invalid = invalid + 1
       end if
     end do 
@@ -246,8 +249,8 @@ contains
     num = 0
  
     if (invalid <= allowedError) then
-      bits => HaplotypeToBits(haplotype, library%numsections)
-      present => HaplotypePresent(haplotype, library%numsections)    
+      bits => HaplotypeToBits(hap, library%numsections)
+      present => HaplotypePresent(hap, library%numsections)    
 
       do i = 1, library % size      
 	e = invalid
@@ -276,9 +279,9 @@ contains
     deallocate(tempMatches)
   end function matchWithError
   
-  function limitedMatchWithError(library, haplotype, allowedError, limit) result(matches)
+  function limitedMatchWithError(library, hap, allowedError, limit) result(matches)
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: haplotype
+    integer(kind = 1), dimension(:), intent(in) :: hap
     integer, intent(in) :: allowedError
     integer, dimension(:), intent(in) :: limit
     integer, dimension(:), pointer :: matches
@@ -314,15 +317,15 @@ contains
 !    end do
     
     invalid = 0
-    do i = 1, size(haplotype)
-      if ((haplotype(i) /= 0) .and. (haplotype(i) /= 1) .and. (haplotype(i) /= MissingPhaseCode)) then
+    do i = 1, size(hap)
+      if ((hap(i) /= 0) .and. (hap(i) /= 1) .and. (hap(i) /= MissingPhaseCode)) then
 	invalid = invalid + 1
       end if
     end do 
     
     if (invalid <= allowedError) then
-      bits => HaplotypeToBits(haplotype, library%numsections)
-      present => HaplotypePresent(haplotype, library%numsections)    
+      bits => HaplotypeToBits(hap, library%numsections)
+      present => HaplotypePresent(hap, library%numsections)    
 
       do k = 1, size(limit)
 	i = limit(k)
@@ -654,14 +657,14 @@ contains
     end do
   end function HaplotypePresent
   
-  function BitsMissingToHaplotype(bits, missing, overhang) result(haplotype)
+  function BitsMissingToHaplotype(bits, missing, overhang) result(hap)
     integer(kind=8), dimension(:), intent(in) :: bits, missing
     integer, intent(in) :: overhang
-    integer(kind=1), dimension(:), allocatable :: haplotype
+    integer(kind=1), dimension(:), allocatable :: hap
     
     integer :: i, j, e
     
-    allocate(haplotype(size(bits)*64 - overhang))
+    allocate(hap(size(bits)*64 - overhang))
     
     do i = 1, size(bits) 
       if (i < size(bits)) then
@@ -671,12 +674,12 @@ contains
       end if
       do j = 1, e
 	if (.not. btest(missing(i),j)) then
-	  haplotype((i-1)*64+j) = 9
+	  hap((i-1)*64+j) = 9
 	else
 	  if (btest(bits(i), j)) then
-	    haplotype((i-1)*64+j) = 1
+	    hap((i-1)*64+j) = 1
 	  else
-	    haplotype((i-1)*64+j) = 0
+	    hap((i-1)*64+j) = 0
 	  end if
 	end if
       end do
@@ -684,14 +687,14 @@ contains
     
   end function BitsMissingToHaplotype
   
-  function BitsToHaplotype(bits, overhang) result(haplotype)
+  function BitsToHaplotype(bits, overhang) result(hap)
     integer(kind=8), dimension(:), intent(in) :: bits
     integer, intent(in) :: overhang
-    integer(kind=1), dimension(:), allocatable :: haplotype
+    integer(kind=1), dimension(:), allocatable :: hap
     
     integer :: i, j, e
     
-    allocate(haplotype(size(bits)*64 - overhang))
+    allocate(hap(size(bits)*64 - overhang))
     
     do i = 1, size(bits) 
       if (i < size(bits)) then
@@ -701,9 +704,9 @@ contains
       end if
       do j = 1, e
 	if (btest(bits(i), j)) then
-	  haplotype((i-1)*64+j) = 1
+	  hap((i-1)*64+j) = 1
 	else
-	  haplotype((i-1)*64+j) = 0
+	  hap((i-1)*64+j) = 0
 	end if
       end do
     end do
