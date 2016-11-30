@@ -1,6 +1,6 @@
 module HaplotypeLibraryDefinition
 !  use Constants
-  use HaplotypeModule
+  use HapMod
   implicit none
   private
 
@@ -112,7 +112,6 @@ contains
   end subroutine destroy
 
   function hasHap(library, hap) result(id)
-    use haplotypemodule
     class(HaplotypeLibrary) :: library
     integer(kind = 1), dimension(:), intent(in) :: hap
     type(HaplotypeType) :: h
