@@ -1,6 +1,6 @@
 module HaplotypeLibraryDefinition
 !  use Constants
-  use HapMod
+  use HaplotypeModule
   implicit none
   private
 
@@ -10,7 +10,7 @@ module HaplotypeLibraryDefinition
     integer(kind = 8), dimension (:,:), allocatable :: bitstore
     integer :: bitoverhang
     integer :: numsections
-    type(HaplotypeType), dimension(:), pointer :: newstore
+    type(Haplotype), dimension(:), pointer :: newstore
     integer, dimension(:), allocatable :: hapFreq
     integer :: size
     integer :: nSnps
@@ -114,7 +114,7 @@ contains
   function hasHap(library, hap) result(id)
     class(HaplotypeLibrary) :: library
     integer(kind = 1), dimension(:), intent(in) :: hap
-    type(HaplotypeType) :: h
+    type(Haplotype) :: h
     integer(kind = 8), dimension(:), pointer :: bits
     integer :: id
 
@@ -139,16 +139,13 @@ contains
 !    deallocate(bits)
     
     id = 0
-    print *, h%compareHaplotype(h)
-!    call newHaplotypeN(hap,h)
-!    print *, h%sections
-!    do i = 1, library%size
-!      if (library%newstore(i) == h) then
-!      if (h%compareHaplotype(library%newstore(i))) then
-!	id = i
-!	exit
-!      end if
-!    end do
+    h = Haplotype(hap)
+    do i = 1, library%size
+      if (library%newstore(i) == h) then
+	id = i
+	exit
+      end if
+    end do
   end function hasHap
 
   function addHap(library, hap) result(id)
@@ -159,7 +156,7 @@ contains
     integer :: newStoreSize
     integer(kind = 1), dimension(:,:), allocatable :: tempStore
     integer(kind = 8), dimension(:,:), allocatable :: tempBitStore
-!    type(Haplotype), dimension(:), pointer :: tempNewStore
+    type(Haplotype), dimension(:), pointer :: tempNewStore
     integer, dimension(:), allocatable :: tempHapFreq
     
     integer(kind=8), dimension(:), pointer :: bits
@@ -191,12 +188,12 @@ contains
       library % bitStore(1:library % Size, :) = tempBitStore
       deallocate(tempBitStore)
       
-!      allocate(tempNewStore(library % storeSize))
-!      tempNewStore = library%newStore
-!      deallocate(library%newStore)
-!      allocate(library%newStore(newStoreSize))
-!      library % newStore(1:library % Size) = tempNewStore
-!      deallocate(tempNewStore)
+      allocate(tempNewStore(library % storeSize))
+      tempNewStore = library%newStore
+      deallocate(library%newStore)
+      allocate(library%newStore(newStoreSize))
+      library % newStore(1:library % Size) = tempNewStore
+      deallocate(tempNewStore)
       
       library % StoreSize = newStoreSize
     end if
