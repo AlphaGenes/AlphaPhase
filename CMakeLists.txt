@@ -64,13 +64,13 @@ endif(${USE_HDF5})
 # RELEASE, and TESTING.  You should  review this file and make sure the flags 
 # are to your liking.
 INCLUDE(${CMAKE_MODULE_PATH}/SetFortranFlags.cmake)
-#SET(SRCAH ../alphahouse/src/)
+SET(SRCAH ../alphahouse/src/)
 
 # Have the .mod files placed in the lib folder
 SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB})
 
 # The source for the BAR library and have it placed in the lib folder
-#ADD_SUBDIRECTORY(${SRCAH} ${LIB}/AH)
+ADD_SUBDIRECTORY(${SRCAH} ${LIB}/AH)
 
 # TODO add tests to correct location
 ADD_SUBDIRECTORY(${SRCALPHAPHASE} ${BIN})

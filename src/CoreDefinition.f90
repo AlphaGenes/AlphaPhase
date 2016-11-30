@@ -55,6 +55,7 @@ module CoreDefinition
   interface Core
     module procedure newCore
     module procedure newPhaseCore
+    module procedure newHDCore
   end interface Core
 
 contains
@@ -112,6 +113,42 @@ contains
     c%phase = phase
     c%hapAnis = MissingHaplotypeCode
   end function newPhaseCore
+  
+  !! This creates a subcore for HLI while we are using the HD hack.  Once HLI copes with missing data we should be able
+  !! to remove this
+  function newHDCore(orig, indivs, snps) result(c)
+    type(Core), intent(in) :: orig
+    integer, dimension(:), intent(in) :: indivs, snps
+    type(Core) :: c
+    
+    integer :: nAnisG, nSnp
+    integer :: i, s, oi, os
+
+    nAnisG = size(indivs,1)
+    nSnp = size(snps,1)
+    
+    allocate(c%genos(nAnisG,nSnp))
+    allocate(c%phase(nAnisG,nSnp,2))
+    allocate(c%fullyphased(nAnisG,2))
+    allocate(c%hapAnis(nAnisG,2))
+    
+    allocate(c%swappable(nAnisG))
+    
+    c%startCoreSnp = 1
+    c%endCoreSnp = nSnp
+    c%endSurrSnp = 0
+    c%fullyPhased = .false.    
+    c%hapAnis = MissingHaplotypeCode  
+    
+    do i = 1, nAnisG
+      oi = indivs(i)
+      do s = 1, nSnp
+	os = snps(s)
+	c%genos(i,s) = orig%genos(oi,os)
+	c%phase(i,s,:) = orig%phase(oi,os,:)
+      end do
+    end do	
+  end function newHDCore
   
   subroutine destroy(c)
     type(Core) :: c

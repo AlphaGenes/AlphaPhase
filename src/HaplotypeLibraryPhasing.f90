@@ -47,7 +47,7 @@ contains
     use Random
     
     type(HaplotypeLibrary), intent(in) :: library
-    type(Core) :: c
+    class(Core) :: c
     integer, intent(inout) :: nGlobalHapsIter
     double precision, intent(in) :: PercGenoHaploDisagree
     integer, intent(in) :: minHapFreq

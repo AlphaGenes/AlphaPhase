@@ -1,5 +1,6 @@
 module HaplotypeLibraryDefinition
-  use Constants
+!  use Constants
+  use HaplotypeModule
   implicit none
   private
 
@@ -9,6 +10,7 @@ module HaplotypeLibraryDefinition
     integer(kind = 8), dimension (:,:), allocatable :: bitstore
     integer :: bitoverhang
     integer :: numsections
+    type(Haplotype), dimension(:), pointer :: newstore
     integer, dimension(:), allocatable :: hapFreq
     integer :: size
     integer :: nSnps
@@ -60,6 +62,7 @@ contains
     library%bitoverhang = 64 - (nSnps - (library%numsections - 1) * 64)
     allocate(library%bitstore(storeSize,library%numsections))
     library%bitstore = 0
+    allocate(library%newstore(library%storeSize))
   end function newHaplotypeLibrary
   
   function haplotypeLibraryFromFile(filename, stepsize) result(library)
@@ -86,6 +89,7 @@ contains
     library%bitoverhang = 64 - (library%nSnps - (library%numsections - 1) * 64)
     allocate(library%bitstore(library%storeSize,library%numsections))
     library%bitstore = 0
+    allocate(library%newstore(library%storeSize))
 
     allocate(holdHap(library%nSnps))
     do i=1,library%storeSize
@@ -102,45 +106,58 @@ contains
     if (allocated(library%store)) then
       deallocate(library%store)
       deallocate(library%bitstore)
+!      deallocate(library%newstore)
       deallocate(library%hapFreq)
     end if
   end subroutine destroy
 
-  function hasHap(library, haplotype) result(id)
+  function hasHap(library, hap) result(id)
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: haplotype
+    integer(kind = 1), dimension(:), intent(in) :: hap
+    type(Haplotype) :: h
     integer(kind = 8), dimension(:), pointer :: bits
     integer :: id
 
     integer :: i, j
     logical :: match
 
-    bits => HaplotypeToBits(haplotype, library%numsections)
+!    bits => HaplotypeToBits(hap, library%numsections)
+!    id = 0
+!    do i = 1, library%size
+!      match = .true.
+!      do j = 1, library % numsections
+!	if (library%bitstore(i,j) /= bits(j)) then
+!	  match = .false.
+!	  exit
+!	end if
+!      end do
+!      if (match) then
+!	id = i
+!	exit
+!      end if
+!    end do
+!    deallocate(bits)
+    
     id = 0
+    h = newHaplotypeInt(hap)
     do i = 1, library%size
-      match = .true.
-      do j = 1, library % numsections
-	if (library%bitstore(i,j) /= bits(j)) then
-	  match = .false.
-	  exit
-	end if
-      end do
-      if (match) then
+!      if (library%newstore(i) == h) then
+      if (h%compareHaplotype(library%newstore(i))) then
 	id = i
 	exit
       end if
     end do
-    deallocate(bits)
   end function hasHap
 
-  function addHap(library, haplotype) result(id)
+  function addHap(library, hap) result(id)
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: haplotype
+    integer(kind = 1), dimension(:), intent(in) :: hap
     integer :: id
 
     integer :: newStoreSize
     integer(kind = 1), dimension(:,:), allocatable :: tempStore
     integer(kind = 8), dimension(:,:), allocatable :: tempBitStore
+!    type(Haplotype), dimension(:), pointer :: tempNewStore
     integer, dimension(:), allocatable :: tempHapFreq
     
     integer(kind=8), dimension(:), pointer :: bits
@@ -172,13 +189,21 @@ contains
       library % bitStore(1:library % Size, :) = tempBitStore
       deallocate(tempBitStore)
       
+!      allocate(tempNewStore(library % storeSize))
+!      tempNewStore = library%newStore
+!      deallocate(library%newStore)
+!      allocate(library%newStore(newStoreSize))
+!      library % newStore(1:library % Size) = tempNewStore
+!      deallocate(tempNewStore)
+      
       library % StoreSize = newStoreSize
     end if
 
     library % Size = library % Size + 1
-    library % Store(library % Size,:) = haplotype
-    bits => HaplotypeToBits(haplotype, library%numsections)
+    library % Store(library % Size,:) = hap
+    bits => HaplotypeToBits(hap, library%numsections)
     library % BitStore(library%Size,:) = bits
+!    library%newStore(library%Size) = Haplotype(hap)
     deallocate(bits)
     
     library%hapfreq(library%size) = 1

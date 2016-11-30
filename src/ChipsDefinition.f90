@@ -9,11 +9,16 @@ module ChipsDefinition
     private
     logical, dimension(:,:), pointer :: snps
     integer, dimension(:), pointer :: animals
+    integer :: numChips
   contains
     private
-    procedure, public :: getChipGenotypes
+    procedure, public :: getChipCore
     procedure, public :: getOverlap
     procedure, public :: expandHaplotype
+    procedure, public :: getAnimals
+    procedure, public :: getSnps
+    procedure, public :: getNumChips
+    procedure, public :: mergeToAll
   end type Chips
   
   interface Chips
@@ -34,35 +39,61 @@ contains
     c%snps = snps
     c%animals = animals
     
+    c%numChips = maxval(animals)
+    
   end function newChips
-  
-  function getChipGenotypes(c, genos, chipID) result(chip)
-    class(Chips), intent(in) :: c
-    integer(kind=1), dimension(:,:), intent(in) :: genos
+
+  function getChipCore(ch, orig, chipID) result(c)
+    use CoreDefinition
+    
+    class(Chips), intent(in) :: ch    
+    type(Core), intent(in) :: orig
     integer, intent(in) :: chipID
     
-    integer(kind=1), dimension(:,:), allocatable :: chip
+    type(Core) :: c
     
-    integer :: i, j, cs, ca
+    if (ch%numChips == 1) then
+      c = orig
+    else
+      c = Core(orig,ch%getAnimals(chipID),ch%getSNPs(chipID))
+    end if
+  end function getChipCore
+  
+  function getAnimals(c,chipID) result(animals)
+    class(Chips), intent(in) :: c
+    integer, intent(in) :: chipID
     
-    allocate(chip(count(c%animals == chipID), count(c%snps(chipID,:))))
+    integer, dimension(:), allocatable :: animals
     
-    print *, size(c%snps,2), size(genos,2)
+    integer i, ci
     
-    ca = 0
-    do i = 1, size(c%animals)
+    allocate(animals(count(c%animals==chipID)))
+    ci = 0
+    do i = 1, size(c%animals,1)
       if (c%animals(i) == chipID) then
-	ca = ca + 1
-	cs = 0
-	do j = 1, size(c%snps,2)
-	  if (c%snps(chipID,j)) then
-	    cs = cs + 1
-	    chip(ca,cs) = genos(i,j)
-	  end if
-	end do
+	ci = ci + 1
+	animals(ci) = i
       end if
     end do
-  end function getChipGenotypes
+  end function getAnimals
+  
+  function getSNPs(c,chipID) result(snps)
+    class(Chips), intent(in) :: c
+    integer, intent(in) :: chipID
+    
+    integer, dimension(:), allocatable :: snps
+    
+    integer i, ci
+    
+    allocate(snps(count(c%snps(chipID,:))))
+    ci = 0
+    do i = 1, size(c%snps,2)
+      if (c%snps(chipID,i)) then
+	ci = ci + 1
+	snps(ci) = i
+      end if
+    end do
+  end function getSNPs
   
   function getOverlap(c, chipIDs) result(overlap)
     class(Chips), intent(in) :: c
@@ -100,69 +131,80 @@ contains
     end do
   end function expandHaplotype
   
-  !! DAMN IT - WHAT TO DO ONE ONE HAP IS ALREADY MERGED??
+  function getNumChips(c) result(num)
+    class(Chips), intent(in) :: c
+    
+    integer :: num
+    
+    num = c%numChips
+  end function getNumChips  
   
-  function matchHaplotypes(c, hap1, chipIDs1, hap2, chipIDs2, allowed) result(match)
-    class(Chips) :: c
-    integer(kind=1), dimension(:), intent(in) :: hap1, hap2
-    integer, dimension(:), intent(in) :: chipIDs1, chipIDs2
-    integer, intent(in) :: allowed
+  !! This is a hacky way to do this (should really be a subroutine of the first Core) but this keeps as much as possible that is
+  !! to do with the temporary HD hack in one place
+  subroutine mergeToAll(c, allLib, subLib, allCore, subCore)
+    use HaplotypeLibraryDefinition
+    use CoreDefinition
     
-    logical :: match
-    logical, dimension(size(chipIDs1)) :: overlap1, overlap2
+    class(Chips), intent(in) :: c
+    class(HaplotypeLibrary), intent(inout) :: allLib
+    class(HaplotypeLibrary), intent(in) :: subLib
+    class(Core), intent(inout) :: allCore
+    class(Core), intent(in) :: subCore
     
-    integer :: count, i
     
-    count = 0
     
-    overlap1 = getOverlap(c, chipIDs1)
-    overlap2 = getOverlap(c, chipIDs2)
-    
-    do i = 1, size(c%snps,2)
-      if (overlap1(i) .and. overlap2(i) .and. (hap1(i) /= hap2(i))) then
-	! Missing?
-	
-	count = count + 1
-	if (count > allowed) then
-	  exit
-	end if
-      end if
-    end do
-    
-    match = (count <= allowed)
-  end function matchHaplotypes
+  end subroutine mergeToAll
   
-  function mergeHaplotypes(c, hap1, chipID1, hap2, chipID2) result(merged)
+  !! NOTHING BELOW SHOULD REALLY BE HERE BUT HERE FOR NOW TO KEEP ALL THE MULTI_HD STUFF IN ONE PLACE
+  !! Will move somewhere more sensible in future
+  
+  function matchHaplotypes(c, hap1, hap2, allowed, minOverlap) result(match)
     use Constants
     
     class(Chips) :: c
     integer(kind=1), dimension(:), intent(in) :: hap1, hap2
-    integer, intent(in) :: chipID1, chipID2
+    integer, intent(in) :: allowed, minOverlap
+    
+    logical :: match
+        
+    integer :: count, overlap, i
+    
+    count = 0
+    overlap = 0
+    
+    do i = 1, size(c%snps,2)
+      if ((hap1(i) /= MissingPhaseCode) .and. (hap2(i) /= MissingPhaseCode)) then
+	overlap = overlap + 1
+	if (hap1(i) /= hap2(i)) then
+	  count = count + 1
+	  if (count > allowed) then
+	    exit
+	  end if
+	end if
+      end if
+    end do
+    
+    match = ((count <= allowed) .and. (overlap >= minOverlap))
+  end function matchHaplotypes
+  
+  function mergeHaplotypes(c, hap1, hap2) result(merged)
+    use Constants
+    
+    class(Chips) :: c
+    integer(kind=1), dimension(:), intent(in) :: hap1, hap2
     
     integer(kind=1), dimension(size(c%snps,2)) :: merged
     
     integer :: i
     
     do i = 1, size(merged)
-      if (c%snps(chipID1,i)) then
-	if (c%snps(chipID1,i)) then
-	  if (hap1(i) == hap2(i)) then
-	    merged(i) = hap1(i)
-	  else
-	    merged(i) = MissingPhaseCode
-	  end if
-	else
-	  merged(i) = hap1(i)
-	end if
+      if (hap1(i) == hap2(i)) then
+	merged(i) = hap1(i)
       else
-	if (c%snps(chipID2,i)) then
-	  merged(i) = hap2(i)
-	else
-	  merged(i) = MissingPhaseCode
-	end if
+	merged(i) = MissingPhaseCode
       end if
     end do
     
   end function mergeHaplotypes
-    
+  
 end module ChipsDefinition
