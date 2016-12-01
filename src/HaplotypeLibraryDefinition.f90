@@ -1,5 +1,5 @@
 module HaplotypeLibraryDefinition
-!  use Constants
+  use Constants
   use HaplotypeModule
   implicit none
   private
@@ -103,7 +103,7 @@ contains
     id = 0
     h = Haplotype(hap)
     do i = 1, library%size
-      if (library%newstore(i) == h) then
+      if (library%newstore(i).compareHaplotype(h)) then
 	id = i
 	exit
       end if
