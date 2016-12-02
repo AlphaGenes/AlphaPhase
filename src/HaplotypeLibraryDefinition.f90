@@ -77,7 +77,7 @@ contains
     allocate(holdHap(library%nSnps))
     do i=1,library%storeSize
       read(2001) holdHap
-      j = library%matchAddHap(holdHap)
+      j = library%matchAddHap(Haplotype(holdHap))
     enddo
     close (2001)
     
@@ -94,16 +94,14 @@ contains
 
   function hasHap(library, hap) result(id)
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: hap
-    type(Haplotype) :: h
+    type(Haplotype), intent(in) :: hap
     integer :: id
 
     integer :: i
     
     id = 0
-    h = Haplotype(hap)
     do i = 1, library%size
-      if (library%newstore(i)%compareHaplotype(h)) then
+      if (library%newstore(i)%compareHaplotype(hap)) then
 	id = i
 	exit
       end if
@@ -112,7 +110,7 @@ contains
 
   function addHap(library, hap) result(id)
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: hap
+    type(Haplotype), intent(in) :: hap
     integer :: id
 
     integer :: newStoreSize
@@ -141,7 +139,7 @@ contains
     end if
 
     library % Size = library % Size + 1
-    library%newStore(library%Size) = Haplotype(hap)
+    library%newStore(library%Size) = hap
     
     library%hapfreq(library%size) = 1
     id = library%size
@@ -149,7 +147,7 @@ contains
   
   function matchAddHap(library, hap) result (id)
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: hap
+    type(Haplotype), intent(in) :: hap
     integer :: id
     
     id = library%hasHap(hap)
@@ -162,29 +160,25 @@ contains
 
   function matchWithError(library, hap, allowedError) result(matches)
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: hap
+    type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
     integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, e, num, invalid
     type(Haplotype) :: h
-
+    
     allocate(tempMatches(library % size))
-    
-    invalid = 0
-    do i = 1, size(hap)
-      if ((hap(i) /= 0) .and. (hap(i) /= 1) .and. (hap(i) /= MissingPhaseCode)) then
-	invalid = invalid + 1
-      end if
-    end do
-    
+
     num = 0
     
+    invalid = hap%numberError()
+    
     if (invalid <= allowedError) then
-      h = Haplotype(hap)
-      do i = 1, library % size
-	e = invalid + library%newstore(i)%mismatchesMod(h)
+
+      do i = 1, library%size
+	e = invalid + library%newstore(i)%mismatchesMod(hap)
+
 	if (e <= allowedError) then
 	  num = num + 1
 	  tempMatches(num) = i
@@ -199,32 +193,25 @@ contains
   
   function limitedMatchWithError(library, hap, allowedError, limit) result(matches)
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: hap
+    type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
     integer, dimension(:), intent(in) :: limit
     integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, k, e, num, invalid    
-    type(Haplotype) :: h
 
     allocate(tempMatches(library % size))
 
     num = 0
     
-    invalid = 0
-    do i = 1, size(hap)
-      if ((hap(i) /= 0) .and. (hap(i) /= 1) .and. (hap(i) /= MissingPhaseCode)) then
-	invalid = invalid + 1
-      end if
-    end do 
+    invalid = hap%numberError()
     
     if (invalid <= allowedError) then
-      h = Haplotype(hap)
 
       do k = 1, size(limit)
 	i = limit(k)
-	e = invalid + library%newstore(i)%mismatchesMod(h)
+	e = invalid + library%newstore(i)%mismatchesMod(hap)
 
 	if (e <= allowedError) then
 	  num = num + 1
@@ -238,11 +225,11 @@ contains
     deallocate(tempMatches)
   end function limitedMatchWithError
   
-  function limitedCompatPairsWithError(library, genos, ErrorAllow, limit, nAnisG) result(pairs)
+  function limitedCompatPairsWithError(library, geno, ErrorAllow, limit, nAnisG) result(pairs)
     use Constants
     use GenotypeModule
     class(HaplotypeLibrary) :: library
-    integer(kind = 1), dimension(:), intent(in) :: genos
+    type(Genotype), intent(in) :: geno
     integer, intent(in) :: ErrorAllow
     integer, dimension(:), intent(in) :: limit
     integer, intent(in) :: nAnisG
@@ -251,9 +238,6 @@ contains
     integer, dimension(:,:), pointer :: tempPairs
     integer :: i, j, p, ii, jj
 
-    type(Genotype) :: g
-    
-    g = Genotype(genos)
     allocate(tempPairs(nAnisG*2,2))
     
     p = 0
@@ -263,7 +247,7 @@ contains
       do while ((j <= size(limit)) .and. ((p*p) <= (nAnisG - 1)))
 	ii = limit(i)
 	jj = limit(j)
-	if (g%compatibleHaplotypes(library%newstore(ii), library%newstore(jj), ErrorAllow)) then
+	if (geno%compatibleHaplotypes(library%newstore(ii), library%newstore(jj), ErrorAllow)) then
 	  p = p + 1
 	  tempPairs(p,1) = ii
 	  tempPairs(p,2) = jj
@@ -282,23 +266,23 @@ contains
   function getHap(library, id) result(hap)
     class(HaplotypeLibrary) :: library
     integer, intent(in) :: id
-    integer(kind = 1), dimension(:), allocatable :: hap
+    type(Haplotype) :: hap
 
-    allocate(hap(library % nSnps))
-    hap = library % newstore(id) % toIntegerArray()
+    
+    hap = library % newstore(id) 
   end function getHap
   
   function getHaps(library, ids) result(haps)
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
-    integer(kind = 1), dimension(:,:), pointer :: haps
+    type(Haplotype), dimension(:), pointer :: haps
     
     integer :: i
     
-    allocate(haps(size(ids,1), library%nSnps))
+    allocate(haps(size(ids,1)))
     
     do i = 1, size(ids,1)
-      haps(i,:) = library%getHap(ids(i))
+      haps(i) = library%getHap(ids(i))
     end do
   end function getHaps
 
@@ -366,29 +350,26 @@ contains
     freq = library%hapFreq(id)
   end function getHapFreq
   
-  function getCompatHaps(library, genos, percgenohaplodisagree) result (compatHaps)
+  function getCompatHaps(library, g, percgenohaplodisagree) result (compatHaps)
+    use GenotypeModule
     class(HaplotypeLibrary) :: library
-    integer(kind=1), dimension(:), intent(in) :: genos
+    type(Genotype), intent(in) :: g
     double precision, intent(in) :: percgenohaplodisagree
     integer, dimension(:), pointer :: compatHaps
     
-    compatHaps = getCompatHapsFreq(library, genos, 1, percgenohaplodisagree)    
+    compatHaps = getCompatHapsFreq(library, g, 1, percgenohaplodisagree)    
   end function getCompatHaps
   
-  function getCompatHapsFreq(library, genos, freq, percgenohaplodisagree) result (compatHaps)
+  function getCompatHapsFreq(library, g, freq, percgenohaplodisagree) result (compatHaps)
     use GenotypeModule
     class(HaplotypeLibrary) :: library
-    integer(kind=1), dimension(:), intent(in) :: genos
+    type(Genotype), intent(in) :: g
     integer, intent(in) :: freq
     double precision, intent(in) :: percgenohaplodisagree
     integer, dimension(:), pointer :: compatHaps
     
     integer, dimension(:), allocatable :: tempCompatHaps
-    integer :: i, numCompatHaps, ErrorAllow
-    
-    type(Genotype) :: g
-    
-    g = Genotype(genos)
+    integer :: i, numCompatHaps, ErrorAllow    
    
     ErrorAllow = int(PercGenoHaploDisagree * library%nSnps)
     allocate(tempCompatHaps(library%size))

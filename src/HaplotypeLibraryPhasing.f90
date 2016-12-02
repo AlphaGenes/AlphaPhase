@@ -14,22 +14,26 @@ contains
     type(Core), intent(in) :: c
     logical, intent(in) :: consistent
     type(HaplotypeLibrary), intent(in) :: library
+    
+    type(Haplotype) :: hap
 
     integer :: i, id
     
     do i = 1, c % getNAnisG()
       !Paternal Haps
-      if (fullyPhased(c % getHaplotype(i, 1))) then
+      hap = c % getHaplotype(i, 1)
+      if (hap % fullyPhased() ) then
 	call newHaplotype(c, i, 1, library)
       endif
 
       !Maternal Haps
-      if (fullyPhased(c % getHaplotype(i, 2))) then
+      hap = c % getHaplotype(i, 2)
+      if (hap%fullyPhased()) then
 	!FUDGE FOR CONSISTENCY.  There should be no if statement here and then we could replace this with a call to newHaplotype
 	if (.not.consistent .or. (library % getSize() > 0)) then
 	  call c % setFullyPhased(i, 2)
 	end if
-	id = library % matchAddHap(c % getHaplotype(i, 2))
+	id = library % matchAddHap(hap)
 	call c % setHapAnis(i, 2, id)
       endif
     enddo
@@ -46,6 +50,8 @@ contains
     use CoreDefinition
     use Clustering
     use Random
+    use GenotypeModule
+    use HaplotypeModule
     
     type(HaplotypeLibrary), intent(in) :: library
     class(Core) :: c
@@ -59,8 +65,10 @@ contains
 
     integer, dimension(:), pointer :: compatHaps
 
-    integer(kind = 1), pointer, dimension(:) :: comp
+    type(Haplotype) :: comp
     integer, pointer, dimension(:) :: CandHapsPat, CandHapsMat, AllCandHapsMat, CandHaps, matches
+    
+    type(Genotype) :: geno
 
     logical :: singlePat, singleMat
 
@@ -124,12 +132,13 @@ contains
 	  !! There's some odd logic here - if we have one paternal and maternal we end up keeping HapP as the
 	  !! paternal even if it's not compitable with the mat.  May be checked later.
 	  if ((size(CandHapsMat, 1) == 1).AND.(size(CandHapsPat, 1) > 0)) then
-	    comp => complement(c % getSingleCoreGenos(i), library % getHap(HapM))
+!	    comp = Haplotype(complement(c % getSingleCoreGenos(i), library % getHap(HapM)))
+	    geno = c%getSingleCoreGenos(i)
+	    comp = geno%complement(library%getHap(HapM))
 	    matches => library % limitedMatchWithError(comp, ErrorAllow, CandHapsPat)
 	    if (size(matches) == 1) then
 	      HapP = matches(1)
 	    end if
-	    deallocate(comp)
 	    deallocate(matches)
 	  end if
 
@@ -138,7 +147,9 @@ contains
 	    ! FUDGE TO DEAL WITH STRANGE LOGIC IN ORIGINAL CODE
 	    HapM = 0
 
-	    comp => complement(c % getSingleCoreGenos(i), library % getHap(HapP))
+!	    comp = Haplotype(complement(c % getSingleCoreGenos(i), library % getHap(HapP)))
+	    geno = c%getSingleCoreGenos(i)
+	    comp = geno%complement(library%getHap(HapP))
 	    matches => library % limitedMatchWithError(comp, ErrorAllow, CandHapsMat)
 	    if (size(matches) == 1) then
 	      HapM = matches(1)
@@ -149,7 +160,6 @@ contains
 	      HapM = 0
 	    end if
 	    
-	    deallocate(comp)
 	    deallocate(matches)
 	  end if
 
@@ -160,19 +170,19 @@ contains
 	    ! If no haplotype has been found for the maternal gamete, or 
 	    ! there are more than one maternal candidate haplotype
 	    if (HapM == 0) then
-	      comp => complement(c % getSingleCoreGenos(i), c % getHaplotype(i, 1))
+	      geno = c%getSingleCoreGenos(i)
+	      comp = geno%complement(c%getHaplotype(i,1))
+!	      comp = Haplotype(complement(c % getSingleCoreGenos(i), c % getHaplotype(i, 1)))
 
 	      do j = 1, c % getNCoreSnp()
-		if ((comp(j) == 0).or.(comp(j) == 1)) then
-		  call c % setPhase(i, j, 2, comp(j))
+		if ((comp.getPhaseMod(j) == 0).or.(comp.getPhaseMod(j) == 1)) then
+		  call c % setPhase(i, j, 2, comp.getPhaseMod(j))
 		endif
 	      enddo
 
-	      if (fullyPhased(comp)) then
+	      if (comp%fullyPhased()) then
 		call newHaplotype(c, i, 2, library)
 	      end if
-	      
-	      deallocate(comp)
 	    end if
 	  end if
 
@@ -189,19 +199,19 @@ contains
 	    ! If no haplotype has been found for the paternal gamete, or 
 	    ! there are more than one paternal candidate haplotype
 	    if (HapP == 0) then
-	      comp => complement(c % getSingleCoreGenos(i), c % getHaplotype(i, 2))
+	      geno = c%getSingleCoreGenos(i)
+	      comp = geno%complement(c%getHaplotype(i,2))
+!	      comp = Haplotype(complement(c % getSingleCoreGenos(i), c % getHaplotype(i, 2)))
 
 	      do j = 1, c % getNCoreSnp()
-		if ((comp(j) == 0).or.(comp(j) == 1)) then
-		  call c % setPhase(i, j, 1, comp(j))
+		if ((comp%getPhaseMod(j) == 0).or.(comp%getPhaseMod(j) == 1)) then
+		  call c % setPhase(i, j, 1, comp%getPhaseMod(j))
 		endif
 	      enddo
 
-	      if (fullyPhased(comp)) then
+	      if (comp%fullyPhased()) then
 		call newHaplotype(c, i, 1, library)
 	      end if
-	      
-	      deallocate(comp)
 	    end if
 	  end if
 
@@ -306,13 +316,16 @@ contains
     use Constants
     use CoreDefinition
     use HaplotypeLibraryDefinition
+    use GenotypeModule
+    use HaplotypeModule
 
     type(Core), intent(in) :: c
     integer, intent(in) :: animal, fully
     double precision, intent(in) :: percgenohaplodisagree
     type(HaplotypeLibrary) :: library
 
-    integer(kind = 1), dimension(:), pointer :: comp
+    type(Haplotype) :: comp
+    type(Genotype) :: geno
     integer, dimension(:), pointer :: CandHaps
     integer :: i, ErrorAllow, notfully
 
@@ -321,7 +334,9 @@ contains
 
     ErrorAllow = int(PercGenoHaploDisagree * c % numNotMissing(animal))
 
-    comp => complement(c % getSingleCoreGenos(animal), c % getHaplotype(animal, fully))
+    !comp => complement(c % getSingleCoreGenos(animal), c % getHaplotype(animal, fully))
+    geno = c % getSingleCoreGenos(animal)
+    comp = geno%complement(c % getHaplotype(animal, fully))
     CandHaps => library % matchWithError(comp, ErrorAllow)
 
     if (size(CandHaps, 1) > 1) then
@@ -341,38 +356,19 @@ contains
 
     if (size(CandHaps, 1) == 0) then
       do i = 1, c % getNCoreSnp()
-	if ((comp(i) == 0).or.(comp(i) == 1)) then
-	  call c % setPhase(animal, i, notfully, comp(i))
+	if ((comp%getPhaseMod(i) == 0).or.(comp%getPhaseMod(i) == 1)) then
+	  call c % setPhase(animal, i, notfully, comp%getPhaseMod(i))
 	endif
       enddo
 
-      if (fullyPhased(comp)) then
+      if (comp%fullyPhased()) then
 	call newHaplotype(c, animal, notfully, library)
 
       end if
     endif
     
-    deallocate(comp)
     deallocate(CandHaps)
   end subroutine processComplement
-
-  function complement(genos, haplotype) result (comp)
-    use Constants
-    integer(kind = 1), dimension(:), intent(in) :: genos, haplotype
-    integer(kind = 1), dimension(:), pointer :: comp
-
-    integer :: i
-
-    allocate(comp(size(genos, 1)))
-
-    do i = 1, size(genos, 1)
-      if (genos(i) == MissingGenotypeCode) then
-	comp(i) = 9
-      else
-	comp(i) = genos(i) - haplotype(i)
-      end if
-    end do
-  end function complement
 
   function HapsToCluster(CandPairs) result (ToCluster)
     integer, dimension(:,:), intent(in) :: CandPairs
@@ -462,6 +458,7 @@ contains
   subroutine clusterAndPhase(c, library, CandPairs, animal)
     use CoreDefinition
     use HaplotypeLibraryDefinition
+    use HaplotypeModule
     use Clustering
     use Constants
 
@@ -472,20 +469,25 @@ contains
 
     integer :: nSnp
 
-    integer(kind = 1), dimension (:,:), pointer :: TempHapArray
+    integer(kind = 1), dimension (:,:), allocatable :: TempHapArray
     integer, dimension(:), pointer :: ClusterMember
     integer, dimension(:), pointer :: TempHapVector
     integer :: rounds
 
     integer :: countZero, countOne
 
-    integer :: j, k
+    integer :: i, j, k
+    type(Haplotype) :: hap
 
     nSNp = c % getNCoreSnp()
 
     ! Initialize procedure of k-medoids
     TempHapVector => HapsToCluster(CandPairs)
-    TempHapArray => library % getHaps(TempHapVector)
+    allocate(TempHapArray(size(TempHapVector),nSnp))
+    do i = 1, size(TempHapVector)
+      hap = library%getHap(TempHapVector(i))
+      TempHapArray(i,:) = hap%toIntegerArray()
+    end do
     ClusterMember => initialAssignmentAlternate(size(TempHapVector, 1))
     rounds = cluster(TempHapArray, ClusterMember, 2, nMaxRounds, .false.)
 
@@ -628,13 +630,6 @@ contains
       enddo
     enddo
   end subroutine complementPhaseSnps
-  
-  function fullyPhased(haplotype) result (fully)
-    integer(kind=1), dimension(:), intent(in) :: haplotype
-    logical :: fully
-
-    fully = all((haplotype == 0) .or. (haplotype == 1))
-  end function fullyPhased
   
   function uniquehaps(haps1, haps2) result (uniq)
     integer, dimension(:), intent(in) :: haps1, haps2

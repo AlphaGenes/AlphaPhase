@@ -1,5 +1,6 @@
 module CoreSubsetDefinition
   use CoreDefinition
+  use GenotypeModule
   use PedigreeDefinition
   
   implicit none
@@ -124,7 +125,7 @@ contains
         
     class(CoreSubset), target :: set
     integer, intent(in) :: i
-    integer(kind=1), dimension(:), pointer :: ctGenos
+    type(Genotype), pointer :: ctGenos
     
     ctGenos => set%parentCore%getSingleCoreAndTailGenos(set%sub2full(i))
     
@@ -135,7 +136,7 @@ contains
         
     class(CoreSubset), target :: set
     integer, intent(in) :: i
-    integer(kind=1), dimension(:), pointer :: cGenos
+    type(Genotype), pointer :: cGenos
     
     cGenos => set%parentCore%getSingleCoreGenos(set%sub2full(i))
     
@@ -153,13 +154,14 @@ contains
   function getCoreAndTailGenos(set) result (ctGenos)
         
     class(CoreSubset) :: set
-    integer(kind=1), dimension(:,:), pointer :: ctGenos
+    !integer(kind=1), dimension(:,:), pointer :: ctGenos
+    type(Genotype), dimension(:), pointer :: ctGenos
     integer :: i
 
-    allocate(ctGenos(set%nAnisG,set%parentCore%getNCoreTailSnp()))
+    allocate(ctGenos(set%nAnisG))
     
     do i = 1, set%nAnisG
-      ctGenos(i,:) = set%parentCore%getSingleCoreAndTailGenos(set%sub2full(i))
+      ctGenos(i) = set%parentCore%getSingleCoreAndTailGenos(set%sub2full(i))
     end do
     
     return
@@ -168,13 +170,13 @@ contains
   function getCoreGenos(set) result (cGenos)
         
     class(CoreSubset) :: set
-    integer(kind=1), dimension(:,:), pointer :: cGenos
+    type(Genotype), dimension(:), pointer :: cGenos
     integer :: i
 
-    allocate(cGenos(set%nAnisG,set%parentCore%getNCoreSnp()))
+    allocate(cGenos(set%nAnisG))
     
     do i = 1, set%nAnisG
-      cGenos(i,:) = set%parentCore%getSingleCoreGenos(set%sub2full(i))
+      cGenos(i) = set%parentCore%getSingleCoreGenos(set%sub2full(i))
     end do
     
     return
@@ -200,17 +202,20 @@ contains
   end function getDam
   
   function getYield(set,phase) result (yield)
+    use HaplotypeModule
     class(CoreSubSet) :: set
     integer, intent(in) :: phase
     double precision :: yield
     integer :: counter, i
+    type(Haplotype) :: hap
     
     counter = 0
     
     do i = 1, set%nAnisG
-      counter = count(set%parentCore%getHaplotype(set%sub2full(i),phase) == 0) + counter
-      counter = count(set%parentCore%getHaplotype(set%sub2full(i),phase) == 1) + counter      
+      hap = set%parentCore%getHaplotype(set%sub2full(i),phase)
+      counter = counter + hap%numberNotMissing()
     end do
+    
     yield = (float(counter)/(set%nAnisG * set%parentCore%getNCoreSnp())) * 100
   end function getYield
   

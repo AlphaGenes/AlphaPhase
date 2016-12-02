@@ -16,6 +16,8 @@ program Rlrplhi
   
   use InputOutput
   
+  use HaplotypeModule
+  
   use NRMcode
   
   implicit none
@@ -45,6 +47,8 @@ program Rlrplhi
   type(HaplotypeLibrary) :: globalLibrary
   
   type(Core), allocatable, dimension(:) :: AllCores
+  
+  type(Haplotype) :: hap
   
   !Linux max path length is 4096 which is more than windows or mac (all according to google)
   character(len=4096) :: specfile
@@ -226,8 +230,8 @@ program Rlrplhi
       end if
       c = Core(Phase)
       do i = 1, nAnisG
-	call c%setHaplotype(i,1,Phase(i,:,1))
-	call c%setHaplotype(i,2,Phase(i,:,2))
+	call c%setHaplotype(i,1,Haplotype(Phase(i,:,1)))
+	call c%setHaplotype(i,2,Haplotype(Phase(i,:,2)))
       end do
       library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
       call MakeHapLib(c,library,params%consistent)
@@ -244,8 +248,10 @@ program Rlrplhi
       call WriteOutCore(c, h, CoreIndex(h,1), p, writeSwappable, params)
     else
       do i = 1, size(AllPhase,1)
-	AllPhase(i,startCoreSnp:endCoreSnp,1) = c%getHaplotype(i,1)
-	AllPhase(i,startCoreSnp:endCoreSnp,2) = c%getHaplotype(i,2)
+	hap = c%getHaplotype(i,1)
+	AllPhase(i,startCoreSnp:endCoreSnp,1) = hap%toIntegerArray()
+	hap = c%getHaplotype(i,2)
+	AllPhase(i,startCoreSnp:endCoreSnp,2) = hap%toIntegerArray()
       end do
       AllHapAnis(:,1,h) = c%hapAnis(:,1)
       AllHapAnis(:,2,h) = c%hapAnis(:,2)

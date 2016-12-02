@@ -1,4 +1,5 @@
 module SurrogateDefinition
+  use GenotypeMOdule
   implicit none
   private
 
@@ -33,7 +34,7 @@ contains
     logical, intent(in) :: writeProgress
     type(Surrogate) :: definition
     
-    integer(kind = 1), dimension (:,:), pointer :: genos
+    type(Genotype), dimension (:), pointer :: genos
     
     integer, allocatable, dimension(:,:) :: passThres
     integer, allocatable, dimension(:) :: numPassThres
@@ -49,8 +50,8 @@ contains
     integer, parameter :: SortOrMedoid = 0 !if 1 it uses Brians Sort, If Zero it uses k-medoids
 
 
-    integer :: numsections, overhang, cursection, curpos
-    integer(kind = 8), allocatable, dimension(:,:) :: homo, additional
+!    integer :: numsections, overhang, cursection, curpos
+!    integer(kind = 8), allocatable, dimension(:,:) :: homo, additional
 
     integer :: pass
     
@@ -77,13 +78,13 @@ contains
     allocate(SurrogateList(nAnisG))
     allocate(ProgCount(nAnisG))
 
-    numsections = nSnp / 64 + 1
-    overhang = 64 - (nSnp - (numsections - 1) * 64)
+!    numsections = nSnp / 64 + 1
+!    overhang = 64 - (nSnp - (numsections - 1) * 64)
 
-    allocate(homo(nAnisG, numsections))
-    allocate(additional(nAnisG, numsections))
-    homo = 0
-    additional = 0
+!    allocate(homo(nAnisG, numsections))
+!    allocate(additional(nAnisG, numsections))
+!    homo = 0
+!    additional = 0
 
     !if (allocated(passThres)) then
     !  deallocate(passThres)
@@ -94,33 +95,33 @@ contains
     numPassThres = 0
     passThres = 0
 
-    do i = 1, nAnisG
-      cursection = 1
-      curpos = 1
-
-      do j = 1, nSnp
-	select case (Genos(i, j))
-	case (0)
-	  homo(i, cursection) = ibset(homo(i, cursection), curpos)
-	  !additional(i,cursection) = ibclr(additional(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
-	case (1)
-	  !homo(i,cursection) = ibclr(homo(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
-	  !additional(i,cursection) = ibclr(additional(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
-	case (2)
-	  homo(i, cursection) = ibset(homo(i, cursection), curpos)
-	  additional(i, cursection) = ibset(additional(i, cursection), curpos)
-	case default
-	  !Asuume missing
-	  !homo(i,cursection) = ibclr(homo(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
-	  additional(i, cursection) = ibset(additional(i, cursection), curpos)
-	end select
-	curpos = curpos + 1
-	if (curpos == 65) then
-	  curpos = 1
-	  cursection = cursection + 1
-	end if
-      end do
-    end do
+!    do i = 1, nAnisG
+!      cursection = 1
+!      curpos = 1
+!
+!      do j = 1, nSnp
+!	select case (Genos(i, j))
+!	case (0)
+!	  homo(i, cursection) = ibset(homo(i, cursection), curpos)
+!	  !additional(i,cursection) = ibclr(additional(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
+!	case (1)
+!	  !homo(i,cursection) = ibclr(homo(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
+!	  !additional(i,cursection) = ibclr(additional(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
+!	case (2)
+!	  homo(i, cursection) = ibset(homo(i, cursection), curpos)
+!	  additional(i, cursection) = ibset(additional(i, cursection), curpos)
+!	case default
+!	  !Asuume missing
+!	  !homo(i,cursection) = ibclr(homo(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
+!	  additional(i, cursection) = ibset(additional(i, cursection), curpos)
+!	end select
+!	curpos = curpos + 1
+!	if (curpos == 65) then
+!	  curpos = 1
+!	  cursection = cursection + 1
+!	end if
+!      end do
+!    end do
 !
 !    if (nClusters /= 2) then
 !      print*, "nClusters must equal 2"
@@ -154,8 +155,10 @@ contains
 	Counter = 0
 	nSnpCommon = 0
 
-	Counter = mismatches(homo, additional, i, j, numsections)
-	nSnpCommon = incommon(homo, additional, i, j, numsections, overhang)
+!	Counter = mismatches(homo, additional, i, j, numsections)
+!	nSnpCommon = incommon(homo, additional, i, j, numsections, overhang)
+	Counter = genos(i)%mismatches(genos(j))
+	nSnpCommon = genos(i)%numIncommon(genos(j))
 
 	definition%numoppose(i, j) = Counter
 	definition%numoppose(j, i) = Counter

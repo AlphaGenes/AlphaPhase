@@ -143,6 +143,7 @@ contains
   end function counts 
 
   subroutine Flipper(c, TruePhase)
+    use HaplotypeModule
     !! This needs a new home
     use CoreDefinition
 
@@ -150,15 +151,12 @@ contains
     integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase
 
     integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth
-    integer(kind = 1), allocatable, dimension(:) :: W1, W2
+    type(Haplotype) :: W1, W2
 
     integer :: nAnisG, nSnp
 
     nAnisG = c%getNAnisG()
     nSnp = c%getNCoreSnp()
-
-    allocate(W1(nSnp))
-    allocate(W2(nSnp))
 
     do i = 1, nAnisG
       CountAgreeStay1 = 0
@@ -175,8 +173,8 @@ contains
       if ((CountAgreeSwitch2 > CountAgreeStay2).and.(CountAgreeStay1 <= CountAgreeSwitch1)) truth = 1
       if ((CountAgreeSwitch1 > CountAgreeStay1).and.(CountAgreeStay2 <= CountAgreeSwitch2)) truth = 1
       if (truth == 1) then
-	W1(:) = c%getHaplotype(i,1)
-	W2(:) = c%getHaplotype(i,2)
+	W1 = c%getHaplotype(i,1)
+	W2 = c%getHaplotype(i,2)
 	call c%setHaplotype(i,1,W2)
 	call c%setHaplotype(i,2,W1)
       end if

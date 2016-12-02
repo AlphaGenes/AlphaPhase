@@ -1,5 +1,6 @@
 module CoreDefinition
   use Constants
+  use GenotypeModule
   use HaplotypeModule
   implicit none
   private
@@ -7,6 +8,8 @@ module CoreDefinition
   type, public :: Core
     private
     integer(kind = 1), allocatable, dimension(:,:) :: genos
+    type(Genotype), allocatable, dimension(:) :: coreAndTailGenos
+    type(Genotype), allocatable, dimension(:) :: coreGenos
     type(Haplotype), allocatable, dimension(:,:) :: phase
     logical, allocatable, dimension(:,:) :: fullyPhased
     integer, dimension(:,:), allocatable, public :: hapAnis
@@ -75,8 +78,12 @@ contains
     nCoreSnp = endCoreSnp - startCoreSnp + 1
     
     allocate(c%genos(nAnisG,nSnp))
+    allocate(c%coreAndTailGenos(nAnisG))
+    allocate(c%coreGenos(nAnisG))
     allocate(c%phase(nAnisG,2))
     do i = 1, nAnisG
+      c%coreGenos(i) = Genotype(genos(i,startCoreSnp:endCoreSnp))
+      c%coreAndTailGenos(i) = Genotype(genos(i,1:endSurrSnp))
       c%phase(i,1) = Haplotype(nCoreSnp)
       c%phase(i,2) = Haplotype(nCoreSnp)
     end do
@@ -160,6 +167,7 @@ contains
     type(Core) :: c
     
     if (allocated(c%genos)) then
+      deallocate(c%coreAndTailGenos)
       deallocate(c%genos)
       deallocate(c%phase)
       deallocate(c%fullyPhased)
@@ -170,13 +178,16 @@ contains
   function getCoreAndTailGenos(c) result (ctGenos)
         
     class(Core), target :: c
-    integer(kind=1), dimension(:,:), pointer :: ctGenos
+!    integer(kind=1), dimension(:,:), pointer :: ctGenos
+    type(Genotype), dimension(:), pointer :: ctGenos
     
     !allocate(ctGenos(size(c%genos,1),size(c%genos,2)))
-    allocate(ctGenos(size(c%genos,1),c%endSurrSnp))
+!    allocate(ctGenos(size(c%genos,1),c%endSurrSnp))
     
     !ctGenos = c%genos
-    ctGenos = c%genos(:,1:c%endSurrSnp)
+!    ctGenos = c%genos(:,1:c%endSurrSnp)
+    
+    ctGenos => c%coreAndTailGenos
     
     return
   end function getCoreAndTailGenos
@@ -185,13 +196,14 @@ contains
         
     class(Core), target :: c
     integer, intent(in) :: i
-    integer(kind=1), dimension(:), pointer :: ctGenos
+    !integer(kind=1), dimension(:), pointer :: ctGenos
+    type(Genotype), pointer :: ctGenos
     
     !allocate(ctGenos(size(c%genos,1),size(c%genos,2)))
     !allocate(ctGenos(c%endSurrSnp))
     
     !ctGenos = c%genos
-    ctGenos => c%genos(i,1:c%endSurrSnp)
+    ctGenos => c%coreAndTailGenos(i)
     
     return
   end function getSingleCoreAndTailGenos
@@ -200,11 +212,13 @@ contains
         
     class(Core), target :: c
     integer, intent(in) :: i
-    integer(kind=1), dimension(:), pointer :: cGenos
+    !integer(kind=1), dimension(:), pointer :: cGenos
+    type(Genotype), pointer :: cGenos
     
     !allocate(cGenos(c%endCoreSnp - c%startCoreSnp+1))
     
-    cGenos => c%genos(i,c%startCoreSnp:c%endCoreSnp)
+    !cGenos => c%genos(i,c%startCoreSnp:c%endCoreSnp)
+    cGenos => c%coreGenos(i)
     
     return
   end function getSingleCoreGenos
@@ -290,18 +304,17 @@ contains
   function getHaplotype(c,animal, phase) result(haplotype)
     class(Core) :: c
     integer, intent(in) :: animal, phase
-    integer(kind=1), dimension(:), allocatable :: haplotype
+    type(Haplotype) :: haplotype
     
-    allocate(haplotype(c%endCoreSnp - c%startCoreSnp + 1))
-    haplotype = c%phase(animal,phase)%toIntegerArray()
+    haplotype = c%phase(animal,phase)
   end function getHaplotype
   
   subroutine setHaplotype(c, animal, phase, hap)
     class(Core) :: c 
     integer, intent(in) :: animal, phase
-    integer(kind=1), dimension(:) :: hap
+    type(Haplotype) :: hap
     
-    c%phase(animal,phase) = Haplotype(hap)
+    c%phase(animal,phase) = hap
   end subroutine setHaplotype
   
   subroutine setHaplotypeToUnphased(c, animal, phase)

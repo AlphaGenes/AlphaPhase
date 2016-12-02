@@ -111,12 +111,14 @@ contains
   end subroutine createRandomOrder
   
   subroutine createCluster(manager, c, number, numIter)
+    use GenotypeModule
     class(MemberManager) :: manager
     class(Core), intent(in), target :: c
     integer, intent(in) :: number, numIter
     
     logical, dimension(c%getNAnisG()) :: used
     integer :: nAnisG, numUsed, curMax, curOrder, seed, i, curIndiv, curSize
+    type(Genotype) :: g1, g2
     
     manager%c => c
     
@@ -145,7 +147,10 @@ contains
       curIndiv = 1
       do while ((curSize < number) .and. (numUsed < nAnisG))
 	if (.not. used(curIndiv)) then
-	  if (dist(c%getSingleCoreAndTailGenos(seed),c%getSingleCoreAndTailGenos(curIndiv)) <= curMax) then
+	  !! HACK !!
+	  g1 = c%getSingleCoreAndTailGenos(seed)
+	  g2 = c%getSingleCoreAndTailGenos(curIndiv)
+	  if (dist(g1%toIntegerArray(),g2%toIntegerArray()) <= curMax) then
 	    used(curIndiv) = .true.
 	    curOrder = curOrder + 1
 	    manager%order(curOrder) = curIndiv

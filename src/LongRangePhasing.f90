@@ -7,13 +7,14 @@ contains
   subroutine Erdos(surrogates, c, numsurrdisagree, useSurrsN, printProgress)
     use SurrogateDefinition
     use CoreSubsetDefinition
+    use GenotypeModule
     
     type(Surrogate), intent(in) :: surrogates
     type(CoreSubSet) :: c
     integer, intent(in) :: numsurrdisagree, useSurrsN
     logical, intent(in) :: printProgress
 
-    integer(kind=1), dimension(:,:), pointer :: genos
+    type(Genotype), dimension(:), pointer :: genos
     integer, dimension(:,:), allocatable :: surrList
     integer, dimension(:), allocatable :: nSurrList
     integer :: nAnisG, nSnp
@@ -105,11 +106,11 @@ contains
 	    visiting = 1
 
 	    !!! FUDGES !!!
-	    if (genos(i,j) == 0) then
+	    if (genos(i)%getGenotype(j) == 0) then
 	      AlleleCount(1) = AlleleCount(1) + 1
 	      found = found + 1
 	    end if
-	    if (genos(i,j) == 2) then
+	    if (genos(i)%getGenotype(j) == 2) then
 	      AlleleCount(2) = AlleleCount(2) + 1
 	      found = found + 1
 	    end if
@@ -122,7 +123,7 @@ contains
 		next = surrList(current,k)
 		if (goodToVisit(next, depth, side, surrogates, visited,  &
 		  toVisit, visiting, SurrAveDiff)) then
-		  select case (Genos(next, j))
+		  select case (Genos(next)%getGenotype(j))
 		    case (0)
 		      if (mod(depth(Visiting) + 1, 2) == 0) then
 			AlleleCount(2) = AlleleCount(2) + 1
@@ -257,12 +258,13 @@ contains
   subroutine CheckCompatHapGeno(c, PercGenoHaploDisagree, printProgress)
     use Constants
     use CoreSubsetDefinition
+    use GenotypeModule
     
     class(CoreSubset) :: c
     double precision, intent(in) :: PercGenoHaploDisagree
     logical, intent(in) :: printProgress
 
-    integer(kind=1), dimension(:,:), pointer :: genos
+    type(Genotype), dimension(:), pointer :: genos
 
     integer :: i, j, CountError, ErrorAllow, counterMissing, nAnisG, nCoreSnp
 
@@ -279,21 +281,22 @@ contains
       do j = 1, nCoreSnp
 	if ((c%getPhase(i, j, 1) /= MissingPhaseCode).and.(c%getPhase(i, j, 2) /= MissingPhaseCode)) then
 	  counterMissing = counterMissing + 1
-	  if ((Genos(i, j) /= MissingGenotypeCode).and.(c%getPhaseGeno(i,j)  /= Genos(i, j))) CountError = CountError + 1
+	  if ((Genos(i)%getGenotype(j) /= MissingGenotypeCode).and.(c%getPhaseGeno(i,j)  /= Genos(i)%getGenotype(j))) CountError = CountError + 1
 	end if
       end do
       ErrorAllow = int(PercGenoHaploDisagree * counterMissing)
       if (CountError >= ErrorAllow) then
 	do j = 1, nCoreSnp
-	  if (Genos(i, j) /= MissingGenotypeCode) then
-	    if ((c%getPhase(i, j, 1) /= MissingPhaseCode).and.(c%getPhase(i, j, 2) /= MissingPhaseCode).and.(c%getPhaseGeno(i, j) /= Genos(i, j))) then
-	      if (Genos(i, j) == 1) call c%setPhase(i, j, 2, MissingPhaseCode)
-	      if (Genos(i, j) == MissingGenotypeCode) call c%setPhase(i, j, 2, MissingPhaseCode)
-	      if (Genos(i, j) == 0) then
+	  if (Genos(i)%getGenotype(j) /= MissingGenotypeCode) then
+	    if ((c%getPhase(i, j, 1) /= MissingPhaseCode).and.(c%getPhase(i, j, 2) /= MissingPhaseCode).and. &
+	      (c%getPhaseGeno(i, j) /= Genos(i)%getGenotype(j))) then
+	      if (Genos(i)%getGenotype(j) == 1) call c%setPhase(i, j, 2, MissingPhaseCode)
+	      if (Genos(i)%getGenotype(j) == MissingGenotypeCode) call c%setPhase(i, j, 2, MissingPhaseCode)
+	      if (Genos(i)%getGenotype(j) == 0) then
 		call c%setPhase(i, j, 1, 0)
 		call c%setPhase(i, j, 2, 0)
 	      end if
-	      if (Genos(i, j) == 2) then
+	      if (Genos(i)%getGenotype(j) == 2) then
 		call c%setPhase(i, j, 1, 1)
 		call c%setPhase(i, j, 2, 1)
 	      end if

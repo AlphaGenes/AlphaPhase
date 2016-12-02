@@ -15,6 +15,7 @@ contains
     use PedigreeDefinition
     use CoreDefinition
     use ParametersDefinition
+    use HaplotypeModule
     
     type(Core), dimension(:), intent(in) :: allCores
     integer, dimension(:,:), intent(in) :: coreIndex
@@ -29,6 +30,8 @@ contains
     double precision, allocatable, dimension(:) :: CoreCount
     integer(kind=1), allocatable, dimension(:) :: TempSwap
     character(len=100) :: fmt
+    
+    type(Haplotype) :: hap
 
     nAnisG = allCores(1)%getNAnisG()
     nCores = size(allCores)
@@ -43,12 +46,14 @@ contains
       write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
       do i = 1, nAnisG
 	do j = 1, nCores
-	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = allCores(j)%getHaplotype(i,1)
+	  hap = allCores(j)%getHaplotype(i,1)
+	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap%toIntegerArray()
 	end do
 	write(15, fmt) p%getId(i), &
 	TempPhase
 	do j = 1, nCores
-	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = allCores(j)%getHaplotype(i,2)
+	  hap = allCores(j)%getHaplotype(i,2)
+	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap%toIntegerArray()
 	end do
 	write(15, fmt) p%getId(i), &
 	TempPhase
