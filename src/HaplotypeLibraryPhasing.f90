@@ -7,6 +7,7 @@ module HaplotypeLibraryPhasing
 contains
   subroutine MakeHapLib(c, library, consistent)
     use HaplotypeLibraryDefinition
+    use HaplotypeModule
     use CoreDefinition
     use Random
     
@@ -15,7 +16,7 @@ contains
     type(HaplotypeLibrary), intent(in) :: library
 
     integer :: i, id
-
+    
     do i = 1, c % getNAnisG()
       !Paternal Haps
       if (fullyPhased(c % getHaplotype(i, 1))) then
@@ -32,7 +33,7 @@ contains
 	call c % setHapAnis(i, 2, id)
       endif
     enddo
-
+    
   end subroutine MakeHapLib
 
   subroutine ImputeFromLib(library, c, nGlobalHapsIter, PercGenoHaploDisagree, minHapFreq, consistent)
@@ -313,7 +314,7 @@ contains
 
     integer(kind = 1), dimension(:), pointer :: comp
     integer, dimension(:), pointer :: CandHaps
-    integer :: i, ErrorAllow, id, notfully
+    integer :: i, ErrorAllow, notfully
 
     ! Maps 1 -> 2 and 2 -> 1
     notfully = 3 - fully
@@ -346,9 +347,7 @@ contains
       enddo
 
       if (fullyPhased(comp)) then
-	id = library % matchAddHap(c % getHaplotype(animal, notfully))
-	call c % setHapAnis(animal, notfully, id)
-	call c % setFullyPhased(animal, notfully)
+	call newHaplotype(c, animal, notfully, library)
 
       end if
     endif
@@ -445,6 +444,7 @@ contains
   end subroutine matchedHaplotype
 
   subroutine newHaplotype(c, animal, phase, library)
+    use HaplotypeModule
     use CoreDefinition
     use HaplotypeLibraryDefinition
 

@@ -51,12 +51,12 @@ contains
     integer, intent(in) :: chipID
     
     type(Core) :: c
-    
-    if (ch%numChips == 1) then
+!    
+!    if (ch%numChips == 1) then
       c = orig
-    else
-      c = Core(orig,ch%getAnimals(chipID),ch%getSNPs(chipID))
-    end if
+!    else
+!      c = Core(orig,ch%getAnimals(chipID),ch%getSNPs(chipID))
+!    end if
   end function getChipCore
   
   function getAnimals(c,chipID) result(animals)

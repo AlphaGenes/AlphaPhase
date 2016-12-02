@@ -243,7 +243,10 @@ program Rlrplhi
     if (params%readCoreAtTime .or. .not. combine) then
       call WriteOutCore(c, h, CoreIndex(h,1), p, writeSwappable, params)
     else
-      AllPhase(:,startCoreSnp:endCoreSnp,:) = c%getAllPhase()
+      do i = 1, size(AllPhase,1)
+	AllPhase(i,startCoreSnp:endCoreSnp,1) = c%getHaplotype(i,1)
+	AllPhase(i,startCoreSnp:endCoreSnp,2) = c%getHaplotype(i,2)
+      end do
       AllHapAnis(:,1,h) = c%hapAnis(:,1)
       AllHapAnis(:,2,h) = c%hapAnis(:,2)
 

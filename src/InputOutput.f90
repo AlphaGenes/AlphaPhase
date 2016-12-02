@@ -1,16 +1,6 @@
-
-
-#IFDEF OS_UNIX
 #DEFINE SEP "/"
 #DEFINE MKDIR "mkdir "
 #DEFINE RMDIR "rm -r "
-
-#else
-#DEFINE SEP "\"
-#DEFINE MKDIR "md "
-#DEFINE RMDIR "RMDIR /S /Q"
-
-#endif
 
 module InputOutput
   implicit none
