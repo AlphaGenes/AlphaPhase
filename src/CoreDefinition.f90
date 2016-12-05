@@ -7,9 +7,9 @@ module CoreDefinition
 
   type, public :: Core
     private
-    type(Genotype), allocatable, dimension(:) :: coreAndTailGenos
-    type(Genotype), allocatable, dimension(:) :: coreGenos
-    type(Haplotype), allocatable, dimension(:,:) :: phase
+    type(Genotype), dimension(:), pointer :: coreAndTailGenos
+    type(Genotype), dimension(:), pointer :: coreGenos
+    type(Haplotype), dimension(:,:), pointer :: phase
     logical, allocatable, dimension(:,:) :: fullyPhased
     integer, dimension(:,:), allocatable, public :: hapAnis
     
@@ -22,13 +22,10 @@ module CoreDefinition
     procedure, public :: getCoreAndTailGenos
     procedure, public :: getSingleCoreAndTailGenos
     procedure, public :: getSingleCoreGenos
-    procedure, public :: setPhase
     procedure, public :: getNAnisG
     procedure, public :: getNSnp
     procedure, public :: getNCoreSnp
     procedure, public :: getNCoreTailSnp
-    procedure, public :: getPhase
-    procedure, public :: getPhaseGeno
     procedure, public :: getYield
     procedure, public :: getTotalYield
     procedure, public :: getHaplotype
@@ -42,9 +39,7 @@ module CoreDefinition
     procedure, public :: setHapAnis
     procedure, public :: getHapAnis
     procedure, public :: getBothFullyPhased
-    procedure, public :: getCoreGeno
-    procedure, public :: numNotMissing
-    procedure, public :: hapNumMissing
+    procedure, public :: getCoreGenos
     
     procedure, public :: setSwappable
     procedure, public :: getSwappable
@@ -159,9 +154,6 @@ contains
     type(Core) :: c
     
     if (allocated(c%coreGenos)) then
-      deallocate(c%coreAndTailGenos)
-      deallocate(c%coreGenos)
-      deallocate(c%phase)
       deallocate(c%fullyPhased)
       deallocate(c%hapAnis)
     end if
@@ -199,15 +191,6 @@ contains
     return
   end function getSingleCoreGenos
   
-  subroutine setPhase(c, animal, snp, phase, val)
-        
-    class(Core) :: c
-    integer, intent(in) :: animal, snp, phase
-    integer(kind=1) :: val
-    
-    call c%phase(animal,phase)%setPhaseMod(snp, val)
-  end subroutine setPhase
-  
   function getNAnisG(c) result(num)
     class(Core) :: c
     integer :: num
@@ -235,22 +218,6 @@ contains
     
     num = c%nCoreAndTailSnps
   end function getNCoreTailSnp
-  
-  function getPhase(c,animal,snp,phase) result(p)
-    class(Core) :: c
-    integer, intent(in) :: animal, snp, phase
-    integer(kind=1) :: p
-    
-    p = c%phase(animal,phase)%getPhaseMod(snp)
-  end function getPhase
-  
-  function getPhaseGeno(c,animal,snp) result (p)
-    class(Core) :: c
-    integer, intent(in) :: animal, snp
-    integer(kind=1) :: p
-    
-    p = c%phase(animal,1)%getPhaseMod(snp) + c%phase(animal,2)%getPhaseMod(snp)
-  end function getPhaseGeno
   
   function getYield(c,phase) result (yield)
     class(Core) :: c
@@ -280,9 +247,9 @@ contains
   function getHaplotype(c,animal, phase) result(haplotype)
     class(Core) :: c
     integer, intent(in) :: animal, phase
-    type(Haplotype) :: haplotype
+    type(Haplotype), pointer :: haplotype
     
-    haplotype = c%phase(animal,phase)
+    haplotype => c%phase(animal,phase)
   end function getHaplotype
   
   subroutine setHaplotype(c, animal, phase, hap)
@@ -358,34 +325,6 @@ contains
     id = c%hapAnis(animal,phase)
   end function getHapAnis
   
-  function getCoreGeno(c,animal,snp) result(geno)
-    class(Core) :: c
-    integer, intent(in) :: animal,snp
-    integer(kind = 1) :: geno
-    
-    geno = c%CoreGenos(animal)%getGenotype(snp)
-  end function getCoreGeno
-  
-  function numNotMissing(c, animal) result(num)
-    use Constants
-    
-    class(Core) :: c
-    integer, intent(in) :: animal
-    integer :: num
-    
-    num = c%coreGenos(animal)%numNotMissing()
-  end function numNotMissing
-  
-  function hapNumMissing(c, animal, phase) result(num)
-    use Constants
-    
-    class(Core) :: c
-    integer, intent(in) :: animal, phase
-    integer :: num
-    
-    num = c%phase(animal,phase)%numberMissing()
-  end function hapNumMissing
-  
   subroutine setSwappable(c, animal, val)
     class(Core) :: c
     integer, intent(in) :: animal
@@ -409,6 +348,15 @@ contains
     
     g = c%coreAndTailGenos(animal)%getGenotype(snp)
   end function getGeno
+  
+  function getCoreGenos(c,animal) result(g)
+    class(Core), intent(in) :: c
+    integer, intent(in) :: animal
+    
+    type(Genotype), pointer :: g
+    
+    g => c%coreGenos(animal)
+  end function getCoreGenos
     
 end module CoreDefinition
 

@@ -8,6 +8,7 @@ contains
     use SurrogateDefinition
     use CoreSubsetDefinition
     use GenotypeModule
+    use HaplotypeModule
     
     type(Surrogate), intent(in) :: surrogates
     type(CoreSubSet) :: c
@@ -30,6 +31,7 @@ contains
     integer(kind=1) :: iAllele
     integer :: current
     integer :: highestErdos
+    type(Haplotype), pointer :: hap
 
     nAnisG = c%getNAnisG()
     nSnp = c%getNCoreSnp()
@@ -91,8 +93,9 @@ contains
 	if ((mod(i, 400) == 0) .and. printProgress) then
 	  print*, "   Phasing done for genotyped individual --- ", i
 	end if
+	hap => c%getHaplotype(i, side)
 	do j = 1, nSnp
-	  if (c%getPhase(i, j, side) == MissingPhaseCode) then
+	  if (hap%getPhaseMod(j) == MissingPhaseCode) then
 	    visited = .false.
 	    toVisit = 0
 	    toVisit(1) = i
@@ -169,7 +172,7 @@ contains
 		iAllele = 1
 	      end if
 	    endif
-	    call c%setPhase(i, j, side, iAllele)
+	    call hap%setPhaseMod(j, iAllele)
 	    ! +1 as we use the genotypes at one depth lower than we're currently visiting (slightly odd but maintains consistency
 	    ! with old version).  See discussion about odd depth first search above (when it's written!)
 	    if (depth(visiting - 1) + 1 > highestErdos) then
@@ -259,46 +262,54 @@ contains
     use Constants
     use CoreSubsetDefinition
     use GenotypeModule
+    use HaplotypeModule
     
     class(CoreSubset) :: c
     double precision, intent(in) :: PercGenoHaploDisagree
     logical, intent(in) :: printProgress
 
-    type(Genotype), dimension(:), pointer :: genos
+    type(Genotype), pointer :: genos
+    type(Haplotype), pointer :: hap1, hap2
 
     integer :: i, j, CountError, ErrorAllow, counterMissing, nAnisG, nCoreSnp
 
     nAnisG  = c%getNAnisG()
     nCoreSnp = c%getNCoreSnp()
 
-    genos => c%getCoreGenos()
+    !genos => c%getCoreGenos()
 
     ErrorAllow = int(PercGenoHaploDisagree * nCoreSnp)
 
     do i = 1, nAnisG
       CountError = 0
       counterMissing = 0
+      hap1 => c%getHaplotype(i,1)
+      hap2 => c%getHaplotype(i,2)
+      genos => c%getSingleCoreGenos(i)
       do j = 1, nCoreSnp
-	if ((c%getPhase(i, j, 1) /= MissingPhaseCode).and.(c%getPhase(i, j, 2) /= MissingPhaseCode)) then
+	if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode)) then
 	  counterMissing = counterMissing + 1
-	  if ((Genos(i)%getGenotype(j) /= MissingGenotypeCode).and.(c%getPhaseGeno(i,j)  /= Genos(i)%getGenotype(j))) CountError = CountError + 1
+	  if ((genos%getGenotype(j) /= MissingGenotypeCode).and. &
+	  ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= genos%getGenotype(j))) then
+	    CountError = CountError + 1
+	end if
 	end if
       end do
       ErrorAllow = int(PercGenoHaploDisagree * counterMissing)
       if (CountError >= ErrorAllow) then
 	do j = 1, nCoreSnp
-	  if (Genos(i)%getGenotype(j) /= MissingGenotypeCode) then
-	    if ((c%getPhase(i, j, 1) /= MissingPhaseCode).and.(c%getPhase(i, j, 2) /= MissingPhaseCode).and. &
-	      (c%getPhaseGeno(i, j) /= Genos(i)%getGenotype(j))) then
-	      if (Genos(i)%getGenotype(j) == 1) call c%setPhase(i, j, 2, MissingPhaseCode)
-	      if (Genos(i)%getGenotype(j) == MissingGenotypeCode) call c%setPhase(i, j, 2, MissingPhaseCode)
-	      if (Genos(i)%getGenotype(j) == 0) then
-		call c%setPhase(i, j, 1, 0)
-		call c%setPhase(i, j, 2, 0)
+	  if (genos%getGenotype(j) /= MissingGenotypeCode) then
+	    if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode).and. &
+	      ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= Genos%getGenotype(j))) then
+	      if (Genos%getGenotype(j) == 1) call hap2%setPhaseMod(j, MissingPhaseCode)
+	      if (Genos%getGenotype(j) == MissingGenotypeCode) call hap2%setPhaseMod(j, MissingPhaseCode)
+	      if (Genos%getGenotype(j) == 0) then
+		call hap1%setPhaseMod(j, 0)
+		call hap2%setPhaseMod(j, 0)
 	      end if
-	      if (Genos(i)%getGenotype(j) == 2) then
-		call c%setPhase(i, j, 1, 1)
-		call c%setPhase(i, j, 2, 1)
+	      if (Genos%getGenotype(j) == 2) then
+		call hap1%setPhaseMod(j, 1)
+		call hap2%setPhaseMod(j, 1)
 	      end if
 	    endif
 	  endif
@@ -314,8 +325,6 @@ contains
       write (*, '(a3,f6.2,a45)') "  ", c%getYield(2), "% was the Maternal allele yield for this core"
     end if
     
-    deallocate(genos)
-
   end subroutine CheckCompatHapGeno
 
 end module LongRangePhasing

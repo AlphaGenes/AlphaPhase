@@ -68,7 +68,8 @@ contains
     type(Haplotype) :: comp
     integer, pointer, dimension(:) :: CandHapsPat, CandHapsMat, AllCandHapsMat, CandHaps, matches
     
-    type(Genotype) :: geno
+    type(Genotype), pointer :: geno
+    type(Haplotype), pointer :: hap1, hap2
 
     logical :: singlePat, singleMat
 
@@ -85,7 +86,10 @@ contains
       nHapsOld = library % getSize()
 
       do i = 1, c % getNAnisG()
-	ErrorAllow = int(PercGenoHaploDisagree * c % numNotMissing(i))
+	geno => c%getSingleCoreGenos(i)
+	hap1 => c%getHaplotype(i,1)
+	hap2 => c%getHaplotype(i,2)
+	ErrorAllow = int(PercGenoHaploDisagree * geno % numNotMissing())
 
 	! If only one of the gametes is completely phased (Section Step 2e.i Hickey et al. 2011): PATERNAL HAPLOTYPE
 	if (c % getFullyPhased(i, 1) .and. (.not.c % getFullyPhased(i, 2))) then
@@ -109,7 +113,7 @@ contains
 	      compatHaps(k) = k
 	    end do
 	  else
-	    compatHaps => library % getCompatHapsFreq(c % getSingleCoreGenos(i),minHapFreq, PercGenoHaploDisagree)
+	    compatHaps => library % getCompatHapsFreq(geno,minHapFreq, PercGenoHaploDisagree)
 	  end if
 
 	  CandHapsPat => library % limitedMatchWithError(c % getHaplotype(i, 1), ErrorAllow, compatHaps)
@@ -133,7 +137,6 @@ contains
 	  !! paternal even if it's not compitable with the mat.  May be checked later.
 	  if ((size(CandHapsMat, 1) == 1).AND.(size(CandHapsPat, 1) > 0)) then
 !	    comp = Haplotype(complement(c % getSingleCoreGenos(i), library % getHap(HapM)))
-	    geno = c%getSingleCoreGenos(i)
 	    comp = geno%complement(library%getHap(HapM))
 	    matches => library % limitedMatchWithError(comp, ErrorAllow, CandHapsPat)
 	    if (size(matches) == 1) then
@@ -148,8 +151,6 @@ contains
 	    HapM = 0
 
 !	    comp = Haplotype(complement(c % getSingleCoreGenos(i), library % getHap(HapP)))
-	    geno = c%getSingleCoreGenos(i)
-	    comp = geno%complement(library%getHap(HapP))
 	    matches => library % limitedMatchWithError(comp, ErrorAllow, CandHapsMat)
 	    if (size(matches) == 1) then
 	      HapM = matches(1)
@@ -170,13 +171,12 @@ contains
 	    ! If no haplotype has been found for the maternal gamete, or 
 	    ! there are more than one maternal candidate haplotype
 	    if (HapM == 0) then
-	      geno = c%getSingleCoreGenos(i)
 	      comp = geno%complement(c%getHaplotype(i,1))
 !	      comp = Haplotype(complement(c % getSingleCoreGenos(i), c % getHaplotype(i, 1)))
 
 	      do j = 1, c % getNCoreSnp()
-		if ((comp.getPhaseMod(j) == 0).or.(comp.getPhaseMod(j) == 1)) then
-		  call c % setPhase(i, j, 2, comp.getPhaseMod(j))
+		if ((comp%getPhaseMod(j) == 0).or.(comp%getPhaseMod(j) == 1)) then
+		  call hap2 % setPhaseMod(j, comp%getPhaseMod(j))
 		endif
 	      enddo
 
@@ -199,13 +199,12 @@ contains
 	    ! If no haplotype has been found for the paternal gamete, or 
 	    ! there are more than one paternal candidate haplotype
 	    if (HapP == 0) then
-	      geno = c%getSingleCoreGenos(i)
 	      comp = geno%complement(c%getHaplotype(i,2))
 !	      comp = Haplotype(complement(c % getSingleCoreGenos(i), c % getHaplotype(i, 2)))
 
 	      do j = 1, c % getNCoreSnp()
 		if ((comp%getPhaseMod(j) == 0).or.(comp%getPhaseMod(j) == 1)) then
-		  call c % setPhase(i, j, 1, comp%getPhaseMod(j))
+		  call hap1 % setPhaseMod(j, comp%getPhaseMod(j))
 		endif
 	      enddo
 
@@ -242,7 +241,7 @@ contains
 		! (Step 2e.ii.B)
 		do j = 1, c % getNCoreSnp()
 		  if (agree(CandPairs(:, 2), library, j)) then
-		    call c % setPhase(i, j, 2, library % getPhase(CandPairs(1, 2), j))
+		    call hap2 % setPhaseMod(j, library % getPhase(CandPairs(1, 2), j))
 		  end if
 		end do
 		call c%setSwappable(i, 1)
@@ -260,7 +259,7 @@ contains
 		! (Step 2e.ii.C)
 		do j = 1, c % getNCoreSnp()
 		  if (agree(CandPairs(:, 1), library, j)) then
-		    call c % setPhase(i, j, 1, library % getPhase(CandPairs(1, 1), j))
+		    call hap1 % setPhaseMod(j, library % getPhase(CandPairs(1, 1), j))
 		  endif
 		enddo
 		call c%setSwappable(i, 2)
@@ -325,6 +324,7 @@ contains
     type(HaplotypeLibrary) :: library
 
     type(Haplotype) :: comp
+    type(Haplotype), pointer :: hap
     type(Genotype) :: geno
     integer, dimension(:), pointer :: CandHaps
     integer :: i, ErrorAllow, notfully
@@ -332,17 +332,17 @@ contains
     ! Maps 1 -> 2 and 2 -> 1
     notfully = 3 - fully
 
-    ErrorAllow = int(PercGenoHaploDisagree * c % numNotMissing(animal))
-
-    !comp => complement(c % getSingleCoreGenos(animal), c % getHaplotype(animal, fully))
     geno = c % getSingleCoreGenos(animal)
+    ErrorAllow = int(PercGenoHaploDisagree * geno % numNotMissing())
     comp = geno%complement(c % getHaplotype(animal, fully))
     CandHaps => library % matchWithError(comp, ErrorAllow)
+    
+    hap => c%getHaplotype(animal, notfully)
 
     if (size(CandHaps, 1) > 1) then
       do i = 1, c % getNCoreSnp()
 	if (agree(CandHaps, library, i)) then
-	  call c % setPhase(animal, i, notfully, library % getPhase(CandHaps(1), i))
+	  call hap % setPhaseMod(i, library % getPhase(CandHaps(1), i))
 	end if
       end do
     endif
@@ -357,7 +357,7 @@ contains
     if (size(CandHaps, 1) == 0) then
       do i = 1, c % getNCoreSnp()
 	if ((comp%getPhaseMod(i) == 0).or.(comp%getPhaseMod(i) == 1)) then
-	  call c % setPhase(animal, i, notfully, comp%getPhaseMod(i))
+	  call hap % setPhaseMod(i, comp%getPhaseMod(i))
 	endif
       enddo
 
@@ -459,6 +459,7 @@ contains
     use CoreDefinition
     use HaplotypeLibraryDefinition
     use HaplotypeModule
+    use GenotypeModule
     use Clustering
     use Constants
 
@@ -477,16 +478,23 @@ contains
     integer :: countZero, countOne
 
     integer :: i, j, k
-    type(Haplotype) :: hap
+    type(Haplotype) :: h
+    type(Haplotype), pointer :: hap1, hap2
+    type(Genotype) :: geno
+    integer(kind=1) :: g
 
     nSNp = c % getNCoreSnp()
+    
+    geno = c%getCoreGenos(animal)
+    hap1 => c%getHaplotype(animal,1)
+    hap2 => c%getHaplotype(animal,2)
 
     ! Initialize procedure of k-medoids
     TempHapVector => HapsToCluster(CandPairs)
     allocate(TempHapArray(size(TempHapVector),nSnp))
     do i = 1, size(TempHapVector)
-      hap = library%getHap(TempHapVector(i))
-      TempHapArray(i,:) = hap%toIntegerArray()
+      h = library%getHap(TempHapVector(i))
+      TempHapArray(i,:) = h%toIntegerArray()
     end do
     ClusterMember => initialAssignmentAlternate(size(TempHapVector, 1))
     rounds = cluster(TempHapArray, ClusterMember, 2, nMaxRounds, .false.)
@@ -502,13 +510,14 @@ contains
 	call c % setHaplotypeToUnphased(animal, 1)
 	call c % setHaplotypeToUnphased(animal, 2)
 	do j = 1, nSnp
-	  if (c % getCoreGeno(animal, j) == 0) then
-	    call c % setPhase(animal, j, 1, 0)
-	    call c % setPhase(animal, j, 2, 0)
+	  g = geno%getGenotype(j)
+	  if (g == 0) then
+	    call hap1%setPhaseMod(j, 0)
+	    call hap2%setPhaseMod(j, 0)
 	  end if
-	  if (c % getCoreGeno(animal, j) == 2) then
-	    call c % setPhase(animal, j, 1, 1)
-	    call c % setPhase(animal, j, 2, 1)
+	  if (g == 2) then
+	    call hap1%setPhaseMod(j, 1)
+	    call hap2%setPhaseMod(j, 1)
 	  end if
 	  CountZero = 0
 	  CountOne = 0
@@ -520,8 +529,8 @@ contains
 	      CountOne = CountOne + 1
 	    endif
 	  end do
-	  if ((CountZero == 0).and.(CountOne > 0)) call c % setPhase(animal, j, 2, 1)
-	  if ((CountZero > 0).and.(CountOne == 0)) call c % setPhase(animal, j, 2, 0)
+	  if ((CountZero == 0).and.(CountOne > 0)) call hap2 % setPhaseMod(j, 1)
+	  if ((CountZero > 0).and.(CountOne == 0)) call hap2 % setPhaseMod(j, 0)
 
 	  CountZero = 0
 	  CountOne = 0
@@ -531,8 +540,8 @@ contains
 	      if (library % getPhase(TempHapVector(k), j) == 1) CountOne = CountOne + 1
 	    endif
 	  end do
-	  if ((CountZero == 0).and.(CountOne > 0)) call c % setPhase(animal, j, 1, 1)
-	  if ((CountZero > 0).and.(CountOne == 0)) call c % setPhase(animal, j, 1, 0)
+	  if ((CountZero == 0).and.(CountOne > 0)) call hap1 % setPhaseMod(j, 1)
+	  if ((CountZero > 0).and.(CountOne == 0)) call hap1 % setPhaseMod(j, 0)
 	end do
       endif
     end if
@@ -544,32 +553,45 @@ contains
   subroutine abErrors(c)
     use CoreDefinition
     use Constants
+    use GenotypeModule
+    use HaplotypeModule
 
     class(Core) :: c
 
     integer :: countA, countB, ErrorCountAB
     integer :: i, j
     integer(kind = 1) :: val
+    
+    type(Genotype) :: geno
+    type(Haplotype), pointer :: hap1, hap2
+    integer(kind = 1) :: g, p1, p2
 
     ErrorCountAB = int(c % getNCoreSnp() * 0.09)
 
     do i = 1, c % getNAnisG()
       CountA = 0
       CountB = 0
+      geno = c%getCoreGenos(i)
+      hap1 => c%getHaplotype(i,1)
+      hap2 => c%getHaplotype(i,2)
       do j = 1, c % getNCoreSnp()
-	if (c % getCoreGeno(i, j) /= MissingGenotypeCode) then
-	  if ((c % getPhase(i, j, 1) /= MissingPhaseCode).and.(c % getPhase(i, j, 2) == MissingPhaseCode)) then
-	    val = c % getCoreGeno(i, j) - c % getPhase(i, j, 1)
+	g = geno%getGenotype(j)
+	p1 = hap1%getPhaseMod(j)
+	p2 = hap2%getPhaseMod(j)
+	!!! BIT OPERATIONS??? !!!
+	if (g /= MissingGenotypeCode) then
+	  if ((p1 /= MissingPhaseCode).and.(p2 == MissingPhaseCode)) then
+	    val = g - p1
 	    if ((val == 0).or.(val == 1)) then !here 7th april 2011
-	      call c % setPhase(i, j, 2, val)
+	      call hap2 % setPhaseMod(j, val)
 	    else
 	      CountA = CountA + 1
 	    endif
 	  endif
-	  if ((c % getPhase(i, j, 2) /= MissingPhaseCode).and.(c % getPhase(i, j, 1) == MissingPhaseCode)) then
-	    val = c % getCoreGeno(i, j) - c % getPhase(i, j, 2)
+	  if ((p2 /= MissingPhaseCode).and.(p1 == MissingPhaseCode)) then
+	    val = g - p2
 	    if ((val == 0).or.(val == 1)) then !here 7th april 2011
-	      call c % setPhase(i, j, 1, val)
+	      call hap1 % setPhaseMod(j, val)
 	    else
 	      CountB = CountB + 1
 	    endif
@@ -580,13 +602,13 @@ contains
 	call c % setHaplotypeToUnphased(i, 1)
 	call c % setHaplotypeToUnphased(i, 2)
 	do j = 1, c % getNCoreSnp()
-	  if (c % getCoreGeno(i, j) == 0) then
-	    call c % setPhase(i, j, 1, 0)
-	    call c % setPhase(i, j, 2, 0)
+	  if (g == 0) then
+	    call hap1 % setPhaseMod(j, 0)
+	    call hap2 % setPhaseMod(j, 0)
 	  end if
-	  if (c % getCoreGeno(i, j) == 2) then
-	    call c % setPhase(i, j, 1, 1)
-	    call c % setPhase(i, j, 1, 1)
+	  if (g == 2) then
+	    call hap1 % setPhaseMod(j, 1)
+	    call hap2 % setPhaseMod(j, 1)
 	  end if
 	enddo
       endif
@@ -595,36 +617,49 @@ contains
 
   subroutine complementPhaseSnps(c)
     use CoreDefinition
+    use GenotypeModule
+    use HaplotypeModule
 
     class(Core) :: c
 
     integer :: i, j
+    
+    type(Genotype) :: geno
+    type(Haplotype), dimension(2) :: hap
+    integer(kind = 1) :: g, p1, p2
 
 
+    !!! BIT OPERATIONS? !!!
     do i = 1, c % getNAnisG()
+      geno = c%getCoreGenos(i)
+      hap(1) = c%getHaplotype(i,1)
+      hap(2) = c%getHaplotype(i,2)
       do j = 1, c % getNCoreSnp()
-	if (c % getCoreGeno(i, j) == 1) then
-	  if ((c % getPhase(i, j, 1) == MissingPhaseCode).and.(c % getPhase(i, j, 2) /= MissingPhaseCode)) then
-	    call c % setPhase(i, j, 1, c % getCoreGeno(i, j) - c % getPhase(i, j, 2))
+	g = geno%getGenotype(j)
+	p1 = hap(1)%getPhaseMod(j)
+	p2 = hap(2)%getPhaseMod(j)
+	if (g == 1) then
+	  if ((p1 == MissingPhaseCode).and.(p2 /= MissingPhaseCode)) then
+	    call hap(1)%setPhaseMod(j, g - p2)
 	  end if
-	  if ((c % getPhase(i, j, 2) == MissingPhaseCode).and.(c % getPhase(i, j, 1) /= MissingPhaseCode)) then
-	    call c % setPhase(i, j, 2, c % getCoreGeno(i, j) - c % getPhase(i, j, 1))
-	  end if
-	endif
-	if (c % getCoreGeno(i, j) == 0) then
-	  if ((c % getPhase(i, j, 1) == MissingPhaseCode).and.(c % getPhase(i, j, 2) /= MissingPhaseCode)) then
-	    call c % setPhase(i, j, 1, 0)
-	  end if
-	  if ((c % getPhase(i, j, 2) == MissingPhaseCode).and.(c % getPhase(i, j, 1) /= MissingPhaseCode)) then
-	    call c % setPhase(i, j, 2, 0)
+	  if ((p2 == MissingPhaseCode).and.(p1 /= MissingPhaseCode)) then
+	    call hap(2)%setPhaseMod(j, g - p1)
 	  end if
 	endif
-	if (c % getCoreGeno(i, j) == 2) then
-	  if ((c % getPhase(i, j, 1) == MissingPhaseCode).and.(c % getPhase(i, j, 2) /= MissingPhaseCode)) then
-	    call c % setPhase(i, j, 1, 1)
+	if (g == 0) then
+	  if ((p1 == MissingPhaseCode).and.(p2 /= MissingPhaseCode)) then
+	    call hap(1) % setPhaseMod(j, 0)
 	  end if
-	  if ((c % getPhase(i, j, 2) == MissingPhaseCode).and.(c % getPhase(i, j, 1) /= MissingPhaseCode)) then
-	    call c % setPhase(i, j, 2, 1)
+	  if ((p2 == MissingPhaseCode).and.(p1 /= MissingPhaseCode)) then
+	    call hap(2) % setPhaseMod(j, 0)
+	  end if
+	endif
+	if (g == 2) then
+	  if ((p1 == MissingPhaseCode).and.(p2 /= MissingPhaseCode)) then
+	    call hap(1) % setPhaseMod(j, 1)
+	  end if
+	  if ((p2 == MissingPhaseCode).and.(p1 /= MissingPhaseCode)) then
+	    call hap(2) % setPhaseMod(j, 1)
 	  end if
 	endif
       enddo

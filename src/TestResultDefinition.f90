@@ -1,5 +1,7 @@
 module TestResultDefinition
   use Constants
+  use GenotypeModule
+  use HaplotypeModule
   implicit none
 !  private
   
@@ -34,6 +36,9 @@ contains
     integer(kind=1) :: p, g
     logical :: het, miss, error
     
+    type(Genotype) :: geno
+    type(Haplotype), dimension(2) :: hap
+    
     print*, " "
     print*, " Checking simulation"
     print*, " "
@@ -42,13 +47,16 @@ contains
     results%countA = 0
     
     do i = 1, c%getNAnisG()
+      geno = c%getCoreGenos(i)
+      hap(1) = c%getHaplotype(i,1)
+      hap(2) = c%getHaplotype(i,1)
       do j = 1, c%getNCoreSnp()
-	g = c%getCoreGeno(i,j)
+	g = geno%getGenotype(j)
 	het = (g == 1)
 	miss = (g == MissingGenotypeCode)
 	error = ((.not. miss) .and. ( (TruePhase(i,j,1) + TruePhase(i,j,2)) /= g))
 	do k = 1, 2
-	  p = c%getPhase(i,j,k)
+	  p = hap(k)%getPhaseMod(j)
 	  if (p == MissingPhaseCode) then
 	    results%countA(i,k,ALL_,NOTPHASED_) = results%countA(i,k,ALL_,NOTPHASED_) + 1
 	    if (het) then
@@ -152,6 +160,7 @@ contains
 
     integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth
     type(Haplotype) :: W1, W2
+    type(Haplotype), dimension(2) :: hap
 
     integer :: nAnisG, nSnp
 
@@ -164,11 +173,13 @@ contains
       CountAgreeSwitch1 = 0
       CountAgreeSwitch2 = 0
       truth = 0
+      hap(1) = c%getHaplotype(i,1)
+      hap(2) = c%getHaplotype(i,1)
       do j = 1, nSnp
-	if (TruePhase(i, j, 1) == c%getPhase(i, j, 1)) CountAgreeStay1 = CountAgreeStay1 + 1
-	if (TruePhase(i, j, 2) == c%getPhase(i, j, 1)) CountAgreeSwitch1 = CountAgreeSwitch1 + 1
-	if (TruePhase(i, j, 1) == c%getPhase(i, j, 2)) CountAgreeSwitch2 = CountAgreeSwitch2 + 1
-	if (TruePhase(i, j, 2) == c%getPhase(i, j, 2)) CountAgreeStay2 = CountAgreeStay2 + 1
+	if (TruePhase(i, j, 1) == hap(1)%getPhaseMod(j)) CountAgreeStay1 = CountAgreeStay1 + 1
+	if (TruePhase(i, j, 2) == hap(1)%getPhaseMod(j)) CountAgreeSwitch1 = CountAgreeSwitch1 + 1
+	if (TruePhase(i, j, 1) == hap(2)%getPhaseMod(j)) CountAgreeSwitch2 = CountAgreeSwitch2 + 1
+	if (TruePhase(i, j, 2) == hap(2)%getPhaseMod(j)) CountAgreeStay2 = CountAgreeStay2 + 1
       end do
       if ((CountAgreeSwitch2 > CountAgreeStay2).and.(CountAgreeStay1 <= CountAgreeSwitch1)) truth = 1
       if ((CountAgreeSwitch1 > CountAgreeStay1).and.(CountAgreeStay2 <= CountAgreeSwitch2)) truth = 1

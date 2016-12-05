@@ -19,16 +19,14 @@ module CoreSubsetDefinition
     procedure, public :: getCoreGenos
     procedure, public :: getSingleCoreAndTailGenos
     procedure, public :: getSingleCoreGenos
-    procedure, public :: setPhase
     procedure, public :: getNAnisG
     procedure, public :: getNSnp
     procedure, public :: getNCoreSnp
     procedure, public :: getNCoreTailSnp
-    procedure, public :: getPhase
-    procedure, public :: getPhaseGeno
     procedure, public :: getSire
     procedure, public :: getDam
     procedure, public :: getYield
+    procedure, public :: getHaplotype
     
     procedure, public :: setSwappable
     
@@ -104,23 +102,6 @@ contains
     num = set%parentCore%getNCoreTailSnp()
   end function getNCoreTailSnp
   
-  subroutine setPhase(set, animal, snp, phase, val)
-        
-    class(CoreSubset) :: set
-    integer, intent(in) :: animal, snp, phase
-    integer(kind=1) :: val
-    
-    call set%parentCore%setPhase(set%sub2full(animal),snp,phase,val)
-  end subroutine setPhase
-  
-  function getPhase(set,animal,snp,phase) result(p)
-    class(CoreSubset) :: set
-    integer, intent(in) :: animal, snp, phase
-    integer(kind=1) :: p
-    
-    p = set%parentCore%getPhase(set%sub2full(animal),snp,phase)
-  end function getPhase
-  
   function getSingleCoreAndTailGenos(set,i) result (ctGenos)
         
     class(CoreSubset), target :: set
@@ -142,14 +123,6 @@ contains
     
     return
   end function getSingleCoreGenos
-  
-  function getPhaseGeno(set,animal,snp) result (p)
-    class(CoreSubset) :: set
-    integer, intent(in) :: animal, snp
-    integer(kind=1) :: p
-    
-    p = set%parentCore%getPhaseGeno(set%sub2full(animal),snp)
-  end function getPhaseGeno
   
   function getCoreAndTailGenos(set) result (ctGenos)
         
@@ -226,4 +199,16 @@ contains
     
     call set%parentCore%setSwappable(set%sub2full(animal),val)
   end subroutine setSwappable
+  
+  function getHaplotype(set, animal, phase) result(hap)
+    use HaplotypeModule
+    class(CoreSubSet), intent(in) :: set
+    integer, intent(in) :: animal, phase
+    
+    type(Haplotype), pointer :: hap
+    
+    hap => set%parentCore%getHaplotype(animal, phase)
+  end function getHaplotype
+    
+    
 end module CoreSubsetDefinition

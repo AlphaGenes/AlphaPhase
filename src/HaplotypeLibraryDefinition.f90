@@ -166,7 +166,6 @@ contains
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, e, num, invalid
-    type(Haplotype) :: h
     
     allocate(tempMatches(library % size))
 

@@ -31,7 +31,7 @@ contains
     integer(kind=1), allocatable, dimension(:) :: TempSwap
     character(len=100) :: fmt
     
-    type(Haplotype) :: hap
+    type(Haplotype), pointer :: hap1, hap2
 
     nAnisG = allCores(1)%getNAnisG()
     nCores = size(allCores)
@@ -46,14 +46,14 @@ contains
       write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
       do i = 1, nAnisG
 	do j = 1, nCores
-	  hap = allCores(j)%getHaplotype(i,1)
-	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap%toIntegerArray()
+	  hap1 => allCores(j)%getHaplotype(i,1)
+	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap1%toIntegerArray()
 	end do
 	write(15, fmt) p%getId(i), &
 	TempPhase
 	do j = 1, nCores
-	  hap = allCores(j)%getHaplotype(i,2)
-	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap%toIntegerArray()
+	  hap2 => allCores(j)%getHaplotype(i,2)
+	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap2%toIntegerArray()
 	end do
 	write(15, fmt) p%getId(i), &
 	TempPhase
@@ -74,10 +74,12 @@ contains
       open (unit = 28, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
 	do j = 1, allCores(i)%getNCoreSnp()
+	  hap1 => allCores(i)%getHaplotype(j,1)
+	  hap2 => allCores(i)%getHaplotype(j,2)
 	  counter = 0
 	  do k = 1, nAnisG
-	    if ((allCores(i)%getPhase(k, j, 1) == 0).or.(allCores(i)%getPhase(k, j, 1) == 1)) counter = counter + 1
-	    if ((allCores(i)%getPhase(k, j, 2) == 0).or.(allCores(i)%getPhase(k, j, 2) == 1)) counter = counter + 1
+	    if ((hap1%getPhaseMod(j) == 0).or.(hap1%getPhaseMod(j) == 1)) counter = counter + 1
+	    if ((hap2%getPhaseMod(j) == 0).or.(hap2%getPhaseMod(j) == 1)) counter = counter + 1
 	  end do
 	  write (28, '(i10,f7.2)') coreIndex(i,1) + j - 1, (100 * (float(counter)/(2 * nAnisG)))
 	end do
@@ -92,10 +94,12 @@ contains
       do i = 1, nAnisG
 	l = 0
 	do j = 1, nCores
-	  CounterP = allCores(j)%getNCoreSnp() - allCores(j)%hapNumMissing(i,1)
+	  hap1 => allCores(j)%getHaplotype(i,1)
+	  CounterP = allCores(j)%getNCoreSnp() - hap1%numberMissing()
 	  l = l + 1
 	  CoreCount(l) = (float(counterP)/allCores(j)%getNCoreSnp()) * 100
-	  CounterM = allCores(j)%getNCoreSnp() - allCores(j)%hapNumMissing(i,2)
+	  hap2 => allCores(j)%getHaplotype(i,1)
+	  CounterM = allCores(j)%getNCoreSnp() - hap2%numberMissing()
 	  l = l + 1
 	  CoreCount(l) = (float(counterM)/allCores(j)%getNCoreSnp()) * 100
 	end do
@@ -142,6 +146,7 @@ contains
     use PedigreeDefinition
     use CoreDefinition
     use ParametersDefinition
+    use HaplotypeModule
         
     type(Core), intent(in) :: c
     integer, intent(in) :: coreID
@@ -156,6 +161,8 @@ contains
     character(len=100) :: fmt
     
     character(:), allocatable :: coreIDtxt
+    
+    type(Haplotype), pointer :: hap1, hap2
   
     nAnisG = c%getNAnisG()
     nSnp = c%getNCoreSnp()
@@ -182,8 +189,10 @@ contains
       do i = 1, nSnp
 	counter = 0
 	do j = 1, nAnisG
-	    if ((c%getPhase(j, i, 1) == 0).or.(c%getPhase(j, i, 1) == 1)) counter = counter + 1
-	    if ((c%getPhase(j, i, 2) == 0).or.(c%getPhase(j, i, 2) == 1)) counter = counter + 1
+	  hap1 => c%getHaplotype(j, 1)
+	  hap2 => c%getHaplotype(j, 2)
+	  if ((hap1%getPhaseMod(i) == 0).or.(hap1%getPhaseMod(i) == 1)) counter = counter + 1
+	  if ((hap2%getPhaseMod(i) == 0).or.(hap2%getPhaseMod(i) == 1)) counter = counter + 1
 	end do
 	write (28, '(i10,f7.2)') i + CoreStart - 1, (100 * (float(counter)/(2 * nAnisG)))
       end do
@@ -193,8 +202,10 @@ contains
     if (params%outputIndivPhaseRate) then
       open (unit = 30, file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
-	CounterP = c%getNCoreSnp() - c%hapNumMissing(i,1)
-	CounterM = c%getNCoreSnp() - c%hapNumMissing(i,2)
+	hap1 => c%getHaplotype(j, 1)
+	hap2 => c%getHaplotype(j, 2)
+	CounterP = c%getNCoreSnp() - hap1%numberMissing()
+	CounterM = c%getNCoreSnp() - hap2%numberMissing()
 	CoreCount(1) = (float(counterP)/(nSnp) * 100)
 	CoreCount(2) = (float(counterM)/(nSnp) * 100)
 	write(30, '(a20,2f7.2)') p%getID(i), CoreCount(:)
@@ -1296,6 +1307,7 @@ contains
     use CoreDefinition
     use PedigreeDefinition
     use ParametersDefinition
+    use HaplotypeModule
     
     type(Core), intent(in) :: c
     !! Probably should be consistent about what we call this
@@ -1304,9 +1316,11 @@ contains
     integer, intent(in) :: OutputPoint
     class(Parameters), intent(in) :: params
     
-    integer :: i, j, k
+    integer :: i, j
     integer(kind = 1), allocatable, dimension(:) :: MistakePhase
     character(len = 300) :: filout
+    
+    type(Haplotype), pointer :: hap1, hap2
     
     if (params%outputMistakes) then
     
@@ -1316,22 +1330,37 @@ contains
       open (unit = 18, FILE = filout, status = 'unknown') 
 
       do i = 1, c%getNAnisG()
-	do k = 1, 2
-	  do j = 1, c%getNCoreSnp()
-	    if (c % getPhase(i, j, k) == MissingPhaseCode) then
-	      MistakePhase(j) = MissingPhaseCode
+	hap1 => c%getHaplotype(i, 1)
+	hap2 => c%getHaplotype(i, 2)
+	do j = 1, c%getNCoreSnp()
+	  if (hap1%getPhaseMod(j) == MissingPhaseCode) then
+	    MistakePhase(j) = MissingPhaseCode
+	  else
+	    if (TruePhase(i, j, 1) == hap1 % getPhaseMod(j)) then
+	      MistakePhase(j) = 1
 	    else
-	      if (TruePhase(i, j, k) == c % getPhase(i, j, k)) then
-		MistakePhase(j) = 1
-	      else
-		MistakePhase(j) = 5
-	      end if
-	    endif
-	  end do
-
-	  write (18, '(a20,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3)') p % getID(i),&
-	  MistakePhase
+	      MistakePhase(j) = 5
+	    end if
+	  endif
 	end do
+
+	write (18, '(a20,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3)') p % getID(i),&
+	MistakePhase
+	
+	do j = 1, c%getNCoreSnp()
+	  if (hap2%getPhaseMod(j) == MissingPhaseCode) then
+	    MistakePhase(j) = MissingPhaseCode
+	  else
+	    if (TruePhase(i, j, 2) == hap2 % getPhaseMod(j)) then
+	      MistakePhase(j) = 1
+	    else
+	      MistakePhase(j) = 5
+	    end if
+	  endif
+	end do
+
+	write (18, '(a20,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3)') p % getID(i),&
+	MistakePhase
       end do
 
       close(18)
