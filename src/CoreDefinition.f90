@@ -7,7 +7,6 @@ module CoreDefinition
 
   type, public :: Core
     private
-    integer(kind = 1), allocatable, dimension(:,:) :: genos
     type(Genotype), allocatable, dimension(:) :: coreAndTailGenos
     type(Genotype), allocatable, dimension(:) :: coreGenos
     type(Haplotype), allocatable, dimension(:,:) :: phase
@@ -16,10 +15,8 @@ module CoreDefinition
     
     integer(kind=1), dimension(:), allocatable :: swappable
     
-    integer :: startCoreSnp, endCoreSnp
+    integer :: nCoreAndTailSnps, nCoreSnps
     
-    !Fudge due to oddness in old version.  Should be removed!!!!!!!
-    integer :: endSurrSnp
   contains
     private
     procedure, public :: getCoreAndTailGenos
@@ -71,31 +68,27 @@ contains
     
     integer, intent(in) :: endSurrSnp
     
-    integer :: nAnisG, nSnp, nCoreSnp, i
+    integer :: nAnisG, i
     
     nAnisG = size(genos,1)
-    nSnp = size(genos,2)
-    nCoreSnp = endCoreSnp - startCoreSnp + 1
+    c%nCoreAndTailSnps = size(genos,2)
+    c%nCoreSnps = endCoreSnp - startCoreSnp + 1
     
-    allocate(c%genos(nAnisG,nSnp))
     allocate(c%coreAndTailGenos(nAnisG))
     allocate(c%coreGenos(nAnisG))
     allocate(c%phase(nAnisG,2))
     do i = 1, nAnisG
       c%coreGenos(i) = Genotype(genos(i,startCoreSnp:endCoreSnp))
       c%coreAndTailGenos(i) = Genotype(genos(i,1:endSurrSnp))
-      c%phase(i,1) = Haplotype(nCoreSnp)
-      c%phase(i,2) = Haplotype(nCoreSnp)
+      c%phase(i,1) = Haplotype(c%nCoreSnps)
+      c%phase(i,2) = Haplotype(c%nCoreSnps)
     end do
     allocate(c%fullyphased(nAnisG,2))
     allocate(c%hapAnis(nAnisG,2))
     
     allocate(c%swappable(nAnisG))
     
-    c%genos = genos
-    c%startCoreSnp = startCoreSnp
-    c%endCoreSnp = endCoreSnp
-    c%endSurrSnp = endSurrSnp
+
     c%fullyPhased = .false.
     c%hapAnis = MissingHaplotypeCode
     
@@ -116,9 +109,8 @@ contains
     allocate(c%fullyphased(nAnisG,2))
     allocate(c%hapAnis(nAnisG,2))
     
-    c%startCoreSnp = 1
-    c%endCoreSnp = nSnp
-    c%endSurrSnp = 0
+    c%nCoreSnps = nSnp
+    c%nCoreAndTailSnps = nSnp
     c%fullyPhased = .false.
     do i = 1, size(phase,1)
       c%phase(i,1) = Haplotype(phase(i,:,1))
@@ -166,9 +158,9 @@ contains
   subroutine destroy(c)
     type(Core) :: c
     
-    if (allocated(c%genos)) then
+    if (allocated(c%coreGenos)) then
       deallocate(c%coreAndTailGenos)
-      deallocate(c%genos)
+      deallocate(c%coreGenos)
       deallocate(c%phase)
       deallocate(c%fullyPhased)
       deallocate(c%hapAnis)
@@ -178,14 +170,7 @@ contains
   function getCoreAndTailGenos(c) result (ctGenos)
         
     class(Core), target :: c
-!    integer(kind=1), dimension(:,:), pointer :: ctGenos
     type(Genotype), dimension(:), pointer :: ctGenos
-    
-    !allocate(ctGenos(size(c%genos,1),size(c%genos,2)))
-!    allocate(ctGenos(size(c%genos,1),c%endSurrSnp))
-    
-    !ctGenos = c%genos
-!    ctGenos = c%genos(:,1:c%endSurrSnp)
     
     ctGenos => c%coreAndTailGenos
     
@@ -196,13 +181,8 @@ contains
         
     class(Core), target :: c
     integer, intent(in) :: i
-    !integer(kind=1), dimension(:), pointer :: ctGenos
     type(Genotype), pointer :: ctGenos
     
-    !allocate(ctGenos(size(c%genos,1),size(c%genos,2)))
-    !allocate(ctGenos(c%endSurrSnp))
-    
-    !ctGenos = c%genos
     ctGenos => c%coreAndTailGenos(i)
     
     return
@@ -212,12 +192,8 @@ contains
         
     class(Core), target :: c
     integer, intent(in) :: i
-    !integer(kind=1), dimension(:), pointer :: cGenos
     type(Genotype), pointer :: cGenos
     
-    !allocate(cGenos(c%endCoreSnp - c%startCoreSnp+1))
-    
-    !cGenos => c%genos(i,c%startCoreSnp:c%endCoreSnp)
     cGenos => c%coreGenos(i)
     
     return
@@ -243,21 +219,21 @@ contains
     class(Core) :: c
     integer :: num
     
-    num = size(c%genos,2)
+    num = c%nCoreAndTailSnps
   end function getNSnp
   
   function getNCoreSnp(c) result(num)
     class(Core) :: c
     integer :: num
     
-    num = c%endCoreSnp-c%startCoreSnp + 1
+    num = c%nCoreSnps
   end function getNCoreSnp
   
   function getNCoreTailSnp(c) result(num)
     class(Core) :: c
     integer :: num
     
-    num = c%endSurrSnp
+    num = c%nCoreAndTailSnps
   end function getNCoreTailSnp
   
   function getPhase(c,animal,snp,phase) result(p)
@@ -298,7 +274,7 @@ contains
       counter = counter + c%phase(i,1)%numberNotMissing()
       counter = counter + c%phase(i,2)%numberNotMissing()
     end do
-    yield = (float(counter)/(size(c%phase,1) * (c%endCoreSnp - c%startCoreSnp + 1) * 2)) * 100
+    yield = (float(counter)/(size(c%phase,1) * c%nCoreSnps * 2)) * 100
   end function getTotalYield
   
   function getHaplotype(c,animal, phase) result(haplotype)
@@ -387,7 +363,7 @@ contains
     integer, intent(in) :: animal,snp
     integer(kind = 1) :: geno
     
-    geno = c%genos(animal,c%startCoreSnp + snp - 1)
+    geno = c%CoreGenos(animal)%getGenotype(snp)
   end function getCoreGeno
   
   function numNotMissing(c, animal) result(num)
@@ -397,7 +373,7 @@ contains
     integer, intent(in) :: animal
     integer :: num
     
-    num = count(c%genos(animal,c%startCoreSnp:c%endCoreSnp) /= MissingGenotypeCode)
+    num = c%coreGenos(animal)%numNotMissing()
   end function numNotMissing
   
   function hapNumMissing(c, animal, phase) result(num)
@@ -431,7 +407,7 @@ contains
     integer, intent(in) :: animal, snp
     integer(kind=1) :: g
     
-    g = c%genos(animal,snp)
+    g = c%coreAndTailGenos(animal)%getGenotype(snp)
   end function getGeno
     
 end module CoreDefinition
