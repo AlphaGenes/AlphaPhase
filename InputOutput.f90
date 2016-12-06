@@ -793,6 +793,26 @@ contains
       params%outputMistakes = .false.
       params%outputNRM = .false.
     end if
+    if (hold .eq. "SeqOpt") then
+      params%outputFinalPhase = .false. 
+      params%outputCoreIndex = .false. 
+      params%outputSnpPhaseRate = .false. 
+      params%outputIndivPhaseRate = .false. 
+      params%outputHapIndex = .true. 
+      params%outputSwappable = .false. 
+      params%outputHapCommonality = .false. 
+      params%outputSurrogates = .false. 
+      params%outputSurrogatesSummary = .false. 
+      params%outputHaplotypeLibraryText = .true. 
+      params%outputHaplotypeLibraryBinary = .false. 
+      params%outputPhasingYield = .false. 
+      params%outputTimer = .false. 
+      params%outputIndivMistakes = .false. 
+      params%outputIndivMistakesPercent = .false. 
+      params%outputCoreMistakesPercent = .false. 
+      params%outputMistakes = .false.
+      params%outputNRM = .false.
+    end if
     if ((hold .eq. "Full") .or. (hold .eq. "1")) then
       params%outputFinalPhase = .true. 
       params%outputCoreIndex = .true. 
