@@ -248,9 +248,9 @@ program Rlrplhi
       call WriteOutCore(c, h, CoreIndex(h,1), p, writeSwappable, params)
     else
       do i = 1, size(AllPhase,1)
-	hap = c%getHaplotype(i,1)
+	hap = c%phase(i,1)
 	AllPhase(i,startCoreSnp:endCoreSnp,1) = hap%toIntegerArray()
-	hap = c%getHaplotype(i,2)
+	hap = c%phase(i,2)
 	AllPhase(i,startCoreSnp:endCoreSnp,2) = hap%toIntegerArray()
       end do
       AllHapAnis(:,1,h) = c%hapAnis(:,1)

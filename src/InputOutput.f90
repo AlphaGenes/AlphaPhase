@@ -46,13 +46,13 @@ contains
       write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
       do i = 1, nAnisG
 	do j = 1, nCores
-	  hap1 => allCores(j)%getHaplotype(i,1)
+	  hap1 => allCores(j)%phase(i,1)
 	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap1%toIntegerArray()
 	end do
 	write(15, fmt) p%getId(i), &
 	TempPhase
 	do j = 1, nCores
-	  hap2 => allCores(j)%getHaplotype(i,2)
+	  hap2 => allCores(j)%phase(i,2)
 	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap2%toIntegerArray()
 	end do
 	write(15, fmt) p%getId(i), &
@@ -74,8 +74,8 @@ contains
       open (unit = 28, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
 	do j = 1, allCores(i)%getNCoreSnp()
-	  hap1 => allCores(i)%getHaplotype(j,1)
-	  hap2 => allCores(i)%getHaplotype(j,2)
+	  hap1 => allCores(i)%phase(j,1)
+	  hap2 => allCores(i)%phase(j,2)
 	  counter = 0
 	  do k = 1, nAnisG
 	    if ((hap1%getPhaseMod(j) == 0).or.(hap1%getPhaseMod(j) == 1)) counter = counter + 1
@@ -94,11 +94,11 @@ contains
       do i = 1, nAnisG
 	l = 0
 	do j = 1, nCores
-	  hap1 => allCores(j)%getHaplotype(i,1)
+	  hap1 => allCores(j)%phase(i,1)
 	  CounterP = allCores(j)%getNCoreSnp() - hap1%numberMissing()
 	  l = l + 1
 	  CoreCount(l) = (float(counterP)/allCores(j)%getNCoreSnp()) * 100
-	  hap2 => allCores(j)%getHaplotype(i,1)
+	  hap2 => allCores(j)%phase(i,1)
 	  CounterM = allCores(j)%getNCoreSnp() - hap2%numberMissing()
 	  l = l + 1
 	  CoreCount(l) = (float(counterM)/allCores(j)%getNCoreSnp()) * 100
@@ -177,9 +177,9 @@ contains
       write(fmt, '(a,i10,a)') '(a20,', c%getNSnp(), 'i2)'
       do i = 1, nAnisG
 	write(15, fmt) p%getID(i), &
-	c%getHaplotype(i,1)
+	c%phase(i,1)
 	write(15, fmt) p%getID(i), &
-	c%getHaplotype(i,2)
+	c%phase(i,2)
       end do
       close(15)
     end if
@@ -189,8 +189,8 @@ contains
       do i = 1, nSnp
 	counter = 0
 	do j = 1, nAnisG
-	  hap1 => c%getHaplotype(j, 1)
-	  hap2 => c%getHaplotype(j, 2)
+	  hap1 => c%phase(j, 1)
+	  hap2 => c%phase(j, 2)
 	  if ((hap1%getPhaseMod(i) == 0).or.(hap1%getPhaseMod(i) == 1)) counter = counter + 1
 	  if ((hap2%getPhaseMod(i) == 0).or.(hap2%getPhaseMod(i) == 1)) counter = counter + 1
 	end do
@@ -202,8 +202,8 @@ contains
     if (params%outputIndivPhaseRate) then
       open (unit = 30, file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
-	hap1 => c%getHaplotype(j, 1)
-	hap2 => c%getHaplotype(j, 2)
+	hap1 => c%phase(j, 1)
+	hap2 => c%phase(j, 2)
 	CounterP = c%getNCoreSnp() - hap1%numberMissing()
 	CounterM = c%getNCoreSnp() - hap2%numberMissing()
 	CoreCount(1) = (float(counterP)/(nSnp) * 100)
@@ -1330,8 +1330,8 @@ contains
       open (unit = 18, FILE = filout, status = 'unknown') 
 
       do i = 1, c%getNAnisG()
-	hap1 => c%getHaplotype(i, 1)
-	hap2 => c%getHaplotype(i, 2)
+	hap1 => c%phase(i, 1)
+	hap2 => c%phase(i, 2)
 	do j = 1, c%getNCoreSnp()
 	  if (hap1%getPhaseMod(j) == MissingPhaseCode) then
 	    MistakePhase(j) = MissingPhaseCode

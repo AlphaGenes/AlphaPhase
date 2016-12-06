@@ -6,7 +6,6 @@ module CoreDefinition
   private
 
   type, public :: Core
-    private
     type(Genotype), dimension(:), pointer :: coreAndTailGenos
     type(Genotype), dimension(:), pointer :: coreGenos
     type(Haplotype), dimension(:,:), pointer :: phase
@@ -20,15 +19,13 @@ module CoreDefinition
   contains
     private
     procedure, public :: getCoreAndTailGenos
-    procedure, public :: getSingleCoreAndTailGenos
-    procedure, public :: getSingleCoreGenos
     procedure, public :: getNAnisG
     procedure, public :: getNSnp
     procedure, public :: getNCoreSnp
     procedure, public :: getNCoreTailSnp
     procedure, public :: getYield
     procedure, public :: getTotalYield
-    procedure, public :: getHaplotype
+!    procedure, public :: getHaplotype
     procedure, public :: setHaplotype
     procedure, public :: setHaplotypeToUnphased
     procedure, public :: resetFullyPhased
@@ -168,28 +165,6 @@ contains
     
     return
   end function getCoreAndTailGenos
-  
-  function getSingleCoreAndTailGenos(c,i) result (ctGenos)
-        
-    class(Core), target :: c
-    integer, intent(in) :: i
-    type(Genotype), pointer :: ctGenos
-    
-    ctGenos => c%coreAndTailGenos(i)
-    
-    return
-  end function getSingleCoreAndTailGenos
-  
-  function getSingleCoreGenos(c, i) result (cGenos)
-        
-    class(Core), target :: c
-    integer, intent(in) :: i
-    type(Genotype), pointer :: cGenos
-    
-    cGenos => c%coreGenos(i)
-    
-    return
-  end function getSingleCoreGenos
   
   function getNAnisG(c) result(num)
     class(Core) :: c
@@ -340,14 +315,6 @@ contains
     
     val = c%swappable(animal)
   end function getSwappable
-  
-  function getGeno(c,animal,snp) result(g)
-    class(Core) :: c
-    integer, intent(in) :: animal, snp
-    integer(kind=1) :: g
-    
-    g = c%coreAndTailGenos(animal)%getGenotype(snp)
-  end function getGeno
   
   function getCoreGenos(c,animal) result(g)
     class(Core), intent(in) :: c

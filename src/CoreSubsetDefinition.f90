@@ -108,7 +108,7 @@ contains
     integer, intent(in) :: i
     type(Genotype), pointer :: ctGenos
     
-    ctGenos => set%parentCore%getSingleCoreAndTailGenos(set%sub2full(i))
+    ctGenos => set%parentCore%coreAndTailGenos(set%sub2full(i))
     
     return
   end function getSingleCoreAndTailGenos
@@ -119,7 +119,7 @@ contains
     integer, intent(in) :: i
     type(Genotype), pointer :: cGenos
     
-    cGenos => set%parentCore%getSingleCoreGenos(set%sub2full(i))
+    cGenos => set%parentCore%coreGenos(set%sub2full(i))
     
     return
   end function getSingleCoreGenos
@@ -134,7 +134,7 @@ contains
     allocate(ctGenos(set%nAnisG))
     
     do i = 1, set%nAnisG
-      ctGenos(i) = set%parentCore%getSingleCoreAndTailGenos(set%sub2full(i))
+      ctGenos(i) = set%parentCore%coreAndTailGenos(set%sub2full(i))
     end do
     
     return
@@ -149,7 +149,7 @@ contains
     allocate(cGenos(set%nAnisG))
     
     do i = 1, set%nAnisG
-      cGenos(i) = set%parentCore%getSingleCoreGenos(set%sub2full(i))
+      cGenos(i) = set%parentCore%coreGenos(set%sub2full(i))
     end do
     
     return
@@ -185,7 +185,7 @@ contains
     counter = 0
     
     do i = 1, set%nAnisG
-      hap = set%parentCore%getHaplotype(set%sub2full(i),phase)
+      hap = set%parentCore%phase(set%sub2full(i),phase)
       counter = counter + hap%numberNotMissing()
     end do
     
@@ -207,7 +207,7 @@ contains
     
     type(Haplotype), pointer :: hap
     
-    hap => set%parentCore%getHaplotype(animal, phase)
+    hap => set%parentCore%phase(animal, phase)
   end function getHaplotype
     
     

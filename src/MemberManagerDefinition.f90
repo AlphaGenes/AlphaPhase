@@ -148,8 +148,8 @@ contains
       do while ((curSize < number) .and. (numUsed < nAnisG))
 	if (.not. used(curIndiv)) then
 	  !! HACK !!
-	  g1 = c%getSingleCoreAndTailGenos(seed)
-	  g2 = c%getSingleCoreAndTailGenos(curIndiv)
+	  g1 = c%coreAndTailGenos(seed)
+	  g2 = c%coreAndTailGenos(curIndiv)
 	  if (dist(g1%toIntegerArray(),g2%toIntegerArray()) <= curMax) then
 	    used(curIndiv) = .true.
 	    curOrder = curOrder + 1
