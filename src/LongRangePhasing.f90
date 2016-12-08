@@ -95,7 +95,8 @@ contains
 	end if
 	hap => c%getHaplotype(i, side)
 	do j = 1, nSnp
-	  if (hap%getPhaseMod(j) == MissingPhaseCode) then
+!	  if (hap%getPhaseMod(j) == MissingPhaseCode) then
+	  if (hap%isMissing(j)) then
 	    visited = .false.
 	    toVisit = 0
 	    toVisit(1) = i
@@ -109,11 +110,13 @@ contains
 	    visiting = 1
 
 	    !!! FUDGES !!!
-	    if (genos(i)%getGenotype(j) == 0) then
+	    if (genos(i)%isZero(j)) then
+!	    if (genos(i)%getGenotype(j) == 0) then
 	      AlleleCount(1) = AlleleCount(1) + 1
 	      found = found + 1
 	    end if
-	    if (genos(i)%getGenotype(j) == 2) then
+	    if (genos(i)%isTwo(j)) then
+!	    if (genos(i)%getGenotype(j) == 2) then
 	      AlleleCount(2) = AlleleCount(2) + 1
 	      found = found + 1
 	    end if
@@ -126,8 +129,10 @@ contains
 		next = surrList(current,k)
 		if (goodToVisit(next, depth, side, surrogates, visited,  &
 		  toVisit, visiting, SurrAveDiff)) then
-		  select case (Genos(next)%getGenotype(j))
-		    case (0)
+!		  select case (Genos(next)%getGenotype(j))
+		  if (Genos(next)%isHomo(j)) then
+		    if (Genos(next)%isZero(j)) then
+!		    case (0)
 		      if (mod(depth(Visiting) + 1, 2) == 0) then
 			AlleleCount(2) = AlleleCount(2) + 1
 		      end if
@@ -135,7 +140,8 @@ contains
 			AlleleCount(1) = AlleleCount(1) + 1
 		      end if
 		      found = found + 1
-		    case (2)
+!		    case (2)
+		    else
 		      if (mod(depth(Visiting) + 1, 2) == 0) then
 			AlleleCount(1) = AlleleCount(1) + 1
 		      end if
@@ -143,11 +149,14 @@ contains
 			AlleleCount(2) = AlleleCount(2) + 1
 		      end if
 		      found = found + 1
-		    case default		      
+!		    case default
+		    end if
+		  else
 		      toVisitPos = toVisitPos + 1
 		      toVisit(toVisitPos) = next
 		      depth(toVisitPos) = depth(visiting) + 1
-		  end select
+!		  end select
+		  end if
 		end if
 		visited(next) = .true.
 		k = k + 1
