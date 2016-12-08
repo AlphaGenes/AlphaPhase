@@ -479,7 +479,6 @@ contains
     type(Haplotype) :: h
     type(Haplotype), pointer :: hap1, hap2
     type(Genotype) :: geno
-    integer(kind=1) :: g
 
     nSNp = c % getNCoreSnp()
     
@@ -505,18 +504,9 @@ contains
 	call matchedHaplotype(c, animal, 1, library, TempHapVector(findloc(ClusterMember, 1)))
       end if
       if ((count(ClusterMember(:) == 2) > 1).and.(count(ClusterMember(:) == 2) > 1)) then
-	call c % setHaplotypeToUnphased(animal, 1)
-	call c % setHaplotypeToUnphased(animal, 2)
+	call geno%setHaplotype(hap1)
+	call geno%setHaplotype(hap2)
 	do j = 1, nSnp
-	  g = geno%getGenotype(j)
-	  if (g == 0) then
-	    call hap1%setPhaseMod(j, 0)
-	    call hap2%setPhaseMod(j, 0)
-	  end if
-	  if (g == 2) then
-	    call hap1%setPhaseMod(j, 1)
-	    call hap2%setPhaseMod(j, 1)
-	  end if
 	  CountZero = 0
 	  CountOne = 0
 	  do k = 1, size(ClusterMember, 1)
