@@ -295,21 +295,24 @@ contains
       hap1 => c%getHaplotype(i,1)
       hap2 => c%getHaplotype(i,2)
       genos => c%getSingleCoreGenos(i)
-      do j = 1, nCoreSnp
-	if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode)) then
-	  counterMissing = counterMissing + 1
-	  if ((genos%getGenotype(j) /= MissingGenotypeCode).and. &
-	  ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= genos%getGenotype(j))) then
-	    CountError = CountError + 1
-	end if
-	end if
-      end do
+!      do j = 1, nCoreSnp
+!	if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode)) then
+!	  counterMissing = counterMissing + 1
+!	  if ((genos%getGenotype(j) /= MissingGenotypeCode).and. &
+!	  ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= genos%getGenotype(j))) then
+!	    CountError = CountError + 1
+!	  end if
+!	end if
+!      end do
+      countError = genos%numberErrors(hap1,hap2)
+      counterMissing = hap1%numberBothNotMissing(hap2)
       ErrorAllow = int(PercGenoHaploDisagree * counterMissing)
       if (CountError >= ErrorAllow) then
 	do j = 1, nCoreSnp
 	  if (genos%getGenotype(j) /= MissingGenotypeCode) then
 	    if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode).and. &
 	      ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= Genos%getGenotype(j))) then
+	      !!! WHY ONLY HAP 2 HERE???
 	      if (Genos%getGenotype(j) == 1) call hap2%setPhaseMod(j, MissingPhaseCode)
 	      if (Genos%getGenotype(j) == MissingGenotypeCode) call hap2%setPhaseMod(j, MissingPhaseCode)
 	      if (Genos%getGenotype(j) == 0) then
