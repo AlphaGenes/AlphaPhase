@@ -272,6 +272,7 @@ contains
     use CoreSubsetDefinition
     use GenotypeModule
     use HaplotypeModule
+    use BitUtilities
     
     class(CoreSubset) :: c
     double precision, intent(in) :: PercGenoHaploDisagree
@@ -281,7 +282,8 @@ contains
     type(Haplotype), pointer :: hap1, hap2
 
     integer :: i, j, CountError, ErrorAllow, counterMissing, nAnisG, nCoreSnp
-
+    integer(kind=8), dimension(:), pointer :: error
+    
     nAnisG  = c%getNAnisG()
     nCoreSnp = c%getNCoreSnp()
 
@@ -295,37 +297,27 @@ contains
       hap1 => c%getHaplotype(i,1)
       hap2 => c%getHaplotype(i,2)
       genos => c%getSingleCoreGenos(i)
-!      do j = 1, nCoreSnp
-!	if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode)) then
-!	  counterMissing = counterMissing + 1
-!	  if ((genos%getGenotype(j) /= MissingGenotypeCode).and. &
-!	  ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= genos%getGenotype(j))) then
-!	    CountError = CountError + 1
-!	  end if
-!	end if
-!      end do
-      countError = genos%numberErrors(hap1,hap2)
+      error => genos%getErrors(hap1,hap2)
+      countError = bitCount(error)
       counterMissing = hap1%numberBothNotMissing(hap2)
       ErrorAllow = int(PercGenoHaploDisagree * counterMissing)
       if (CountError >= ErrorAllow) then
-	do j = 1, nCoreSnp
-	  if (genos%getGenotype(j) /= MissingGenotypeCode) then
-	    if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode).and. &
-	      ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= Genos%getGenotype(j))) then
-	      !!! WHY ONLY HAP 2 HERE???
-	      if (Genos%getGenotype(j) == 1) call hap2%setPhaseMod(j, MissingPhaseCode)
-	      if (Genos%getGenotype(j) == MissingGenotypeCode) call hap2%setPhaseMod(j, MissingPhaseCode)
-	      if (Genos%getGenotype(j) == 0) then
-		call hap1%setPhaseMod(j, 0)
-		call hap2%setPhaseMod(j, 0)
-	      end if
-	      if (Genos%getGenotype(j) == 2) then
-		call hap1%setPhaseMod(j, 1)
-		call hap2%setPhaseMod(j, 1)
-	      end if
-	    endif
-	  endif
-	enddo
+! Comment out the line below (hap1) and comment in the stuff after to be consistent
+	call genos%setHaplotypeIfError(hap1,error)
+	call genos%setHaplotypeIfError(hap2,error)
+!	do j = 1, nCoreSnp
+!	  if (genos%getGenotype(j) /= MissingGenotypeCode) then
+!	    if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode).and. &
+!	      ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= Genos%getGenotype(j))) then
+!	      if (Genos%getGenotype(j) == 0) then
+!		call hap1%setPhaseMod(j, 0)
+!	      end if
+!	      if (Genos%getGenotype(j) == 2) then
+!		call hap1%setPhaseMod(j, 1)
+!	      end if
+!	    endif
+!	  endif
+!	enddo
       endif
     end do
 
