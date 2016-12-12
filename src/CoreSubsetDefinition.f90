@@ -180,12 +180,12 @@ contains
     integer, intent(in) :: phase
     double precision :: yield
     integer :: counter, i
-    type(Haplotype) :: hap
+    type(Haplotype), pointer :: hap
     
     counter = 0
     
     do i = 1, set%nAnisG
-      hap = set%parentCore%phase(set%sub2full(i),phase)
+      hap => set%parentCore%phase(set%sub2full(i),phase)
       counter = counter + hap%numberNotMissing()
     end do
     

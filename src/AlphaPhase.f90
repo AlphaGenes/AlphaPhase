@@ -48,7 +48,7 @@ program Rlrplhi
   
   type(Core), allocatable, dimension(:) :: AllCores
   
-  type(Haplotype) :: hap
+  type(Haplotype), pointer :: hap
   
   !Linux max path length is 4096 which is more than windows or mac (all according to google)
   character(len=4096) :: specfile
@@ -60,6 +60,8 @@ program Rlrplhi
   logical :: combine, printOldProgress, writeSwappable, outputSurrogates
     
   type(MemberManager) :: manager
+  
+  real :: total, elapsed(2), etime
   
   if (Command_Argument_Count() > 0) then
     call get_command_argument(1,cmd)
@@ -145,6 +147,9 @@ program Rlrplhi
     print*, " "
     print*, " "
     print*, " Starting Core", h, "/", nCores
+    
+    total = etime(elapsed)
+    print *, total
 
     if (params%GenotypeFileFormat /= 2) then
       allocate(Genos(nAnisG, max(EndSurrSnp,EndCoreSnp)-startSurrSnp+1))
@@ -174,8 +179,14 @@ program Rlrplhi
 	  if (outputSurrogates) then
 	    call writeSurrogates(surrogates, h, p, params)
 	  end if
+	  total = etime(elapsed)
+	  print *, total
 	  call Erdos(surrogates, cs, params%numsurrdisagree, params%useSurrsN, printOldProgress)
-	  call CheckCompatHapGeno(cs, params%percgenohaplodisagree, printOldProgress)     
+	  total = etime(elapsed)
+	  print *, total
+	  call CheckCompatHapGeno(cs, params%percgenohaplodisagree, printOldProgress)
+	  total = etime(elapsed)
+	  print *, total
 
 	  subsetCount = subsetCount + 1
 	  if (.not. printOldProgress) then
@@ -217,6 +228,9 @@ program Rlrplhi
 	  if (allChips%getNumChips() > 1) then
 	    call allChips%mergeToAll(globalLibrary,library,allCore,c)
 	  end if
+	  
+	  total = etime(elapsed)
+	  print *, total
 	end do
       end do
 
@@ -248,9 +262,9 @@ program Rlrplhi
       call WriteOutCore(c, h, CoreIndex(h,1), p, writeSwappable, params)
     else
       do i = 1, size(AllPhase,1)
-	hap = c%phase(i,1)
+	hap => c%phase(i,1)
 	AllPhase(i,startCoreSnp:endCoreSnp,1) = hap%toIntegerArray()
-	hap = c%phase(i,2)
+	hap => c%phase(i,2)
 	AllPhase(i,startCoreSnp:endCoreSnp,2) = hap%toIntegerArray()
       end do
       AllHapAnis(:,1,h) = c%hapAnis(:,1)

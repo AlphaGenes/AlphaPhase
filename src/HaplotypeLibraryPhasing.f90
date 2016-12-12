@@ -323,14 +323,14 @@ contains
 
     type(Haplotype) :: comp
     type(Haplotype), pointer :: hap
-    type(Genotype) :: geno
+    type(Genotype), pointer :: geno
     integer, dimension(:), pointer :: CandHaps
     integer :: i, ErrorAllow, notfully
 
     ! Maps 1 -> 2 and 2 -> 1
     notfully = 3 - fully
 
-    geno = c %coreGenos(animal)
+    geno => c %coreGenos(animal)
     ErrorAllow = int(PercGenoHaploDisagree * geno % numNotMissing())
     comp = geno%complement(c % phase(animal, fully))
     CandHaps => library % matchWithError(comp, ErrorAllow)
@@ -478,11 +478,11 @@ contains
     integer :: i, j, k
     type(Haplotype) :: h
     type(Haplotype), pointer :: hap1, hap2
-    type(Genotype) :: geno
+    type(Genotype), pointer :: geno
 
     nSNp = c % getNCoreSnp()
     
-    geno = c%getCoreGenos(animal)
+    geno => c%coreGenos(animal)
     hap1 => c%phase(animal,1)
     hap2 => c%phase(animal,2)
 
@@ -550,7 +550,7 @@ contains
     integer :: i, j
     integer(kind = 1) :: val
     
-    type(Genotype) :: geno
+    type(Genotype), pointer :: geno
     type(Haplotype), pointer :: hap1, hap2
     integer(kind = 1) :: g, p1, p2
 

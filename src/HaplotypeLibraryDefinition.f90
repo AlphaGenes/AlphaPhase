@@ -352,7 +352,7 @@ contains
   function getCompatHaps(library, g, percgenohaplodisagree) result (compatHaps)
     use GenotypeModule
     class(HaplotypeLibrary) :: library
-    type(Genotype), intent(in) :: g
+    type(Genotype), intent(in), pointer :: g
     double precision, intent(in) :: percgenohaplodisagree
     integer, dimension(:), pointer :: compatHaps
     
@@ -362,7 +362,7 @@ contains
   function getCompatHapsFreq(library, g, freq, percgenohaplodisagree) result (compatHaps)
     use GenotypeModule
     class(HaplotypeLibrary) :: library
-    type(Genotype), intent(in) :: g
+    type(Genotype), intent(in), pointer :: g
     integer, intent(in) :: freq
     double precision, intent(in) :: percgenohaplodisagree
     integer, dimension(:), pointer :: compatHaps

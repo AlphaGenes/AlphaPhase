@@ -118,7 +118,7 @@ contains
     
     logical, dimension(c%getNAnisG()) :: used
     integer :: nAnisG, numUsed, curMax, curOrder, seed, i, curIndiv, curSize
-    type(Genotype) :: g1, g2
+    type(Genotype), pointer :: g1, g2
     
     manager%c => c
     
