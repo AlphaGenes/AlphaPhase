@@ -709,7 +709,7 @@ end function ParsePhaseData
 
 function ReadInParameterFile(filename) result (params)
   use ParametersDefinition
-
+  use AlphaHouseMod, only: parseToFirstWhitespace,splitLineIntoTwoParts,toLower
   character(*), intent(in) :: filename
   type(Parameters) :: params
 
@@ -726,9 +726,9 @@ function ReadInParameterFile(filename) result (params)
 
   open(newunit=unit, file=filename, action="read", status="old")
 
-  IOStatus = 0
-  READFILE: do while (IOStatus==0)
-    read(unit,"(A)", IOStat=IOStatus)  line
+  status = 0
+  READFILE: do while (status==0)
+    read(unit,"(A)", IOStat=status)  line
     if (len_trim(line)==0) then
       CYCLE
     end if
@@ -750,7 +750,7 @@ function ReadInParameterFile(filename) result (params)
 
     case("genotypefile")
       if (.not. allocated(second)) then
-        write(*, "(A,A)") "No genotype file specified. Using default filename: ", this%Genotypefile
+        write(*, "(A,A)") "No genotype file specified. Using default filename: ", params%Genotypefile
       else
         write(params%Genotypefile, "(A)") second(1)
         if (size(second) >1) then
