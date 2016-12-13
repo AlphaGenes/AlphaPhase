@@ -111,12 +111,10 @@ contains
 
 	    !!! FUDGES !!!
 	    if (genos(i)%isZero(j)) then
-!	    if (genos(i)%getGenotype(j) == 0) then
 	      AlleleCount(1) = AlleleCount(1) + 1
 	      found = found + 1
 	    end if
 	    if (genos(i)%isTwo(j)) then
-!	    if (genos(i)%getGenotype(j) == 2) then
 	      AlleleCount(2) = AlleleCount(2) + 1
 	      found = found + 1
 	    end if
@@ -303,21 +301,21 @@ contains
       ErrorAllow = int(PercGenoHaploDisagree * counterMissing)
       if (CountError >= ErrorAllow) then
 ! Comment out the line below (hap1) and comment in the stuff after to be consistent
-	call genos%setHaplotypeIfError(hap1,error)
+!	call genos%setHaplotypeIfError(hap1,error)
 	call genos%setHaplotypeIfError(hap2,error)
-!	do j = 1, nCoreSnp
-!	  if (genos%getGenotype(j) /= MissingGenotypeCode) then
-!	    if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode).and. &
-!	      ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= Genos%getGenotype(j))) then
-!	      if (Genos%getGenotype(j) == 0) then
-!		call hap1%setPhaseMod(j, 0)
-!	      end if
-!	      if (Genos%getGenotype(j) == 2) then
-!		call hap1%setPhaseMod(j, 1)
-!	      end if
-!	    endif
-!	  endif
-!	enddo
+	do j = 1, nCoreSnp
+	  if (genos%getGenotype(j) /= MissingGenotypeCode) then
+	    if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode).and. &
+	      ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= Genos%getGenotype(j))) then
+	      if (Genos%getGenotype(j) == 0) then
+		call hap1%setPhaseMod(j, 0)
+	      end if
+	      if (Genos%getGenotype(j) == 2) then
+		call hap1%setPhaseMod(j, 1)
+	      end if
+	    endif
+	  endif
+	enddo
       endif
     end do
 

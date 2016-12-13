@@ -65,7 +65,7 @@ contains
 
     integer, dimension(:), pointer :: compatHaps
 
-    type(Haplotype) :: comp
+    type(Haplotype) :: comp, HapTest
     integer, pointer, dimension(:) :: CandHapsPat, CandHapsMat, AllCandHapsMat, CandHaps, matches
     
     type(Genotype), pointer :: geno
@@ -172,12 +172,7 @@ contains
 	    ! there are more than one maternal candidate haplotype
 	    if (HapM == 0) then
 	      comp = geno%complement(c%phase(i,1))
-
-	      do j = 1, c % getNCoreSnp()
-		if ((comp%getPhaseMod(j) == 0).or.(comp%getPhaseMod(j) == 1)) then
-		  call hap2 % setPhaseMod(j, comp%getPhaseMod(j))
-		endif
-	      enddo
+	      call hap2%setFromOther(comp)
 
 	      if (comp%fullyPhased()) then
 		call newHaplotype(c, i, 2, library)
@@ -199,12 +194,7 @@ contains
 	    ! there are more than one paternal candidate haplotype
 	    if (HapP == 0) then
 	      comp = geno%complement(c%phase(i,2))
-
-	      do j = 1, c % getNCoreSnp()
-		if ((comp%getPhaseMod(j) == 0).or.(comp%getPhaseMod(j) == 1)) then
-		  call hap1 % setPhaseMod(j, comp%getPhaseMod(j))
-		endif
-	      enddo
+	      call hap1%setFromOther(comp)
 
 	      if (comp%fullyPhased()) then
 		call newHaplotype(c, i, 1, library)
@@ -237,11 +227,13 @@ contains
 		! If only one haplotype is found for the paternal gamete 
 		! and many for the maternal gamete, phase each loci only all pairs agree
 		! (Step 2e.ii.B)
-		do j = 1, c % getNCoreSnp()
-		  if (agree(CandPairs(:, 2), library, j)) then
-		    call hap2 % setPhaseMod(j, library % getPhase(CandPairs(1, 2), j))
-		  end if
-		end do
+!		do j = 1, c % getNCoreSnp()
+!		  if (agree(CandPairs(:, 2), library, j)) then
+!		    call hap2 % setPhaseMod(j, library % getPhase(CandPairs(1, 2), j))
+!		  end if
+!		end do
+		call hap2%setOneBits(library%allOne(CandPairs(:,2)))
+		call hap2%setZeroBits(library%allZero(CandPairs(:,2)))
 		call c%setSwappable(i, 1)
 	      end if
 
@@ -251,18 +243,29 @@ contains
 	      ! If there is only one maternal haplotype in all the candidate pairs
 	      if (SingleMat) then
 		call matchedHaplotype(c, i, 2, library, CandPairs(1, 2))
-
+		
 		! If only one haplotype is found for the paternal gamete 
 		! and many for the maternal gamete, phase each loci only all pairs agree
 		! (Step 2e.ii.C)
-		do j = 1, c % getNCoreSnp()
-		  if (agree(CandPairs(:, 1), library, j)) then
-		    call hap1 % setPhaseMod(j, library % getPhase(CandPairs(1, 1), j))
-		  endif
-		enddo
+!		hapTest = hap1
+!		do j = 1, c % getNCoreSnp()
+!		  if (agree(CandPairs(:, 1), library, j)) then
+!		    call hap1 % setPhaseMod(j, library % getPhase(CandPairs(1, 1), j))
+!!		    call hapTest % setPhaseMod(j, library % getPhase(CandPairs(1, 1), j))
+!		  endif
+!		enddo
+!		
+		call hap1%setOneBits(library%allOne(CandPairs(:,1)))
+		call hap1%setZeroBits(library%allZero(CandPairs(:,1)))
 		call c%setSwappable(i, 2)
+!		
+!		if (.not. hap1%compareHaplotype(hapTest)) then
+!		  print *, hap1%toIntegerArray()
+!		  print *
+!		  print *, hap2%toIntegerArray()
+!		end if
 	      endif
-
+	      
 	      ! If proband is not completely phased and have more than one candidate 
 	      ! for both paternal and maternal haplotype 
 	      ! (Step 2e.iv)
@@ -307,6 +310,7 @@ contains
     end do
 
     a = (all(phases == 0) .or. (all(phases == 1)))
+!    if (a) print *, "Hmmmmm....", library%getPhase(candidates(1), position)
   end function agree
 
   subroutine processComplement(c, animal, library, fully, percgenohaplodisagree)
@@ -507,6 +511,7 @@ contains
 	call geno%setHaplotype(hap1)
 	call geno%setHaplotype(hap2)
 	do j = 1, nSnp
+	  !!!!! Checks all the same or missing for each cluster group
 	  CountZero = 0
 	  CountOne = 0
 	  do k = 1, size(ClusterMember, 1)
@@ -546,59 +551,24 @@ contains
 
     class(Core) :: c
 
-    integer :: countA, countB, ErrorCountAB
-    integer :: i, j
-    integer(kind = 1) :: val
+    integer :: ErrorCountAB
+    integer :: i
     
     type(Genotype), pointer :: geno
     type(Haplotype), pointer :: hap1, hap2
-    integer(kind = 1) :: g, p1, p2
 
     ErrorCountAB = int(c % getNCoreSnp() * 0.09)
 
     do i = 1, c % getNAnisG()
-      CountA = 0
-      CountB = 0
       geno = c%getCoreGenos(i)
       hap1 => c%phase(i,1)
       hap2 => c%phase(i,2)
-      do j = 1, c % getNCoreSnp()
-	g = geno%getGenotype(j)
-	p1 = hap1%getPhaseMod(j)
-	p2 = hap2%getPhaseMod(j)
-	!!! BIT OPERATIONS??? !!!
-	if (g /= MissingGenotypeCode) then
-	  if ((p1 /= MissingPhaseCode).and.(p2 == MissingPhaseCode)) then
-	    val = g - p1
-	    if ((val == 0).or.(val == 1)) then !here 7th april 2011
-	      call hap2 % setPhaseMod(j, val)
-	    else
-	      CountA = CountA + 1
-	    endif
-	  endif
-	  if ((p2 /= MissingPhaseCode).and.(p1 == MissingPhaseCode)) then
-	    val = g - p2
-	    if ((val == 0).or.(val == 1)) then !here 7th april 2011
-	      call hap1 % setPhaseMod(j, val)
-	    else
-	      CountB = CountB + 1
-	    endif
-	  endif
-	end if
-      end do
-      if ((CountA > ErrorCountAB) .or. (CountB > ErrorCountAB)) then
-	call c % setHaplotypeToUnphased(i, 1)
-	call c % setHaplotypeToUnphased(i, 2)
-	do j = 1, c % getNCoreSnp()
-	  if (g == 0) then
-	    call hap1 % setPhaseMod(j, 0)
-	    call hap2 % setPhaseMod(j, 0)
-	  end if
-	  if (g == 2) then
-	    call hap1 % setPhaseMod(j, 1)
-	    call hap2 % setPhaseMod(j, 1)
-	  end if
-	enddo
+      if ((geno%numberErrorsSingle(hap1) > ErrorCountAB) .or. (geno%numberErrorsSingle(hap2) > ErrorCountAB)) then
+	call geno%setHaplotype(hap1)
+	call geno%setHaplotype(hap2)
+      else
+	call geno%setHaplotypeIfMissing(hap1)
+	call geno%setHaplotypeIfMissing(hap2)
       endif
     end do
   end subroutine abErrors
@@ -614,6 +584,7 @@ contains
     
     type(Genotype), pointer :: geno
     type(Haplotype), pointer :: hap1, hap2
+!    type(Haplotype) :: hap1complement, hap2complement
     integer(kind = 1) :: g, p1, p2
 
 
@@ -622,6 +593,15 @@ contains
       geno => c%getCoreGenos(i)
       hap1 => c%phase(i,1)
       hap2 => c%phase(i,2)
+!      
+!      hap1complement = geno%complement(hap1)
+!      hap2complement = geno%complement(hap2)
+!      
+!      call geno%setHaplotypeIfMissing(hap1)
+!      call geno%setHaplotypeIfMissing(hap2)
+!      
+!!      call hap1%SetFromOtherIfMissing(hap2complement)
+!!      call hap2%SetFromOtherIfMissing(hap1complement)
       do j = 1, c % getNCoreSnp()
 	g = geno%getGenotype(j)
 	p1 = hap1%getPhaseMod(j)

@@ -30,6 +30,8 @@ module HaplotypeLibraryDefinition
     procedure, public :: getCompatHaps    
     procedure, public :: matchAddHap
     procedure, public :: getCompatHapsFreq
+    procedure, public :: allZero
+    procedure, public :: allOne
     final :: destroy
   end type HaplotypeLibrary
   
@@ -385,5 +387,60 @@ contains
     compatHaps = tempCompatHaps(1:numCompatHaps)
     deallocate(tempCompatHaps)
   end function getCompatHapsFreq
+  
+  function allOne(library, ids) result(all)
+    class(HaplotypeLibrary) :: library
+    integer, dimension(:), intent(in) :: ids
+    
+    integer(kind=8), dimension(library%nSnps/64 + 1) :: all
+
+    integer :: i, j, sections
+    type(Haplotype) :: hap
+    
+    sections = library%nSnps/64+1
+    
+    all = 0
+    all = NOT(all)
+    
+    hap = Haplotype(library%nSnps)
+    
+    do i = 1, size(ids)
+      hap = library%newstore(ids(i))
+      do j = 1, sections
+	all(j) = IAND(all(j), IAND(hap%phase(j), NOT(hap%missing(j))))
+      end do
+    end do
+   
+  end function allOne
+  
+  function allZero(library, ids) result(all)
+    class(HaplotypeLibrary) :: library
+    integer, dimension(:), intent(in) :: ids
+    
+    integer(kind=8), dimension(library%nSnps/64 + 1) :: all
+
+    integer :: i, j, sections, overhang
+    type(Haplotype) :: hap
+    
+    sections = library%nSnps/64+1
+    
+    all = 0
+    all = NOT(all)
+    
+    hap = Haplotype(library%nSnps)
+    
+    do i = 1, size(ids)
+      hap = library%newstore(ids(i))
+      do j = 1, sections
+	all(j) = IAND(all(j), IAND(NOT(hap%phase(j)), NOT(hap%missing(j))))
+      end do
+    end do
+    
+    overhang = 64 - (library%nSnps - (sections - 1) * 64)
+    do i = 64 - overhang + 1, 64
+        all(sections) = ibclr(all(sections), i)
+    end do
+    
+  end function allZero
 
 end module HaplotypeLibraryDefinition
