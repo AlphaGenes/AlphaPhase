@@ -715,7 +715,11 @@ function ReadInParameterFile(filename) result (params)
 
   double precision :: PercSurrDisagree
   integer :: TempInt, Graphics, status, cl
+  integer :: unit
   character (len = 300) :: dumC, FileFormat, OffsetVariable, hold
+  character(len=300) :: first, line
+  character(len=:), allocatable::tag
+  character(len=300),dimension(:),allocatable :: second
 
   params = Parameters()
 
@@ -816,8 +820,8 @@ function ReadInParameterFile(filename) result (params)
 
     case("iteratemethod")
 
-      if (allocated(second))
-      read(second(1), *) params%itterateType
+      if (allocated(second)) then
+        read(second(1), *) params%itterateType
     else
       params%consistent = .true.
       params%itterateType = "Off"
@@ -864,7 +868,7 @@ function ReadInParameterFile(filename) result (params)
       params%endCoreChar = "Combine"
     endif
   case("minhapfreq")
-    if(allocated(second) then
+    if(allocated(second)) then
         read (second, *) dumC, hold
         if (hold(1:1) == "*") then
             read(hold,"(X,I2)") cl
