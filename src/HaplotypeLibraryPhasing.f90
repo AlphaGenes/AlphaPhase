@@ -60,12 +60,12 @@ contains
     integer, intent(in) :: minHapFreq
     logical, intent(in) :: consistent
 
-    integer :: i, j, k, nHapsOld, ErrorAllow, HapM, HapP
+    integer :: i, k, nHapsOld, ErrorAllow, HapM, HapP
     integer, pointer, dimension(:,:) :: CandPairs
 
     integer, dimension(:), pointer :: compatHaps
 
-    type(Haplotype) :: comp, HapTest
+    type(Haplotype) :: comp
     integer, pointer, dimension(:) :: CandHapsPat, CandHapsMat, AllCandHapsMat, CandHaps, matches
     
     type(Genotype), pointer :: geno
@@ -227,11 +227,6 @@ contains
 		! If only one haplotype is found for the paternal gamete 
 		! and many for the maternal gamete, phase each loci only all pairs agree
 		! (Step 2e.ii.B)
-!		do j = 1, c % getNCoreSnp()
-!		  if (agree(CandPairs(:, 2), library, j)) then
-!		    call hap2 % setPhaseMod(j, library % getPhase(CandPairs(1, 2), j))
-!		  end if
-!		end do
 		call hap2%setOneBits(library%allOne(CandPairs(:,2)))
 		call hap2%setZeroBits(library%allZero(CandPairs(:,2)))
 		call c%setSwappable(i, 1)
@@ -247,23 +242,9 @@ contains
 		! If only one haplotype is found for the paternal gamete 
 		! and many for the maternal gamete, phase each loci only all pairs agree
 		! (Step 2e.ii.C)
-!		hapTest = hap1
-!		do j = 1, c % getNCoreSnp()
-!		  if (agree(CandPairs(:, 1), library, j)) then
-!		    call hap1 % setPhaseMod(j, library % getPhase(CandPairs(1, 1), j))
-!!		    call hapTest % setPhaseMod(j, library % getPhase(CandPairs(1, 1), j))
-!		  endif
-!		enddo
-!		
 		call hap1%setOneBits(library%allOne(CandPairs(:,1)))
 		call hap1%setZeroBits(library%allZero(CandPairs(:,1)))
 		call c%setSwappable(i, 2)
-!		
-!		if (.not. hap1%compareHaplotype(hapTest)) then
-!		  print *, hap1%toIntegerArray()
-!		  print *
-!		  print *, hap2%toIntegerArray()
-!		end if
 	      endif
 	      
 	      ! If proband is not completely phased and have more than one candidate 
@@ -294,25 +275,6 @@ contains
 
   end subroutine ImputeFromLib
 
-  function agree(candidates, library, position) result (a)
-    use HaplotypeLibraryDefinition
-
-    integer, dimension(:), intent(in) :: candidates
-    class(HaplotypeLibrary), intent(in) :: library
-    integer, intent(in) :: position
-
-    logical :: a
-    integer(kind = 1), dimension(size(candidates, 1)) :: phases
-    integer :: i
-
-    do i = 1, size(candidates, 1)
-      phases(i) = library % getPhase(candidates(i), position)
-    end do
-
-    a = (all(phases == 0) .or. (all(phases == 1)))
-!    if (a) print *, "Hmmmmm....", library%getPhase(candidates(1), position)
-  end function agree
-
   subroutine processComplement(c, animal, library, fully, percgenohaplodisagree)
     use Constants
     use CoreDefinition
@@ -329,7 +291,7 @@ contains
     type(Haplotype), pointer :: hap
     type(Genotype), pointer :: geno
     integer, dimension(:), pointer :: CandHaps
-    integer :: i, ErrorAllow, notfully
+    integer :: ErrorAllow, notfully
 
     ! Maps 1 -> 2 and 2 -> 1
     notfully = 3 - fully
@@ -342,11 +304,8 @@ contains
     hap => c%phase(animal, notfully)
 
     if (size(CandHaps, 1) > 1) then
-      do i = 1, c % getNCoreSnp()
-	if (agree(CandHaps, library, i)) then
-	  call hap % setPhaseMod(i, library % getPhase(CandHaps(1), i))
-	end if
-      end do
+      call hap%setOneBits(library%allOne(CandHaps))
+      call hap%setZeroBits(library%allZero(CandHaps))
     endif
 
     if (size(CandHaps, 1) == 1) then
@@ -357,11 +316,7 @@ contains
     end if
 
     if (size(CandHaps, 1) == 0) then
-      do i = 1, c % getNCoreSnp()
-	if ((comp%getPhaseMod(i) == 0).or.(comp%getPhaseMod(i) == 1)) then
-	  call hap % setPhaseMod(i, comp%getPhaseMod(i))
-	endif
-      enddo
+      call hap%setFromOther(comp)
 
       if (comp%fullyPhased()) then
 	call newHaplotype(c, animal, notfully, library)
@@ -477,12 +432,12 @@ contains
     integer, dimension(:), pointer :: TempHapVector
     integer :: rounds
 
-    integer :: countZero, countOne
 
-    integer :: i, j, k
+    integer :: i, i1, i2
     type(Haplotype) :: h
     type(Haplotype), pointer :: hap1, hap2
     type(Genotype), pointer :: geno
+    integer, dimension(:), allocatable :: ids1, ids2
 
     nSNp = c % getNCoreSnp()
     
@@ -510,32 +465,26 @@ contains
       if ((count(ClusterMember(:) == 2) > 1).and.(count(ClusterMember(:) == 2) > 1)) then
 	call geno%setHaplotype(hap1)
 	call geno%setHaplotype(hap2)
-	do j = 1, nSnp
-	  !!!!! Checks all the same or missing for each cluster group
-	  CountZero = 0
-	  CountOne = 0
-	  do k = 1, size(ClusterMember, 1)
-	    if (ClusterMember(k) == 2) then
-	      if (library % getPhase(TempHapVector(k), j) == 0)&
-	      CountZero = CountZero + 1
-	      if (library % getPhase(TempHapVector(k), j) == 1)&
-	      CountOne = CountOne + 1
-	    endif
-	  end do
-	  if ((CountZero == 0).and.(CountOne > 0)) call hap2 % setPhaseMod(j, 1)
-	  if ((CountZero > 0).and.(CountOne == 0)) call hap2 % setPhaseMod(j, 0)
-
-	  CountZero = 0
-	  CountOne = 0
-	  do k = 1, size(ClusterMember, 1)
-	    if (ClusterMember(k) == 1) then
-	      if (library % getPhase(TempHapVector(k), j) == 0) CountZero = CountZero + 1
-	      if (library % getPhase(TempHapVector(k), j) == 1) CountOne = CountOne + 1
-	    endif
-	  end do
-	  if ((CountZero == 0).and.(CountOne > 0)) call hap1 % setPhaseMod(j, 1)
-	  if ((CountZero > 0).and.(CountOne == 0)) call hap1 % setPhaseMod(j, 0)
+	
+	i1 = 0
+	i2 = 0
+	allocate(ids1(count(ClusterMember(:) == 1)))
+	allocate(ids2(count(ClusterMember(:) == 2)))
+	do i = 1, size(ClusterMember,1)
+	  if (ClusterMember(i) == 1) then
+	    i1 = i1 + 1
+	    ids1(i1) = TempHapVector(i)
+	  else
+	    i2 = i2 + 1
+	    ids2(i2) = TempHapVector(i)
+	  end if
 	end do
+		
+	call hap1%setZeroBits(library%oneZeroNoOnes(ids1))
+	call hap1%setOneBits(library%oneOneNoZeros(ids1))
+	
+	call hap2%setZeroBits(library%oneZeroNoOnes(ids2))
+	call hap2%setOneBits(library%oneOneNoZeros(ids2))
       endif
     end if
     deallocate(ClusterMember)

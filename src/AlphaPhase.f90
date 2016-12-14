@@ -198,7 +198,8 @@ program Rlrplhi
 	allCore = c
 	globalLibrary = HaplotypeLibrary(c%getNCoreSnp(),500,500)
 	do chip = 1, allChips%getNumChips()
-	  c = allChips%getChipCore(allCore,chip)
+!	  c = allChips%getChipCore(allCore,chip)
+	  c = allChips%getChipCore(allCore)
 	  nGlobalHapsIter = 1
 	  if (params%consistent) then
 	    library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
@@ -226,7 +227,7 @@ program Rlrplhi
 	  end if
 	  
 	  if (allChips%getNumChips() > 1) then
-	    call allChips%mergeToAll(globalLibrary,library,allCore,c)
+!	    call allChips%mergeToAll(globalLibrary,library,allCore,c)
 	  end if
 	  
 	  total = etime(elapsed)

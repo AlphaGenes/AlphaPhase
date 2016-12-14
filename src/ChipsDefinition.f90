@@ -18,7 +18,7 @@ module ChipsDefinition
     procedure, public :: getAnimals
     procedure, public :: getSnps
     procedure, public :: getNumChips
-    procedure, public :: mergeToAll
+!    procedure, public :: mergeToAll
   end type Chips
   
   interface Chips
@@ -43,17 +43,19 @@ contains
     
   end function newChips
 
-  function getChipCore(ch, orig, chipID) result(c)
+!  function getChipCore(ch, orig, chipID) result(c)
+  function getChipCore(ch, orig) result(c)
     use CoreDefinition
     
     class(Chips), intent(in) :: ch    
     type(Core), intent(in) :: orig
-    integer, intent(in) :: chipID
+!    integer, intent(in) :: chipID
     
     type(Core) :: c
 !    
-!    if (ch%numChips == 1) then
+    if (ch%numChips == 1) then
       c = orig
+    end if
 !    else
 !      c = Core(orig,ch%getAnimals(chipID),ch%getSNPs(chipID))
 !    end if
@@ -141,19 +143,19 @@ contains
   
   !! This is a hacky way to do this (should really be a subroutine of the first Core) but this keeps as much as possible that is
   !! to do with the temporary HD hack in one place
-  subroutine mergeToAll(c, allLib, subLib, allCore, subCore)
-    use HaplotypeLibraryDefinition
-    use CoreDefinition
-    
-    class(Chips), intent(in) :: c
-    class(HaplotypeLibrary), intent(inout) :: allLib
-    class(HaplotypeLibrary), intent(in) :: subLib
-    class(Core), intent(inout) :: allCore
-    class(Core), intent(in) :: subCore
-    
-    
-    
-  end subroutine mergeToAll
+!  subroutine mergeToAll(c, allLib, subLib, allCore, subCore)
+!    use HaplotypeLibraryDefinition
+!    use CoreDefinition
+!    
+!    class(Chips), intent(in) :: c
+!    class(HaplotypeLibrary), intent(inout) :: allLib
+!    class(HaplotypeLibrary), intent(in) :: subLib
+!    class(Core), intent(inout) :: allCore
+!    class(Core), intent(in) :: subCore
+!    
+!    
+!    
+!  end subroutine mergeToAll
   
   !! NOTHING BELOW SHOULD REALLY BE HERE BUT HERE FOR NOW TO KEEP ALL THE MULTI_HD STUFF IN ONE PLACE
   !! Will move somewhere more sensible in future

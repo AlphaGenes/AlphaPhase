@@ -28,7 +28,6 @@ contains
     integer, dimension(2) :: alleleCount
     integer :: total, counter
     integer, dimension(:), allocatable :: surrAveDiff
-    integer(kind=1) :: iAllele
     integer :: current
     integer :: highestErdos
     type(Haplotype), pointer :: hap
@@ -95,7 +94,6 @@ contains
 	end if
 	hap => c%getHaplotype(i, side)
 	do j = 1, nSnp
-!	  if (hap%getPhaseMod(j) == MissingPhaseCode) then
 	  if (hap%isMissing(j)) then
 	    visited = .false.
 	    toVisit = 0
@@ -127,7 +125,6 @@ contains
 		next = surrList(current,k)
 		if (goodToVisit(next, depth, side, surrogates, visited,  &
 		  toVisit, visiting, SurrAveDiff)) then
-!		  select case (Genos(next)%getGenotype(j))
 		  if (Genos(next)%isHomo(j)) then
 		    if (Genos(next)%isZero(j)) then
 !		    case (0)
@@ -168,18 +165,20 @@ contains
 	      end if
 	    end do
 
-	    iAllele = MissingPhaseCode
 	    if (sum(AlleleCount(:)) < UseSurrsN) then
-	      if ((AlleleCount(2) <= NumSurrDisagree).and.(AlleleCount(1) > AlleleCount(2))) iAllele = 0
-	      if ((AlleleCount(1) <= NumSurrDisagree).and.(AlleleCount(2) > AlleleCount(1))) iAllele = 1
+	      if ((AlleleCount(2) <= NumSurrDisagree).and.(AlleleCount(1) > AlleleCount(2))) then
+		call hap%setZero(j)
+	      end if
+	      if ((AlleleCount(1) <= NumSurrDisagree).and.(AlleleCount(2) > AlleleCount(1))) then
+		call hap%setOne(j)
+	      end if
 	    else
 	      if ((AlleleCount(1) > 0).and.(AlleleCount(2) <= NumSurrDisagree)) then
-		iAllele = 0
+		call hap%setZero(j)
 	      elseif ((AlleleCount(2) > 0).and.(AlleleCount(1) <= NumSurrDisagree)) then
-		iAllele = 1
+		call hap%setOne(j)
 	      end if
 	    endif
-	    call hap%setPhaseMod(j, iAllele)
 	    ! +1 as we use the genotypes at one depth lower than we're currently visiting (slightly odd but maintains consistency
 	    ! with old version).  See discussion about odd depth first search above (when it's written!)
 	    if (depth(visiting - 1) + 1 > highestErdos) then

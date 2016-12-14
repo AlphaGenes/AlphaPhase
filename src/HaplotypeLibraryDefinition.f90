@@ -20,7 +20,6 @@ module HaplotypeLibraryDefinition
     procedure, public :: matchWithError
     procedure, public :: limitedMatchWithError
     procedure, public :: limitedCompatPairsWithError
-    procedure, public :: getPhase
     procedure, public :: getSize
     procedure, public :: getHapRel
     procedure, public :: getNumSnps
@@ -32,6 +31,11 @@ module HaplotypeLibraryDefinition
     procedure, public :: getCompatHapsFreq
     procedure, public :: allZero
     procedure, public :: allOne
+    procedure, public :: allZeroOrMissing
+    procedure, public :: allOneOrMissing
+    procedure, public :: allMissing
+    procedure, public :: oneZeroNoOnes
+    procedure, public :: oneOneNoZeros
     final :: destroy
   end type HaplotypeLibrary
   
@@ -287,14 +291,6 @@ contains
     end do
   end function getHaps
 
-  function getPhase(library, id, snp) result(phase)
-    class(HaplotypeLibrary) :: library
-    integer, intent(in) :: id, snp
-    integer(kind = 1) :: phase
-    
-    phase = library % newstore(id) % getPhaseMod(snp)
-  end function getPhase
-
   function getSize(library) result(size)
     class(HaplotypeLibrary) :: library
     integer :: size
@@ -442,5 +438,123 @@ contains
     end do
     
   end function allZero
+  
+  function allOneOrMissing(library, ids) result(all)
+    class(HaplotypeLibrary) :: library
+    integer, dimension(:), intent(in) :: ids
+    
+    integer(kind=8), dimension(library%nSnps/64 + 1) :: all
+
+    integer :: i, j, sections
+    type(Haplotype) :: hap
+    
+    sections = library%nSnps/64+1
+    
+    all = 0
+    all = NOT(all)
+    
+    hap = Haplotype(library%nSnps)
+    
+    do i = 1, size(ids)
+      hap = library%newstore(ids(i))
+      do j = 1, sections
+	all(j) = IAND(all(j), IOR(hap%phase(j), hap%missing(j)))
+      end do
+    end do
+   
+  end function allOneOrMissing
+  
+  function allZeroOrMissing(library, ids) result(all)
+    class(HaplotypeLibrary) :: library
+    integer, dimension(:), intent(in) :: ids
+    
+    integer(kind=8), dimension(library%nSnps/64 + 1) :: all
+
+    integer :: i, j, sections, overhang
+    type(Haplotype) :: hap
+    
+    sections = library%nSnps/64+1
+    
+    all = 0
+    all = NOT(all)
+    
+    hap = Haplotype(library%nSnps)
+    
+    do i = 1, size(ids)
+      hap = library%newstore(ids(i))
+      do j = 1, sections
+	all(j) = IAND(all(j), IOR(NOT(hap%phase(j)), hap%missing(j)))
+      end do
+    end do
+    
+    overhang = 64 - (library%nSnps - (sections - 1) * 64)
+    do i = 64 - overhang + 1, 64
+        all(sections) = ibclr(all(sections), i)
+    end do
+    
+  end function allZeroOrMissing
+  
+  function allMissing(library, ids) result(all)
+    class(HaplotypeLibrary) :: library
+    integer, dimension(:), intent(in) :: ids
+    
+    integer(kind=8), dimension(library%nSnps/64 + 1) :: all
+
+    integer :: i, j, sections
+    type(Haplotype) :: hap
+    
+    sections = library%nSnps/64+1
+    
+    all = 0
+    all = NOT(all)
+    
+    hap = Haplotype(library%nSnps)
+    
+    do i = 1, size(ids)
+      hap = library%newstore(ids(i))
+      do j = 1, sections
+	all(j) = IAND(all(j), hap%missing(j))
+      end do
+    end do
+    
+  end function allMissing
+  
+  function oneZeroNoOnes(library, ids) result(all)
+    class(HaplotypeLibrary) :: library
+    integer, dimension(:), intent(in) :: ids
+    
+    integer(kind=8), dimension(library%nSnps/64 + 1) :: all, azm, am
+
+    integer :: i, sections
+    
+    sections = library%nSnps/64+1
+    
+    azm = library%allZeroOrMissing(ids)
+    am = library%allMissing(ids)
+    
+    do i = 1, sections
+      all(i) = IAND(azm(i), NOT(am(i)))
+    end do
+    
+  end function oneZeroNoOnes
+  
+  function oneOneNoZeros(library, ids) result(all)
+    class(HaplotypeLibrary) :: library
+    integer, dimension(:), intent(in) :: ids
+    
+    integer(kind=8), dimension(library%nSnps/64 + 1) :: all, aom, am
+
+    integer :: i, sections
+    
+    sections = library%nSnps/64+1
+    
+    aom = library%allOneOrMissing(ids)
+    am = library%allMissing(ids)
+    
+    do i = 1, sections
+      all(i) = IAND(aom(i), NOT(am(i)))
+    end do
+    
+  end function oneOneNoZeros  
 
 end module HaplotypeLibraryDefinition
