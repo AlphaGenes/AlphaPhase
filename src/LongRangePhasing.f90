@@ -49,7 +49,7 @@ contains
     do i = 1, nAnisG
       do j = 1, nAnisG
 	if ((surrogates%numOppose(i,j) <= surrogates%threshold) .and. &
-	(surrogates%numIncommon(i,j) >= surrogates%incommonThreshold)) then
+	surrogates%enoughIncommon(i,j)) then
 	  if (i /= j) then
 	    nSurrList(i) = nSurrList(i) + 1
 	    surrList(i,nSurrList(i)) = j
@@ -237,7 +237,7 @@ contains
 	if ( &
 	  ((surrogates%numOppose(next, tovisit(i)) > surrogates%threshold) .and. &
 	  (surrogates%numOppose(next, tovisit(i)) <= SurrAveDiff(next))) .or. &
-	  (surrogates%numIncommon(next,toVisit(i)) < surrogates%incommonThreshold)) then
+	  .not. surrogates%enoughIncommon(next,toVisit(i))) then
 	  good = .false.
 	end if
       end do

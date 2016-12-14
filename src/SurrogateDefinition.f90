@@ -7,7 +7,8 @@ module SurrogateDefinition
     private
     !Almost definitely shouldn't be public but for now...
     integer(kind = 2), allocatable, dimension(:,:), public :: numOppose
-    integer(kind = 2), allocatable, dimension(:,:), public :: numIncommon
+!    integer(kind = 2), allocatable, dimension(:,:), public :: numIncommon
+    logical, allocatable, dimension(:,:), public :: enoughInCommon
     integer(kind = 1), allocatable, dimension(:,:), public :: partition
     integer(kind = 1), allocatable, dimension(:), public :: method
     integer, public :: threshold
@@ -136,36 +137,47 @@ contains
     if (allocated(definition%partition)) then
       deallocate(definition%partition)
       deallocate(definition%numoppose)
-      deallocate(definition%numIncommon)
+!      deallocate(definition%numIncommon)
+      deallocate(definition%enoughIncommon)      
       deallocate(definition%method)
     end if
     allocate(definition%partition(nAnisG,nAnisG))
     allocate(definition%numoppose(nAnisG,nAnisG))
-    allocate(definition%numIncommon(nAnisG,nAnisG))
+!    allocate(definition%numIncommon(nAnisG,nAnisG))
+    allocate(definition%enoughIncommon(nAnisG,nAnisG))
     allocate(definition%method(nAnisG))
 
     definition%partition = 0
     definition%numoppose = 0
-    definition%numIncommon = 0
+!    definition%numIncommon = 0
+    definition%enoughInCommon = .true.
     definition%method = 0
-
+    
+    if (inCommonThreshold > 0) then
+      do i = 1, nAnisG
+	do j = i + 1, nAnisG
+	  nSnpCommon = genos(i)%numIncommon(genos(j))
+	  
+	  definition%enoughIncommon(i,j) = (nSnpCommon >= incommonThreshold)
+	  definition%enoughIncommon(j,i) = (nSnpCommon >= incommonThreshold)	
+	end do
+      end do
+    end if
+	  
+	  
     do i = 1, nAnisG
       pass = 0
       do j = i + 1, nAnisG
 	Counter = 0
 	nSnpCommon = 0
 
-!	Counter = mismatches(homo, additional, i, j, numsections)
-!	nSnpCommon = incommon(homo, additional, i, j, numsections, overhang)
 	Counter = genos(i)%mismatches(genos(j))
-	nSnpCommon = genos(i)%numIncommon(genos(j))
+	
 
 	definition%numoppose(i, j) = Counter
 	definition%numoppose(j, i) = Counter
-	definition%numIncommon(i,j) = nSnpCommon
-	definition%numIncommon(j,i) = nSnpCommon
 
-	if ((Counter <= threshold) .and. (nSnpCommon >= incommonThreshold)) then
+	if ((Counter <= threshold) .and. (definition%enoughIncommon(i,j))) then
 	  numPassThres(i) = numPassThres(i) + 1
 	  passThres(i, numPassThres(i)) = j
 	  numPassThres(j) = numPassThres(j) + 1
@@ -204,26 +216,26 @@ contains
 	  truth = 0
 	  if ((definition%numoppose((cs%getSire(i)), j) <=  threshold) &
 	    .and.(definition%numoppose((cs%getDam(i)), j) > threshold)) then
-	    if ((definition%numIncommon(cs%getSire(i), j) >= incommonThreshold) &
-	      .and. (definition%numIncommon(cs%getDam(i), j) >= incommonThreshold)) then
+	    if (definition%enoughIncommon(cs%getSire(i), j) &
+	      .and. definition%enoughIncommon(cs%getDam(i), j)) then
 	      definition%partition(i, j) = 1
 	    end if
 	  endif
 	  if ((definition%numoppose((cs%getDam(i)), j) <= threshold)&
 	    .and.(definition%numoppose((cs%getSire(i)), j) > threshold)) then
-	    if ((definition%numIncommon(cs%getSire(i), j) >= incommonThreshold) &
-	      .and. (definition%numIncommon(cs%getDam(i), j) >= incommonThreshold)) then
+	    if (definition%enoughIncommon(cs%getSire(i), j) &
+	      .and. definition%enoughIncommon(cs%getDam(i), j)) then
 	      definition%partition(i, j) = 2
 	    end if
 	  endif
 	end do
 	if (definition%numoppose(i, cs%getSire(i)) <= threshold) then
-	  if (definition%numIncommon(cs%getSire(i), j) >= incommonThreshold) then
+	  if (definition%enoughIncommon(cs%getSire(i), j)) then
 	    definition%partition(i, cs%getSire(i)) = 1
 	  end if
 	end if
 	if (definition%numoppose(i, cs%getDam(i)) <= threshold) then
-	  if (definition%numIncommon(cs%getDam(i), j) >= incommonThreshold) then
+	  if (definition%enoughIncommon(cs%getDam(i), j)) then
 	    definition%partition(i, cs%getDam(i)) = 2
 	  end if
 	end if
@@ -235,7 +247,7 @@ contains
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
 	  if (definition%numoppose(cs%getSire(i), j) <= threshold) then
-	    if (definition%numIncommon(cs%getSire(i), j) >= incommonThreshold) then
+	    if (definition%enoughIncommon(cs%getSire(i), j)) then
 	      definition%partition(i, j) = 1
 	    end if
 	  endif
@@ -248,7 +260,7 @@ contains
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
 	  if (definition%numoppose(cs%getDam(i), j) <= threshold) then
-	    if (definition%numIncommon(cs%getDam(i), j) >= incommonThreshold) then
+	    if (definition%enoughIncommon(cs%getDam(i), j)) then
 	      definition%partition(i, j) = 2
 	    end if
 	  endif
@@ -316,7 +328,7 @@ contains
 	    j = passThres(i, aj)
 	    if ((i == cs%getSire(j)).or.(i == cs%getDam(j))) then
 	      if (definition%numoppose(j, DumSire) > threshold) then
-		if (definition%numIncommon(j, DumSire) >= incommonThreshold) then
+		if (definition%enoughIncommon(j, DumSire)) then
 		  definition%partition(i, j) = 2
 		  truth = 1
 		  exit
@@ -387,7 +399,7 @@ contains
 	  SurrCounter = 0
 	  do j = 1, nAnisG
 	    if ((definition%numoppose(i, j) <= threshold).and.(i /= j)) then
-	      if (definition%numIncommon(i, j) >= incommonThreshold) then
+	      if (definition%enoughIncommon(i, j)) then
 		SurrCounter = SurrCounter + 1
 		TempSurrVector(SurrCounter) = j
 	      end if
@@ -397,7 +409,7 @@ contains
 	  do j = 1, SurrCounter
 	    do k = 1, SurrCounter
 	      if (definition%numoppose(TempSurrVector(j), TempSurrVector(k)) <= threshold) then
-		if (definition%numIncommon(TempSurrVector(j), TempSurrVector(k)) >= incommonThreshold) then
+		if (definition%enoughIncommon(TempSurrVector(j), TempSurrVector(k))) then
 		  TempSurrArray(j, k) = 1
 		end if
 	      end if

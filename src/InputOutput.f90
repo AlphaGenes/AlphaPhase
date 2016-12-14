@@ -1005,7 +1005,7 @@ contains
 	nSurrogates = 0
 	do j = 1, nAnisG
 	  if ((definition%numOppose(i, j) <= definition%threshold) .and. &
-	    (definition%numIncommon(i,j) >= definition%incommonThreshold)) then
+	   definition%enoughIncommon(i,j)) then
 	    nSurrogates = nSurrogates + 1
 	  end if
 	enddo
@@ -1198,7 +1198,8 @@ contains
 	  nSurrogates = 0
 	  do k = i, nAnisG
 	    if ((surrogates%numOppose(i, k) <= surrogates%threshold) .and. &
-	      (surrogates%numIncommon(i, k) >= surrogates%incommonThreshold)) then
+!	      (surrogates%numIncommon(i, k) >= surrogates%incommonThreshold)) then
+	      surrogates%enoughIncommon(i, k)) then
 	      nSurrogates = nSurrogates + 1
 	    end if
 	  enddo
@@ -1234,7 +1235,7 @@ contains
 	  nSurrogates = 0
 	  do k = i, nAnisG
 	    if ((surrogates%numOppose(i,k) <= surrogates%threshold) .and. &
-	      (surrogates%numIncommon(i,k) >= surrogates%incommonThreshold)) then
+	    surrogates%enoughIncommon(i,k)) then
 	      nSurrogates = nSurrogates + 1
 	    end if
 	  enddo
