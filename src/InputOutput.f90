@@ -176,10 +176,12 @@ contains
       open (unit = 15, file = "."//SEP//"PhasingResults"//SEP//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
       write(fmt, '(a,i10,a)') '(a20,', c%getNSnp(), 'i2)'
       do i = 1, nAnisG
+	hap1 => c%phase(j, 1)
+	hap2 => c%phase(j, 2)
 	write(15, fmt) p%getID(i), &
-	c%phase(i,1)
+	hap1
 	write(15, fmt) p%getID(i), &
-	c%phase(i,2)
+	hap2
       end do
       close(15)
     end if
@@ -1096,6 +1098,7 @@ contains
     use HaplotypeLibraryDefinition
     use Constants
     use CoreDefinition
+    use HaplotypeModule
     
     type(HaplotypeLibrary), intent(in) :: library
     type(Core), intent(in) :: c
@@ -1104,6 +1107,7 @@ contains
 
     integer :: i, SizeCore, nHaps
     character(len = 300) :: filout
+    type(Haplotype) :: hap
 
     SizeCore = library%getNumSnps()
 
@@ -1122,8 +1126,9 @@ contains
     
     do i = 1, nHaps
       if (params%outputHaplotypeLibraryText) then
+	hap = library%getHap(i)
 	write (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
-	i, library%getHapFreq(i), " ", library%getHap(i)
+	i, library%getHapFreq(i), " ", hap%toIntegerArray()
       end if
       if (params%outputHaplotypeLibraryBinary) then
 	write (34) library%getHap(i)
