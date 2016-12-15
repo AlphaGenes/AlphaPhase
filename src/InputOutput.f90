@@ -179,9 +179,9 @@ contains
 	hap1 => c%phase(j, 1)
 	hap2 => c%phase(j, 2)
 	write(15, fmt) p%getID(i), &
-	hap1
+	hap1%toIntegerArray()
 	write(15, fmt) p%getID(i), &
-	hap2
+	hap2%toIntegerArray()
       end do
       close(15)
     end if
