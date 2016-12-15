@@ -64,7 +64,7 @@ contains
 	  Dist(k) = Dist(k) + abs(input(i, j) - Medoids(k, j))
 	end do
       end do
-      Dist = Dist/size(input,2)
+!      Dist = Dist/size(input,2)
       MinClust = Dist(assign(i))
       k = 1
       !do k = 1, numClusters
@@ -141,7 +141,7 @@ contains
 	  Dist(k) = Dist(k) + abs(input(i, j) - Medoids(k, j))
 	end do
       end do
-      Dist = Dist/size(input,2)
+!      Dist = Dist/size(input,2)
       MinClust = Dist(assign(i))
       k = 1
       !do k = 1, numClusters
