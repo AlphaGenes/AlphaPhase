@@ -533,53 +533,41 @@ contains
     
     type(Genotype), pointer :: geno
     type(Haplotype), pointer :: hap1, hap2
-!    type(Haplotype) :: hap1complement, hap2complement
-    integer(kind = 1) :: g, p1, p2
-
-
-    !!! BIT OPERATIONS? !!!
+    type(Haplotype) :: hap1complement, hap2complement
+    integer(kind=8), dimension(:), allocatable :: keepmissing
+    
     do i = 1, c % getNAnisG()
       geno => c%getCoreGenos(i)
       hap1 => c%phase(i,1)
       hap2 => c%phase(i,2)
-!      
-!      hap1complement = geno%complement(hap1)
-!      hap2complement = geno%complement(hap2)
-!      
-!      call geno%setHaplotypeIfMissing(hap1)
-!      call geno%setHaplotypeIfMissing(hap2)
-!      
-!!      call hap1%SetFromOtherIfMissing(hap2complement)
-!!      call hap2%SetFromOtherIfMissing(hap1complement)
-      do j = 1, c % getNCoreSnp()
-	g = geno%getGenotype(j)
-	p1 = hap1%getPhaseMod(j)
-	p2 = hap2%getPhaseMod(j)
-	if (g == 1) then
-	  if ((p1 == MissingPhaseCode).and.(p2 /= MissingPhaseCode)) then
-	    call hap1%setPhaseMod(j, g - p2)
-	  end if
-	  if ((p2 == MissingPhaseCode).and.(p1 /= MissingPhaseCode)) then
-	    call hap2%setPhaseMod(j, g - p1)
-	  end if
-	endif
-	if (g == 0) then
-	  if ((p1 == MissingPhaseCode).and.(p2 /= MissingPhaseCode)) then
-	    call hap1 % setPhaseMod(j, 0)
-	  end if
-	  if ((p2 == MissingPhaseCode).and.(p1 /= MissingPhaseCode)) then
-	    call hap2 % setPhaseMod(j, 0)
-	  end if
-	endif
-	if (g == 2) then
-	  if ((p1 == MissingPhaseCode).and.(p2 /= MissingPhaseCode)) then
-	    call hap1 % setPhaseMod(j, 1)
-	  end if
-	  if ((p2 == MissingPhaseCode).and.(p1 /= MissingPhaseCode)) then
-	    call hap2 % setPhaseMod(j, 1)
-	  end if
-	endif
-      enddo
+      
+      !! THIS IS QUITE HACKY AS I'M NOT SURE WHY WE ONLY SET FROM A HOMO GENO IF ONE (AND ONLY ONE) HAPLOTYPE IS MISSING...
+      !! So I think this code may not stay.  Then again I can also see a possible reason for it (if both are missing we may
+      !! have set it to missing because of a conflict with imputed haplotype... but that still seems wrong.   Need to look into it).ß
+      allocate(keepmissing(hap1%sections))
+      do j = 1, hap1%sections
+	keepmissing(j) = IAND(hap1%missing(j), hap2%missing(j))
+      end do
+      
+      hap1complement = geno%complement(hap1)
+      hap2complement = geno%complement(hap2)      
+
+      call geno%setHaplotypeIfMissing(Hap1)
+      call geno%setHaplotypeIfMissing(Hap2)
+    
+      
+      call Hap1%setFromOtherIfMissing(hap2complement)
+      call Hap2%setFromOtherIfMissing(hap1complement)
+      
+      do j = 1, hap1%sections
+	hap1%missing(j) = IOR(hap1%missing(j), keepmissing(j))
+	hap1%phase(j) = IAND(NOT(keepmissing(j)),hap1%phase(j))
+	
+	hap2%missing(j) = IOR(hap2%missing(j), keepmissing(j))
+	hap2%phase(j) = IAND(NOT(keepmissing(j)),hap2%phase(j))
+      end do
+      
+      deallocate(keepmissing)
     enddo
   end subroutine complementPhaseSnps
   
