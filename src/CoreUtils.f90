@@ -1,137 +1,74 @@
 module CoreUtils
   
 contains
-  function calculateCores(nSnp, Jump, offset, consistent) result(CoreIndex)
+  function calculateCores(nSnp, Jump, offset) result(CoreIndex)
     implicit none
 
     integer, intent(in) :: nSnp, Jump
-    logical, intent(in) :: offset, consistent
+    logical, intent(in) :: offset
     integer, dimension(:,:), pointer :: CoreIndex
 
     double precision :: corelength
     integer :: i, nCores, left
 
-    if (consistent) then
-      if (.not. Offset) then
-	nCores = int(nSnp)/Jump
-	allocate(CoreIndex(nCores, 2))
+    nCores = nSnp / Jump
+    corelength = nSnp / nCores
+    left = nSnp - nCores * corelength
 
-	CoreIndex(1, 1) = 1
-	CoreIndex(1, 2) = 1 + Jump - 1
-	do i = 2, nCores
-	  CoreIndex(i, 1) = CoreIndex(i - 1, 1) + Jump
-	  CoreIndex(i, 2) = CoreIndex(i - 1, 2) + Jump
-	end do
-	CoreIndex(nCores, 2) = nSnp
-      endif
-
-      if (Offset) then
-	nCores = (int(nSnp)/Jump) + 1
-	allocate(CoreIndex(nCores, 2))
-
-	CoreIndex(1, 1) = 1
-	CoreIndex(1, 2) = int(Jump/2)
-	do i = 2, nCores
-	  CoreIndex(i, 1) = CoreIndex(i - 1, 2) + 1
-	  CoreIndex(i, 2) = CoreIndex(i - 1, 2) + Jump
-	end do
-	CoreIndex(nCores, 2) = nSnp
-      endif
-    else
-      nCores = nSnp / Jump
-      corelength = nSnp / nCores
-      left = nSnp - nCores * corelength
-
-      if (.not. Offset) then
-	allocate(CoreIndex(nCores, 2))
-	CoreIndex(1, 1) = 1
-	if (left /= 0) then
-	  CoreIndex(1, 2) = 1 + corelength
-	else
-	  CoreIndex(1, 2) = corelength
-	end if
+    if (.not. Offset) then
+      allocate(CoreIndex(nCores, 2))
+      CoreIndex(1, 1) = 1
+      if (left /= 0) then
+	CoreIndex(1, 2) = 1 + corelength
       else
-	nCores = nCores + 1
-	allocate(CoreIndex(nCores, 2))
-	CoreIndex(1, 1) = 1
-	if (left /= 0) then
-	  CoreIndex(1, 2) = 1 + floor(dble(corelength) / 2.0)
-	else
-	  CoreIndex(1, 2) = floor(dble(corelength) / 2.0)
-	end if
+	CoreIndex(1, 2) = corelength
       end if
-
-      do i = 2, nCores
-	CoreIndex(i,1) = CoreIndex(i - 1, 2) + 1
-	if (i <= left) then
-	  CoreIndex(i, 2) = CoreIndex(i - 1, 2) + corelength + 1
-	else
-	  CoreIndex(i, 2) = CoreIndex(i - 1, 2) + corelength
-	end if
-      end do
-
-      if (Offset) then
-	CoreIndex(nCores,2) = nSnp
+    else
+      nCores = nCores + 1
+      allocate(CoreIndex(nCores, 2))
+      CoreIndex(1, 1) = 1
+      if (left /= 0) then
+	CoreIndex(1, 2) = 1 + floor(dble(corelength) / 2.0)
+      else
+	CoreIndex(1, 2) = floor(dble(corelength) / 2.0)
       end if
-    endif
+    end if
+
+    do i = 2, nCores
+      CoreIndex(i,1) = CoreIndex(i - 1, 2) + 1
+      if (i <= left) then
+	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + corelength + 1
+      else
+	CoreIndex(i, 2) = CoreIndex(i - 1, 2) + corelength
+      end if
+    end do
+
+    if (Offset) then
+      CoreIndex(nCores,2) = nSnp
+    end if
   end function CalculateCores
 
-  function CalculateTails(CoreIndex, nSnp, Jump, CoreAndTailLength, offset, consistent) result(TailIndex)
+  function CalculateTails(CoreIndex, nSnp, Jump, CoreAndTailLength) result(TailIndex)
     implicit none
 
     integer, dimension(:,:), intent(in) :: CoreIndex
     integer, intent(in) :: nSnp, Jump, CoreAndTailLength
-    logical, intent(in) :: offset, consistent
     integer, dimension(:,:), pointer :: TailIndex
 
-    integer :: resid
     integer :: ltail, rtail, nCores
     integer :: i
 
     nCores = size(CoreIndex,1)
     allocate(TailIndex(nCores,2))
 
-    if (consistent) then
-      if (.not. Offset) then
-	allocate(TailIndex(nCores, 2))
-
-	resid = int((CoreAndTailLength - Jump)/2)
-	TailIndex(1, 1) = 1
-	TailIndex(1, 2) = 1 + CoreAndTailLength - 1
-	do i = 2, nCores
-	  TailIndex(i, 1) = CoreIndex(i, 1) - resid
-	  TailIndex(i, 2) = CoreIndex(i, 2) + resid
-	  if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
-	  if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
-	end do
-      endif
-
-      if (Offset) then
-	resid = int((CoreAndTailLength - Jump)/2)
-
-	allocate(TailIndex(nCores, 2))
-
-	TailIndex(1, 1) = 1
-	TailIndex(1, 2) = nSnp
-	do i = 2, nCores
-	  TailIndex(i, 1) = CoreIndex(i, 1) - resid
-	  TailIndex(i, 2) = CoreIndex(i, 2) + resid
-	  if (TailIndex(i, 1) < 1) TailIndex(i, 1) = 1
-	  if (TailIndex(i, 2) > nSnp) TailIndex(i, 2) = nSnp
-	end do
-	TailIndex(nCores, 1) = 1   
-	TailIndex(nCores, 2) = nSnp
-      endif
-    else
-      ltail = floor(dble(CoreAndTailLength - Jump) / 2.0)
-      rtail = ceiling(dble(CoreAndTailLength - Jump) / 2.0)
+    ltail = floor(dble(CoreAndTailLength - Jump) / 2.0)
+    rtail = ceiling(dble(CoreAndTailLength - Jump) / 2.0)
 
 
-      do i = 1, nCores
-	TailIndex(i,1) = max(1,CoreIndex(i,1) - ltail)
-	TailIndex(i,2) = min(nSnp,CoreIndex(i,2) + rtail)
-      end do
-    endif
+    do i = 1, nCores
+      TailIndex(i,1) = max(1,CoreIndex(i,1) - ltail)
+      TailIndex(i,2) = min(nSnp,CoreIndex(i,2) + rtail)
+    end do
   end function CalculateTails
   
   function MinorAlleleFrequency(genos) result(maf)

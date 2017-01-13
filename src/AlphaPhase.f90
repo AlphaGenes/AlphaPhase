@@ -83,11 +83,11 @@ program Rlrplhi
   nAnisG = p%getNAnis()
 
   if (params%library .eq. "None") then
-    CoreIndex => CalculateCores(params%nSnp, params%Jump, params%offset, params%consistent)    
+    CoreIndex => CalculateCores(params%nSnp, params%Jump, params%offset)    
   else
     CoreIndex => getCoresFromHapLib(params%library)
   end if
-  TailIndex => calculateTails(CoreIndex, params%nSnp, params%Jump, params%CoreAndTailLength, params%offset, params%consistent)
+  TailIndex => calculateTails(CoreIndex, params%nSnp, params%Jump, params%CoreAndTailLength)
   nCores = size(CoreIndex,1)  
     
   if (.not. params%readCoreAtTime) then
