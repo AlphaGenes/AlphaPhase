@@ -52,13 +52,11 @@ module CoreDefinition
 
 contains
 
-  function newCore(genos, startCoreSnp, endCoreSnp, endSurrSnp) result(c)
+  function newCore(genos, startCoreSnp, endCoreSnp) result(c)
     
     integer(kind = 1), dimension(:,:), intent(in) :: genos
     integer, intent(in) :: startCoreSnp, endCoreSnp
     type(Core) :: c
-    
-    integer, intent(in) :: endSurrSnp
     
     integer :: nAnisG, i
     
@@ -71,7 +69,7 @@ contains
     allocate(c%phase(nAnisG,2))
     do i = 1, nAnisG
       c%coreGenos(i) = Genotype(genos(i,startCoreSnp:endCoreSnp))
-      c%coreAndTailGenos(i) = Genotype(genos(i,1:endSurrSnp))
+      c%coreAndTailGenos(i) = Genotype(genos(i,:))
       c%phase(i,1) = Haplotype(c%nCoreSnps)
       c%phase(i,2) = Haplotype(c%nCoreSnps)
     end do

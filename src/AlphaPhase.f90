@@ -146,15 +146,15 @@ program Rlrplhi
     print *, total
 
     if (params%GenotypeFileFormat /= 2) then
-      allocate(Genos(nAnisG, max(EndSurrSnp,EndCoreSnp)-startSurrSnp+1))
+      allocate(Genos(nAnisG, EndSurrSnp-startSurrSnp+1))
       if (params%readCoreAtTime) then
-	Genos = ParseGenotypeData(StartSurrSnp,max(EndSurrSnp,EndCoreSnp),nAnisG,params)
+	Genos = ParseGenotypeData(StartSurrSnp,EndSurrSnp,nAnisG,params)
       else
-	Genos = AllGenos(:,StartSurrSnp:max(EndSurrSnp,EndCoreSnp))
+	Genos = AllGenos(:,StartSurrSnp:EndSurrSnp)
       end if
       
       ! Fudge below
-      c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1, endSurrSnp-startSurrSnp+1)
+      c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1)
 	
       if (params%library .eq. "None") then
 	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
