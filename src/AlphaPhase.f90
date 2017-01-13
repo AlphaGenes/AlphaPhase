@@ -201,10 +201,7 @@ program Rlrplhi
 !	  c = allChips%getChipCore(allCore,chip)
 	  c = allChips%getChipCore(allCore)
 	  nGlobalHapsIter = 1
-	  if (params%consistent) then
-	    library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
-	  end if
-	  call MakeHapLib(c, library, params%consistent)
+	  call UpdateHapLib(c, library)
 	  nGlobalHapsOld = library%getSize()
 	  if (params%ItterateType .eq. "Off") then
 	    print*, " "
@@ -212,10 +209,7 @@ program Rlrplhi
 	  end if
 	  do j = 1, 20
 	    call ImputeFromLib(library, c, nGlobalHapsIter, params%PercGenoHaploDisagree, params%minHapFreq, params%consistent)
-	    if (params%consistent) then
-	      library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
-	    end if
-	    call MakeHapLib(c,library,params%consistent)
+	    call UpdateHapLib(c,library)
 	    if (nGlobalHapsOld == library%getSize()) exit
 	    nGlobalHapsOld = library%getSize()
 	  end do
@@ -249,7 +243,7 @@ program Rlrplhi
 	call c%setHaplotype(i,2,Haplotype(Phase(i,:,2)))
       end do
       library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
-      call MakeHapLib(c,library,params%consistent)
+      call UpdateHapLib(c,library)
       deallocate(Phase)
     end if
    

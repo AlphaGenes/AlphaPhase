@@ -5,19 +5,18 @@ module HaplotypeLibraryPhasing
   integer, parameter, private :: nMaxRounds = 100
   
 contains
-  subroutine MakeHapLib(c, library, consistent)
+  subroutine UpdateHapLib(c, library)
     use HaplotypeLibraryDefinition
     use HaplotypeModule
     use CoreDefinition
     use Random
     
     type(Core), intent(in) :: c
-    logical, intent(in) :: consistent
     type(HaplotypeLibrary), intent(in) :: library
     
     type(Haplotype) :: hap
 
-    integer :: i, id
+    integer :: i
     
     do i = 1, c % getNAnisG()
       !Paternal Haps
@@ -29,16 +28,11 @@ contains
       !Maternal Haps
       hap = c % phase(i, 2)
       if (hap%fullyPhased()) then
-	!FUDGE FOR CONSISTENCY.  There should be no if statement here and then we could replace this with a call to newHaplotype
-	if (.not.consistent .or. (library % getSize() > 0)) then
-	  call c % setFullyPhased(i, 2)
-	end if
-	id = library % matchAddHap(hap)
-	call c % setHapAnis(i, 2, id)
+	call newHaplotype(c, i, 2, library)
       endif
     enddo
     
-  end subroutine MakeHapLib
+  end subroutine UpdateHapLib
 
   subroutine ImputeFromLib(library, c, nGlobalHapsIter, PercGenoHaploDisagree, minHapFreq, consistent)
     ! Impute the phase for gametes that are not completely phased by LRP 
