@@ -106,7 +106,6 @@ contains
 	    allelecount = 0
 	    visiting = 1
 
-	    !!! FUDGES !!!
 	    if (genos(i)%isZero(j)) then
 	      AlleleCount(1) = AlleleCount(1) + 1
 	      found = found + 1
@@ -115,7 +114,6 @@ contains
 	      AlleleCount(2) = AlleleCount(2) + 1
 	      found = found + 1
 	    end if
-	    !!! END FUDGES !!!
 
 	    do while ((toVisit(visiting) /= 0) .and.(found < useSurrsN))
 	      current = toVisit(visiting)
@@ -126,7 +124,6 @@ contains
 		  toVisit, visiting, SurrAveDiff)) then
 		  if (Genos(next)%isHomo(j)) then
 		    if (Genos(next)%isZero(j)) then
-!		    case (0)
 		      if (mod(depth(Visiting) + 1, 2) == 0) then
 			AlleleCount(2) = AlleleCount(2) + 1
 		      end if
@@ -134,7 +131,6 @@ contains
 			AlleleCount(1) = AlleleCount(1) + 1
 		      end if
 		      found = found + 1
-!		    case (2)
 		    else
 		      if (mod(depth(Visiting) + 1, 2) == 0) then
 			AlleleCount(1) = AlleleCount(1) + 1
@@ -143,13 +139,11 @@ contains
 			AlleleCount(2) = AlleleCount(2) + 1
 		      end if
 		      found = found + 1
-!		    case default
 		    end if
 		  else
 		      toVisitPos = toVisitPos + 1
 		      toVisit(toVisitPos) = next
 		      depth(toVisitPos) = depth(visiting) + 1
-!		  end select
 		  end if
 		end if
 		visited(next) = .true.

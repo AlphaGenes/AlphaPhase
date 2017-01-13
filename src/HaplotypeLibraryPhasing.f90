@@ -122,7 +122,6 @@ contains
 	  !! There's some odd logic here - if we have one paternal and maternal we end up keeping HapP as the
 	  !! paternal even if it's not compitable with the mat.  May be checked later.
 	  if ((size(CandHapsMat, 1) == 1).AND.(size(CandHapsPat, 1) > 0)) then
-!	    comp = Haplotype(complement(c % getSingleCoreGenos(i), library % getHap(HapM)))
 	    comp = geno%complement(library%getHap(HapM))
 	    matches => library % limitedMatchWithError(comp, ErrorAllow, CandHapsPat)
 	    if (size(matches) == 1) then
@@ -133,20 +132,11 @@ contains
 
 	  ! If only one paternal candidate haplotype and one / many maternal candidate haplotypes
 	  if ((size(CandHapsPat, 1) == 1).and.(size(CandHapsMat, 1) > 0)) then
-	    ! FUDGE TO DEAL WITH STRANGE LOGIC IN ORIGINAL CODE
-	    HapM = 0
-
-!	    comp = Haplotype(complement(c % getSingleCoreGenos(i), library % getHap(HapP)))
+	    comp = geno%complement(library%getHap(HapP))
 	    matches => library % limitedMatchWithError(comp, ErrorAllow, CandHapsMat)
 	    if (size(matches) == 1) then
 	      HapM = matches(1)
 	    end if
-
-	    ! FUDGE TO DEAL WITH STRANGE LOGIC IN ORIGINAL CODE
-	    if (HapM /= CandHapsMat(size(CandHapsMat, 1))) then
-	      HapM = 0
-	    end if
-	    
 	    deallocate(matches)
 	  end if
 
