@@ -484,45 +484,22 @@ contains
 
     class(Core) :: c
 
-    integer :: i, j
+    integer :: i
     
     type(Genotype), pointer :: geno
     type(Haplotype), pointer :: hap1, hap2
     type(Haplotype) :: hap1complement, hap2complement
-    integer(kind=8), dimension(:), allocatable :: keepmissing
     
     do i = 1, c % getNAnisG()
       geno => c%getCoreGenos(i)
       hap1 => c%phase(i,1)
       hap2 => c%phase(i,2)
       
-      !! THIS IS QUITE HACKY AS I'M NOT SURE WHY WE ONLY SET FROM A HOMO GENO IF ONE (AND ONLY ONE) HAPLOTYPE IS MISSING...
-      !! So I think this code may not stay.  Then again I can also see a possible reason for it (if both are missing we may
-      !! have set it to missing because of a conflict with imputed haplotype... but that still seems wrong.   Need to look into it).ß
-      allocate(keepmissing(hap1%sections))
-      do j = 1, hap1%sections
-	keepmissing(j) = IAND(hap1%missing(j), hap2%missing(j))
-      end do
-      
       hap1complement = geno%complement(hap1)
       hap2complement = geno%complement(hap2)      
-
-      call geno%setHaplotypeIfMissing(Hap1)
-      call geno%setHaplotypeIfMissing(Hap2)
-    
       
       call Hap1%setFromOtherIfMissing(hap2complement)
       call Hap2%setFromOtherIfMissing(hap1complement)
-      
-      do j = 1, hap1%sections
-	hap1%missing(j) = IOR(hap1%missing(j), keepmissing(j))
-	hap1%phase(j) = IAND(NOT(keepmissing(j)),hap1%phase(j))
-	
-	hap2%missing(j) = IOR(hap2%missing(j), keepmissing(j))
-	hap2%phase(j) = IAND(NOT(keepmissing(j)),hap2%phase(j))
-      end do
-      
-      deallocate(keepmissing)
     enddo
   end subroutine complementPhaseSnps
   
