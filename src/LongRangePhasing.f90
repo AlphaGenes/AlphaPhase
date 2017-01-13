@@ -278,7 +278,7 @@ contains
     type(Genotype), pointer :: genos
     type(Haplotype), pointer :: hap1, hap2
 
-    integer :: i, j, CountError, ErrorAllow, counterMissing, nAnisG, nCoreSnp
+    integer :: i, CountError, ErrorAllow, counterMissing, nAnisG, nCoreSnp
     integer(kind=8), dimension(:), pointer :: error
     
     nAnisG  = c%getNAnisG()
@@ -299,22 +299,8 @@ contains
       counterMissing = hap1%numberBothNotMissing(hap2)
       ErrorAllow = int(PercGenoHaploDisagree * counterMissing)
       if (CountError >= ErrorAllow) then
-! Comment out the line below (hap1) and comment in the stuff after to be consistent
-!	call genos%setHaplotypeIfError(hap1,error)
+	call genos%setHaplotypeIfError(hap1,error)
 	call genos%setHaplotypeIfError(hap2,error)
-	do j = 1, nCoreSnp
-	  if (genos%getGenotype(j) /= MissingGenotypeCode) then
-	    if ((hap1%getPhaseMod(j) /= MissingPhaseCode).and.(hap2%getPhaseMod(j) /= MissingPhaseCode).and. &
-	      ((hap1%getPhaseMod(j) + hap2%getPhaseMod(j)) /= Genos%getGenotype(j))) then
-	      if (Genos%getGenotype(j) == 0) then
-		call hap1%setPhaseMod(j, 0)
-	      end if
-	      if (Genos%getGenotype(j) == 2) then
-		call hap1%setPhaseMod(j, 1)
-	      end if
-	    endif
-	  endif
-	enddo
       endif
     end do
 
