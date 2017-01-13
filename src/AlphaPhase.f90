@@ -202,7 +202,7 @@ program Rlrplhi
 	    print*, "  ", "Haplotype library imputation step"
 	  end if
 	  do j = 1, 20
-	    call ImputeFromLib(library, c, nGlobalHapsIter, params%PercGenoHaploDisagree, params%minHapFreq, params%consistent)
+	    call ImputeFromLib(library, c, nGlobalHapsIter, params%PercGenoHaploDisagree, params%minHapFreq)
 	    call UpdateHapLib(c,library)
 	    if (nGlobalHapsOld == library%getSize()) exit
 	    nGlobalHapsOld = library%getSize()

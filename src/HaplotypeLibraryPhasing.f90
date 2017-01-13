@@ -34,7 +34,7 @@ contains
     
   end subroutine UpdateHapLib
 
-  subroutine ImputeFromLib(library, c, nGlobalHapsIter, PercGenoHaploDisagree, minHapFreq, consistent)
+  subroutine ImputeFromLib(library, c, nGlobalHapsIter, PercGenoHaploDisagree, minHapFreq)
     ! Impute the phase for gametes that are not completely phased by LRP 
     ! by matching their phased loci to haplotypes in the Haplotype Library,
     ! following strategies listed in the section Step 2e of Hickey et al 2011.
@@ -52,9 +52,8 @@ contains
     integer, intent(inout) :: nGlobalHapsIter
     double precision, intent(in) :: PercGenoHaploDisagree
     integer, intent(in) :: minHapFreq
-    logical, intent(in) :: consistent
 
-    integer :: i, k, nHapsOld, ErrorAllow, HapM, HapP
+    integer :: i, nHapsOld, ErrorAllow, HapM, HapP
     integer, pointer, dimension(:,:) :: CandPairs
 
     integer, dimension(:), pointer :: compatHaps
@@ -101,14 +100,7 @@ contains
 
 	! If neither of the gametes is completely phased (Section Step 2e.ii Hickey et al. 2011)
 	if ((.not.c % getFullyPhased(i, 1)) .and. (.not.c % getFullyPhased(i, 2))) then
-	  if (consistent) then
-	    allocate(compatHaps(library % getSize()))
-	    do k = 1, library % getSize()
-	      compatHaps(k) = k
-	    end do
-	  else
-	    compatHaps => library % getCompatHapsFreq(geno,minHapFreq, PercGenoHaploDisagree)
-	  end if
+          compatHaps => library % getCompatHapsFreq(geno,minHapFreq, PercGenoHaploDisagree)
 
 	  CandHapsPat => library % limitedMatchWithError(c % phase(i, 1), ErrorAllow, compatHaps)
 	  !Find all candiate maternal haps and then remove those that are already candidate paternal haps
