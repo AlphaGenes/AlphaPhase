@@ -54,9 +54,7 @@ program Rlrplhi
   character(len=4096) :: specfile
   character(len=4096) :: cmd
   
-  integer(kind = 1), allocatable, dimension (:,:) :: PseudoNRM
-  
-  integer :: startCore, endCore
+ integer :: startCore, endCore
   logical :: combine, printOldProgress, writeSwappable, outputSurrogates
     
   type(MemberManager) :: manager
@@ -109,10 +107,6 @@ program Rlrplhi
     end if
   end if
   
-  if ((params%consistent) .and. (params%GenotypeFileFormat /= 2)) then
-    allocate(PseudoNRM(nAnisG,nAnisG))
-    PseudoNRM = createNRM(p, params)
-  end if
     
   threshold = int(params%GenotypeMissingErrorPercentage*params%CoreAndTailLength)
   
@@ -175,7 +169,7 @@ program Rlrplhi
 	do while (manager%hasNext())
 	  cs = CoreSubSet(c, p, manager%getNext())
 
-	  surrogates = Surrogate(cs, threshold, params%consistent, pseudoNRM, printOldProgress)
+	  surrogates = Surrogate(cs, threshold, printOldProgress)
 	  if (outputSurrogates) then
 	    call writeSurrogates(surrogates, h, p, params)
 	  end if
@@ -289,9 +283,6 @@ program Rlrplhi
     call CombineResults(nAnisG,CoreIndex,writeSwappable,params)
   else
     call WriteOutResults(AllCores,CoreIndex,p,writeSwappable, params)
-  end if
-  if ((params%consistent) .and. (params%GenotypeFileFormat /= 2)) then
-    deallocate(PseudoNRM)
   end if
   if (.not. params%readCoreAtTime) then
     deallocate(AllHapAnis)

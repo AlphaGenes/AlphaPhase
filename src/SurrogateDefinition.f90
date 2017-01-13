@@ -23,15 +23,13 @@ module SurrogateDefinition
   end interface Surrogate
 
 contains
-  function newSurrogate(cs, threshold, useNRM, pseudoNRM, writeProgress) result(definition)
+  function newSurrogate(cs, threshold, writeProgress) result(definition)
     use Clustering
     use CoreSubSetDefinition
     
     class(CoreSubSet), intent(in) :: cs    
     integer, intent(in) :: threshold
     integer :: incommonThreshold = 0
-    logical, intent(in) :: useNRM
-    integer(kind = 1), dimension (:,:), intent(in) :: PseudoNRM
     logical, intent(in) :: writeProgress
     type(Surrogate) :: definition
     
@@ -266,46 +264,6 @@ contains
 	  endif
 	enddo
 	definition%method(i) = 3
-      endif
-      
-      if ((definition%method(i) == 0).and.(cs%getSire(i) == 0).and.(cs%getDam(i) == 0).and.useNRM) then
-	subtract1 = .false.
-	! Same fudge as below.  Definitely should not be here
-	do aj = 1, numPassThres(i) + 1
-	  if (.not.subtract1) then
-	  j = passThres(i, aj)
-	  if ((j > i) .or. (j == 0)) then
-	    j = i
-	    subtract1 = .true.
-	  end if
-	  else
-	    j = passThres(i, aj - 1)
-	  end if
-	  if (PseudoNRM(i, j) == 1) then
-	    DumSire = j
-	    definition%partition(i, j) = 1
-	    definition%method(i) = 4
-	    exit
-	  endif
-	end do
-	subtract1 = .false.
-	do aj = 1, numPassThres(i) + 1
-	  if (.not.subtract1) then
-	    j = passThres(i, aj)
-	    if ((j > i) .or. (j == 0)) then
-	      j = i
-	      subtract1 = .true.
-	    end if
-	  else
-	    j = passThres(i, aj - 1)
-	  end if
-	  if (PseudoNRM(i, j) == 2) then
-	    DumDam = j
-	    definition%partition(i, j) = 2
-	    definition%method(i) = 4
-	    exit
-	  end if
-	end do
       endif
       
       if ((definition%method(i) == 0).and.(ProgCount(i) /= 0)) then
