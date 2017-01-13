@@ -18,8 +18,6 @@ program Rlrplhi
   
   use HaplotypeModule
   
-  use NRMcode
-  
   implicit none
 
   integer :: h, i, j, nGlobalHapsOld, threshold

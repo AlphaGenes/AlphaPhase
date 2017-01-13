@@ -252,7 +252,6 @@ contains
       print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
     enddo
 
-!    call abErrors(c)
     call complementPhaseSnps(c)
 
     call library % resetHapFreq()
@@ -477,36 +476,6 @@ contains
     deallocate(TempHapArray)
     deallocate(TempHapVector)
   end subroutine clusterAndPhase
-
-  subroutine abErrors(c)
-    use CoreDefinition
-    use Constants
-    use GenotypeModule
-    use HaplotypeModule
-
-    class(Core) :: c
-
-    integer :: ErrorCountAB
-    integer :: i
-    
-    type(Genotype), pointer :: geno
-    type(Haplotype), pointer :: hap1, hap2
-
-    ErrorCountAB = int(c % getNCoreSnp() * 0.09)
-
-    do i = 1, c % getNAnisG()
-      geno = c%getCoreGenos(i)
-      hap1 => c%phase(i,1)
-      hap2 => c%phase(i,2)
-      if ((geno%numberErrorsSingle(hap1) > ErrorCountAB) .or. (geno%numberErrorsSingle(hap2) > ErrorCountAB)) then
-	call geno%setHaplotype(hap1)
-	call geno%setHaplotype(hap2)
-      else
-	call geno%setHaplotypeIfMissing(hap1)
-	call geno%setHaplotypeIfMissing(hap2)
-      endif
-    end do
-  end subroutine abErrors
 
   subroutine complementPhaseSnps(c)
     use CoreDefinition

@@ -56,7 +56,6 @@ contains
     
     change = .false.
     i = 1
-    !do i = 1, size(input,1)
     do while ((i <= size(input,1)) .and. (multi .or. (.not. Change)))
       Dist = 0
       do j = 1, size(input,2)
@@ -64,10 +63,8 @@ contains
 	  Dist(k) = Dist(k) + abs(input(i, j) - Medoids(k, j))
 	end do
       end do
-!      Dist = Dist/size(input,2)
       MinClust = Dist(assign(i))
       k = 1
-      !do k = 1, numClusters
       do while ((k <= numClusters) .and. (multi .or. (.not. Change)))
 	d = dist(k)
 	if ((d <= MinClust).and.(assign(i) /= k)) then
@@ -133,7 +130,6 @@ contains
     
     change = .false.
     i = 1
-    !do i = 1, size(input,1)
     do while ((i <= size(input,1)) .and. (multi .or. (.not. Change)))
       Dist = 0
       do j = 1, size(input,2)
@@ -141,10 +137,8 @@ contains
 	  Dist(k) = Dist(k) + abs(input(i, j) - Medoids(k, j))
 	end do
       end do
-!      Dist = Dist/size(input,2)
       MinClust = Dist(assign(i))
       k = 1
-      !do k = 1, numClusters
       do while ((k <= numClusters) .and. (multi .or. (.not. Change)))
 	d = dist(k)
 	if ((d <= MinClust).and.(assign(i) /= k)) then

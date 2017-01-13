@@ -5,9 +5,7 @@ module SurrogateDefinition
 
   type, public :: Surrogate
     private
-    !Almost definitely shouldn't be public but for now...
     integer(kind = 2), allocatable, dimension(:,:), public :: numOppose
-!    integer(kind = 2), allocatable, dimension(:,:), public :: numIncommon
     logical, allocatable, dimension(:,:), public :: enoughInCommon
     integer(kind = 1), allocatable, dimension(:,:), public :: partition
     integer(kind = 1), allocatable, dimension(:), public :: method
@@ -45,13 +43,6 @@ contains
     integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam
 
     integer :: aj, ak
-
-    integer, parameter :: SortOrMedoid = 0 !if 1 it uses Brians Sort, If Zero it uses k-medoids
-
-
-!    integer :: numsections, overhang, cursection, curpos
-!    integer(kind = 8), allocatable, dimension(:,:) :: homo, additional
-
     integer :: pass
     
     
@@ -60,68 +51,18 @@ contains
     integer :: rounds, SurrCounter
     integer, allocatable, dimension (:) :: ClusterMember
 
-    ! integer,allocatable,dimension(:,:) :: nSnpErrorThreshAnims
-
     definition%threshold = threshold
-    !nAnisG = size(genos,1)
-    !nSnp = size(genos,2)
     nAnisG = cs%getNAnisG()
     nSnp = cs%getNCoreTailSnp()
-    !allocate(genos(nAnisG,nSNp))
     genos => cs%getCoreAndTailGenos()
 
     allocate(SurrogateList(nAnisG))
     allocate(ProgCount(nAnisG))
 
-!    numsections = nSnp / 64 + 1
-!    overhang = 64 - (nSnp - (numsections - 1) * 64)
-
-!    allocate(homo(nAnisG, numsections))
-!    allocate(additional(nAnisG, numsections))
-!    homo = 0
-!    additional = 0
-
-    !if (allocated(passThres)) then
-    !  deallocate(passThres)
-    !  deallocate(numPassThres)
-    !end if
     allocate(passThres(nAnisG, nAnisG))
     allocate(numPassThres(nAnisG))
     numPassThres = 0
     passThres = 0
-
-!    do i = 1, nAnisG
-!      cursection = 1
-!      curpos = 1
-!
-!      do j = 1, nSnp
-!	select case (Genos(i, j))
-!	case (0)
-!	  homo(i, cursection) = ibset(homo(i, cursection), curpos)
-!	  !additional(i,cursection) = ibclr(additional(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
-!	case (1)
-!	  !homo(i,cursection) = ibclr(homo(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
-!	  !additional(i,cursection) = ibclr(additional(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
-!	case (2)
-!	  homo(i, cursection) = ibset(homo(i, cursection), curpos)
-!	  additional(i, cursection) = ibset(additional(i, cursection), curpos)
-!	case default
-!	  !Asuume missing
-!	  !homo(i,cursection) = ibclr(homo(i,cursection),curpos) NOT NEEDED AS INITIALISED TO ZERO
-!	  additional(i, cursection) = ibset(additional(i, cursection), curpos)
-!	end select
-!	curpos = curpos + 1
-!	if (curpos == 65) then
-!	  curpos = 1
-!	  cursection = cursection + 1
-!	end if
-!      end do
-!    end do
-!
-!    if (nClusters /= 2) then
-!      print*, "nClusters must equal 2"
-!      stop
-!    end if
 
     if (writeProgress) then
       print*, " "
@@ -131,19 +72,16 @@ contains
     if (allocated(definition%partition)) then
       deallocate(definition%partition)
       deallocate(definition%numoppose)
-!      deallocate(definition%numIncommon)
       deallocate(definition%enoughIncommon)      
       deallocate(definition%method)
     end if
     allocate(definition%partition(nAnisG,nAnisG))
     allocate(definition%numoppose(nAnisG,nAnisG))
-!    allocate(definition%numIncommon(nAnisG,nAnisG))
     allocate(definition%enoughIncommon(nAnisG,nAnisG))
     allocate(definition%method(nAnisG))
 
     definition%partition = 0
     definition%numoppose = 0
-!    definition%numIncommon = 0
     definition%enoughInCommon = .true.
     definition%method = 0
     
@@ -204,7 +142,6 @@ contains
       DumDam = 0
 
       if ((cs%getSire(i) /= 0).and.(cs%getDam(i) /= 0)) then
-	!do j = 1, nAnisG
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
 	  truth = 0
@@ -301,8 +238,6 @@ contains
 	  CountAgreeMat = 0
 	  do ak = 1, numPassThres(j)
 	    k = passThres(j, ak)
-!	    if (definition%numoppose(j,k) == 0) then
-	      !if (i == 20) print *, j, k
 	      if (definition%partition(i, k) == 1) then
 		CountAgreePat = CountAgreePat + 1
 		exit !here
@@ -311,7 +246,6 @@ contains
 		CountAgreeMat = CountAgreeMat + 1
 		exit !here
 	      endif
-!	    endif
 	  end do
 	  if ((CountAgreePat /= 0).and.(CountAgreeMat == 0)) then
 	    definition%partition(i, j) = 1

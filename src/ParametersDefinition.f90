@@ -46,7 +46,6 @@ module ParametersDefinition
     logical :: outputIndivMistakesPercent
     logical :: outputCoreMistakesPercent
     logical :: outputMistakes
-    logical :: outputNRM
     
   end type Parameters
 

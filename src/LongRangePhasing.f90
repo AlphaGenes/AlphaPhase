@@ -77,7 +77,6 @@ contains
     end do
 
     do side = 1, 2
-!      if (ItterateType .eq. "Off") then
       if (printProgress) then
 	print*, " "
 	select case (side)
@@ -283,8 +282,6 @@ contains
     
     nAnisG  = c%getNAnisG()
     nCoreSnp = c%getNCoreSnp()
-
-    !genos => c%getCoreGenos()
 
     ErrorAllow = int(PercGenoHaploDisagree * nCoreSnp)
 

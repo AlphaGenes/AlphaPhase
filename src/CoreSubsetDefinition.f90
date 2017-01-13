@@ -127,7 +127,6 @@ contains
   function getCoreAndTailGenos(set) result (ctGenos)
         
     class(CoreSubset) :: set
-    !integer(kind=1), dimension(:,:), pointer :: ctGenos
     type(Genotype), dimension(:), pointer :: ctGenos
     integer :: i
 
@@ -163,7 +162,6 @@ contains
     s = set%sub2full(animal)
     p = set%parentPedigree%getSire(s)
     sire = set%full2sub(p)
-    !sire = set%full2sub(set%parentPedigree%getSire(set%sub2full(animal)))
   end function getSire
   
   function getDam(set,animal) result(dam)

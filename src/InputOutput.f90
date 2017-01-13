@@ -9,7 +9,6 @@ module InputOutput
   
 contains
 
-  !subroutine WriteOutResults(phase, allHapAnis, coreIndex, p)
   subroutine WriteOutResults(allCores, coreIndex, p, writeSwappable, params)
     use Constants
     use PedigreeDefinition
@@ -439,7 +438,6 @@ contains
     
     ! Removing Pedigree global variable as first step to moving to seperate subroutine
     character(lengan), allocatable :: ped(:,:)
-    !character(lengan), allocatable :: Id(:)
     
     integer(kind = 4), allocatable, dimension (:), target :: SireGenotyped, DamGenotyped
     character(lengan), dimension(:), allocatable :: GenotypeId
@@ -448,7 +446,6 @@ contains
 
     allocate(GenotypeId(nAnisG))
     allocate(GenoInPed(nAnisG))
-!    allocate(RecodeGenotypeId(nAnisG))
     allocate(Ped(nAnisRawPedigree, 3))
     allocate(WorkVec(params%nSnp * 2))
     allocate(ReadingVector(params%nSnp))
@@ -483,20 +480,12 @@ contains
 	read (3, *) GenotypeId(i), ReadingVector(:)
       end if
       if (params%GenotypeFileFormat == 2) then
-	!read (3, *) GenotypeId(i), Phase(i,:, 1)
-	!read (3, *) GenotypeId(i), Phase(i,:, 2)
 	read (3, *) GenotypeId(i), ReadingVector(:)
 	read (3, *) GenotypeId(i), ReadingVector(:)
       end if
       if (params%GenotypeFileFormat == 3) then
 	read (3, *) GenotypeId(i), WorkVec(:)
       endif
-!      do j = 1, nAnisRawPedigree
-!	if (GenotypeId(i) == ped(j, 1)) then
-!	  truth = 1
-!	  exit
-!	endif
-!      enddo
       truth = BinarySearch(DanArray,adjustr(GenotypeID(i)))
       if (truth == 0) GenoInPed(i) = 1
     enddo
@@ -539,37 +528,6 @@ contains
     allocate(SireGenotyped(nAnisG))
     allocate(DamGenotyped(nAnisG))    
     
-!    allocate(DanRecode(size(ped,1)))
-!    DanRecode = 0
-!    do i = 1, nAnisG
-!      do j = 1, size(ped,1)
-!	if (ped(j,1) == GenotypeId(i)) then
-!	  DanRecode(j) = i
-!	  exit
-!	end if
-!      end do
-!    end do
-!    
-!    allocate(SireGenotyped(nAnisG))
-!    allocate(DamGenotyped(nAnisG))
-    
-!    SireGenotyped = 0
-!    DamGenotyped = 0
-!    do i = 1, size(ped,1)
-!      if (DanRecode(i) /= 0) then
-!	do j = 1, nAnisG
-!	  if (GenotypeID(j) .eq. ped(i,2)) then
-!	    SireGenotyped(DanRecode(i)) = j
-!	  end if
-!	  if (GenotypeID(j) .eq. ped(i,3)) then
-!	    DamGenotyped(DanRecode(i)) = j
-!	  end if
-!	end do
-!      end if
-!    end do
-!
-!    deallocate(DanRecode)
-    
     allocate(DanArray(size(GenotypeID)))
     allocate(DanPos(size(GenotypeID)))
     DanArray = adjustr(GenotypeID)
@@ -604,12 +562,7 @@ contains
     deallocate(DanRecode)
     deallocate(DanPos)
 
-    allocate (nrmped(size(ped,1),size(ped,2)))
-    nrmped = ped
-    
     p = Pedigree(sireGenotyped, damGenotyped, genotypeId)
-    
-    !deallocate(sireGenotyped, damGenotyped, genotypeID)
   end function ParsePedigreeData
   
   function ParseGenotypeData(startSnp, endSnp, nAnisG, params) result(Genos)
@@ -632,13 +585,8 @@ contains
     allocate(Genos(nAnisG, nReadSnp))
     Genos = MissingGenotypeCode
     
-    !allocate(Phase(nAnisG, nReadSnp, 2))
     allocate(WorkVec(params%nSnp * 2))
     allocate(ReadingVector(params%nSnp))
-
-    !allocate(HapLib(nAnisG * 2, nSnp))
-
-    !Phase = 9
 
     Genos = MissingGenotypeCode
     do i = 1, nAnisG
@@ -648,22 +596,11 @@ contains
 	do j = startSnp, endSnp
 	  if ((ReadingVector(j) /= 0).and.(ReadingVector(j) /= 1).and.(ReadingVector(j) /= 2)) ReadingVector(j) = MissingGenotypeCode
 	  Genos(i, j - startSnp + 1) = ReadingVector(j)
-!	  if (Genos(i, j) == 0) Phase(i, j,:) = 0
-!	  if (Genos(i, j) == 2) Phase(i, j,:) = 1
 	end do
       end if
-!      if (GenotypeFileFormat == 2) then
-!	!read (3, *) GenotypeId(i), Phase(i,:, 1)
-!	!read (3, *) GenotypeId(i), Phase(i,:, 2)
-!	read (3, *) dummy, ReadingVector(:)
-!	Phase(i,:,1) = ReadingVector(startSnp:endSnp)
-!	read (3, *) dummy, ReadingVector(:)
-!	Phase(i,:,2) = ReadingVector(startSnp:endSnp)
-!      end if
       if (params%GenotypeFileFormat == 3) then
 	read (3, *) dummy, WorkVec(:)
 	k = 0
-	!do j = 1, nSnp * 2
 	do j = startSnp*2-1,endSnp*2
 	  if (mod(j, 2) == 0) then
 	    k = k + 1
@@ -720,7 +657,6 @@ contains
     
     params = Parameters()
 
-    !open (unit = 1, file = "AlphaPhaseSpec.txt", status = "old")
     open (unit = 1, file = filename, status = "old")
 
     read (1, *) dumC, params%PedigreeFile
@@ -794,7 +730,6 @@ contains
       params%outputIndivMistakesPercent = .false. 
       params%outputCoreMistakesPercent = .false. 
       params%outputMistakes = .false.
-      params%outputNRM = .false.
     end if
     if ((hold .eq. "Full") .or. (hold .eq. "1")) then
       params%outputFinalPhase = .true. 
@@ -814,7 +749,6 @@ contains
       params%outputIndivMistakesPercent = .true. 
       params%outputCoreMistakesPercent = .true. 
       params%outputMistakes = .true.
-      params%outputNRM = .true.
     end if
     if ((hold .eq. "Standard") .or. (hold .eq. "0")) then
       params%outputFinalPhase = .true. 
@@ -834,7 +768,6 @@ contains
       params%outputIndivMistakesPercent = .false. 
       params%outputCoreMistakesPercent = .false. 
       params%outputMistakes = .false.
-      params%outputNRM = .false.
     end if
     read (1, *) dumC, Graphics
     read (1, *) dumC, TempInt
@@ -922,12 +855,6 @@ contains
       print*, "Graphics option is not yet functional"
       stop
     end if
-
-    !if (nSnp>32767) then
-    !        print*, "Kind=2 is not sufficient for this number of SNP.... Contact John Hickey because there is a simple solution!"
-    !        stop
-    !end if
-
   end function ReadInParameterFile
 
   subroutine HapCommonality(library, OutputPoint, params)

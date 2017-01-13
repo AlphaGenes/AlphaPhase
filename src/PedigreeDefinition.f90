@@ -14,8 +14,6 @@ module PedigreeDefinition
     procedure, public :: getDam
     procedure, public :: getID
     procedure, public :: getNAnis
-    final :: destroy
-      
   end type Pedigree
   
   interface Pedigree
@@ -40,17 +38,6 @@ contains
     allocate(character(len(id)) :: p%id(size(id,1)))
     p%id = id
   end function newPedigree
-  
-  subroutine destroy(p)
-    type(Pedigree) :: p
-    
-    if (allocated(p%sire)) then
-      !I have no idea why this causes it to crash since we just checked it's allocated but hey ho...
-!      deallocate(p%sire)
-!      deallocate(p%dam)
-!      deallocate(p%id)
-    end if
-  end subroutine destroy
   
   function getSire(p,animal) result (sire)
     class(Pedigree) :: p

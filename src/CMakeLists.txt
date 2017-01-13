@@ -11,7 +11,6 @@ SET(ALPHAPHASE_src
             ${SRCALPHAPHASE}/InputOutput.f90
             ${SRCALPHAPHASE}/LongRangePhasing.f90
             ${SRCALPHAPHASE}/MemberManagerDefinition.f90
-            ${SRCALPHAPHASE}/NRMcode.f90
             ${SRCALPHAPHASE}/ParametersDefinition.f90
             ${SRCALPHAPHASE}/PedigreeDefinition.f90
             ${SRCALPHAPHASE}/Random.f90
