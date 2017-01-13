@@ -6,7 +6,6 @@ program Rlrplhi
   use CoreDefinition
   use MemberManagerDefinition
   use ParametersDefinition
-  use ChipsDefinition
   use TestResultDefinition
   use CoreUtils
   use InputOutput
@@ -39,9 +38,6 @@ program Rlrplhi
   integer :: nGlobalHapsIter
   integer :: nAnisG
   integer :: subsetCount
-  integer :: chip
-  type(Chips) :: allChips
-  type(Core) :: allCore
   type(HaplotypeLibrary) :: globalLibrary
   
   type(Core), allocatable, dimension(:) :: AllCores
@@ -128,7 +124,6 @@ program Rlrplhi
   outputSurrogates = (params%ItterateType .eq. "Off") .and. (params%numIter == 1)
   writeSwappable = (params%GenotypeFileFormat /= 2)
   
-  allChips = getChips(params,nAnisG)
  
   do h = startCore, endCore
     StartCoreSnp = CoreIndex(h, 1)
@@ -186,38 +181,29 @@ program Rlrplhi
 	  end if
 	end do
 
-	allCore = c
 	globalLibrary = HaplotypeLibrary(c%getNCoreSnp(),500,500)
-	do chip = 1, allChips%getNumChips()
-!	  c = allChips%getChipCore(allCore,chip)
-	  c = allChips%getChipCore(allCore)
-	  nGlobalHapsIter = 1
-	  call UpdateHapLib(c, library)
+	nGlobalHapsIter = 1
+	call UpdateHapLib(c, library)
+	nGlobalHapsOld = library%getSize()
+	if (params%ItterateType .eq. "Off") then
+	  print*, " "
+	  print*, "  ", "Haplotype library imputation step"
+	end if
+	do j = 1, 20
+	  call ImputeFromLib(library, c, nGlobalHapsIter, params%PercGenoHaploDisagree, params%minHapFreq)
+	  call UpdateHapLib(c,library)
+	  if (nGlobalHapsOld == library%getSize()) exit
 	  nGlobalHapsOld = library%getSize()
-	  if (params%ItterateType .eq. "Off") then
-	    print*, " "
-	    print*, "  ", "Haplotype library imputation step"
-	  end if
-	  do j = 1, 20
-	    call ImputeFromLib(library, c, nGlobalHapsIter, params%PercGenoHaploDisagree, params%minHapFreq)
-	    call UpdateHapLib(c,library)
-	    if (nGlobalHapsOld == library%getSize()) exit
-	    nGlobalHapsOld = library%getSize()
-	  end do
-
-	  if (.not. printOldProgress) then
-	    print '(4x, a9, 20x, i6, a19, f6.2, a25)', "After HLI", library%getSize(), " Haplotypes found, ", &
-	      c%getPercentFullyPhased(), "% Haplotypes fully phased"
-	    print '(33x, f6.2, a16, f6.2, a16)', c%getYield(1), "% Paternal yield, ", c%getYield(2), "% Maternal Yield"
-	  end if
-	  
-	  if (allChips%getNumChips() > 1) then
-!	    call allChips%mergeToAll(globalLibrary,library,allCore,c)
-	  end if
-	  
-	  total = etime(elapsed)
-	  print *, total
 	end do
+
+	if (.not. printOldProgress) then
+	  print '(4x, a9, 20x, i6, a19, f6.2, a25)', "After HLI", library%getSize(), " Haplotypes found, ", &
+	    c%getPercentFullyPhased(), "% Haplotypes fully phased"
+	  print '(33x, f6.2, a16, f6.2, a16)', c%getYield(1), "% Paternal yield, ", c%getYield(2), "% Maternal Yield"
+	end if
+
+	total = etime(elapsed)
+	print *, total
       end do
 
       deallocate(Genos)

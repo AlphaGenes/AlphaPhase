@@ -1372,44 +1372,6 @@ contains
     library = HaplotypeLibrary(filename,500)
   end function getHaplotypeLibrary
   
-  function getChips(params, nAnisG) result(c)
-    use ChipsDefinition
-    use ParametersDefinition
-    
-    type(Parameters) :: params
-    integer, intent(in) :: nAnisG
-    
-    type(Chips) :: c
-
-    integer :: i    
-    logical, dimension(params%nChips,params%nSnp):: snps
-    integer, dimension(nAnisG):: animals
-    character(lengan) :: dummy
-    
-    if (params%nChips == 1) then
-      snps = .true.
-      animals = 1
-    else
-      open (unit = 103, file = trim(params%ChipsSnps), status = "old")
-
-      do i = 1, params%nChips
-	read (103, *) dummy, snps(i,:)
-      enddo
-
-      close(103)
-
-      open (unit = 104, file = trim(params%ChipsAnimals), status = "old")
-
-      do i = 1, nAnisG
-	read (104, *) dummy, animals(i)
-      enddo
-
-      close(104)
-    end if
-    
-    c = Chips(snps,animals)
-  end function getChips
-  
   !####################################################################################################################################################################
   subroutine Header
     print*, ""
