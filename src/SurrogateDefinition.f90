@@ -62,10 +62,6 @@ contains
 
     ! integer,allocatable,dimension(:,:) :: nSnpErrorThreshAnims
 
-    logical :: subtract1, subtract2 ! Fudge to produce same results as old version.  Effectively does old buggy logic.  Should be removed
-    ! once finished with speed ups.
-
-    
     definition%threshold = threshold
     !nAnisG = size(genos,1)
     !nSnp = size(genos,2)
@@ -299,35 +295,12 @@ contains
       end if
 
       if (definition%method(i) > 1) then
-	subtract1 = .false.
-	do aj = 1, numPassThres(i) + 1
-	  ! Fudge to get same (buggy) result as before.  Should really be just:
-	  ! j = passThres(i,aj)
-	  if (.not.subtract1) then
-	    j = passThres(i, aj)
-	    if ((j > i) .or. (j == 0)) then
-	      j = i
-	      subtract1 = .true.
-	    end if
-	  else
-	    j = passThres(i, aj - 1)
-	  end if
+	do aj = 1, numPassThres(i)
+          j = passThres(i, aj)
 	  CountAgreePat = 0
 	  CountAgreeMat = 0
-	  subtract2 = .false.
-	  do ak = 1, numPassThres(j) + 1
-!	  do k = 1, nAnisG
-	    !More fudges!
+	  do ak = 1, numPassThres(j)
 	    k = passThres(j, ak)
-	    if (.not.subtract2) then
-	      k = passThres(j, ak)
-	      if ((k > j) .or. (k == 0)) then
-		k = j
-		subtract2 = .true.
-	      end if
-	    else
-	      k = passThres(j, ak - 1)
-	    end if
 !	    if (definition%numoppose(j,k) == 0) then
 	      !if (i == 20) print *, j, k
 	      if (definition%partition(i, k) == 1) then
