@@ -153,7 +153,6 @@ program Rlrplhi
 	Genos = AllGenos(:,StartSurrSnp:EndSurrSnp)
       end if
       
-      ! Fudge below
       c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1)
 	
       if (params%library .eq. "None") then
@@ -243,7 +242,7 @@ program Rlrplhi
    
     call WriteHapLib(library, h, c, params)
     
-    if (params%consistent) then
+    if (params%outputHapCommonality) then
       call HapCommonality(library, h, params)
     end if
     

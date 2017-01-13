@@ -28,8 +28,6 @@ module ParametersDefinition
     
     integer :: nChips
     character(len = 300) :: ChipsSnps, ChipsAnimals
-
-    logical :: consistent
        
     logical :: outputFinalPhase
     logical :: outputCoreIndex

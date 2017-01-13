@@ -849,10 +849,7 @@ contains
     end if
 
     read (1, *, iostat=status) dumC, params%itterateType
-    if (status == 0) then
-      params%consistent = ((params%itterateType .eq. "Off") .and. (.not. params%readCoreAtTime))
-    else
-      params%consistent = .true.
+    if (status /= 0) then
       params%itterateType = "Off"
     end if
 
@@ -908,13 +905,11 @@ contains
     if (status /= 0) then
       params%library = "None"
     end if
-    params%consistent = params%consistent .and. (params%library .eq. "None")
     
     read(1, *, iostat=status) dumC, params%nChips, params%ChipsSnps, params%ChipsAnimals
     if (status /= 0) then
       params%nChips = 1
     end if
-    params%consistent = params%consistent .and. (params%nChips == 1)
 
     PercSurrDisagree = PercSurrDisagree/100
     params%NumSurrDisagree = int(params%UseSurrsN * PercSurrDisagree)
