@@ -1,5 +1,5 @@
 module CoreDefinition
-  use Constants
+  use ConstantModule
   use GenotypeModule
   use HaplotypeModule
   implicit none

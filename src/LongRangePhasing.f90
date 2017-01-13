@@ -1,5 +1,5 @@
 module LongRangePhasing
-  use Constants
+  use ConstantModule
   implicit none
   
 contains
@@ -258,7 +258,6 @@ contains
   end function
 
   subroutine CheckCompatHapGeno(c, PercGenoHaploDisagree, printProgress)
-    use Constants
     use CoreSubsetDefinition
     use GenotypeModule
     use HaplotypeModule

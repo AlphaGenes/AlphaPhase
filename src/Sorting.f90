@@ -1,6 +1,4 @@
 module Sorting
-  use Constants
-  
   type sortElement
     integer :: element
     integer :: index

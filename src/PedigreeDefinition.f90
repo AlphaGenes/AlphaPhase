@@ -1,5 +1,5 @@
 module PedigreeDefinition
-  use Constants
+  use ConstantModule
   implicit none
   private
 
@@ -23,8 +23,6 @@ module PedigreeDefinition
 contains
   
   function newPedigree(sire, dam, id) result(p)
-    use Constants
-    
     integer, dimension(:), intent(in) :: sire, dam
     character(*), dimension(:), intent(in):: id(:)
     type(Pedigree) :: p
@@ -56,8 +54,6 @@ contains
   end function getDam
   
   function getID(p,animal) result (id)
-    use Constants
-    
     class(Pedigree) :: p
     integer, intent(in) :: animal
     character(len(p%id)) :: id

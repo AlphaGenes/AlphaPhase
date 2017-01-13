@@ -1,5 +1,5 @@
 module TestResultDefinition
-  use Constants
+  use ConstantModule
   use GenotypeModule
   use HaplotypeModule
   implicit none
@@ -26,7 +26,6 @@ contains
 
   function newResults(c, TruePhase) result (results)
     use CoreDefinition
-    use Constants
     
     type(Core) :: c
     integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase    

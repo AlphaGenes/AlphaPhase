@@ -1,7 +1,6 @@
 
 # Alphaphase library
 SET(ALPHAPHASE_src
-            ${SRCALPHAPHASE}/Constants.f90
             ${SRCALPHAPHASE}/CoreDefinition.f90
             ${SRCALPHAPHASE}/CoreUtils.f90
             ${SRCALPHAPHASE}/CoreSubsetDefinition.f90

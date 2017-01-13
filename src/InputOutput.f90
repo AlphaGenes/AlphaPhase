@@ -3,6 +3,7 @@
 #DEFINE RMDIR "rm -r "
 
 module InputOutput
+  use ConstantModule
   implicit none
 
   integer, parameter, private :: lengan = 20
@@ -10,7 +11,6 @@ module InputOutput
 contains
 
   subroutine WriteOutResults(allCores, coreIndex, p, writeSwappable, params)
-    use Constants
     use PedigreeDefinition
     use CoreDefinition
     use ParametersDefinition
@@ -141,7 +141,6 @@ contains
   end subroutine WriteOutResults
 
   subroutine writeOutCore(c, coreID, coreStart, p, writeSwappable, params)
-    use Constants
     use PedigreeDefinition
     use CoreDefinition
     use ParametersDefinition
@@ -242,7 +241,6 @@ contains
   end function
   
   subroutine CombineResults(nAnisG, CoreIndex, writeSwappable, params)
-    use Constants
     use PedigreeDefinition
     use ParametersDefinition
             
@@ -418,7 +416,6 @@ contains
   end subroutine CombineResults
   
   function ParsePedigreeData(params) result(p)
-    use Constants
     use ParametersDefinition
     use PedigreeDefinition
     use NRMCode
@@ -567,7 +564,6 @@ contains
   
   function ParseGenotypeData(startSnp, endSnp, nAnisG, params) result(Genos)
     use ParametersDefinition
-    use Constants
     
     integer, intent(in) :: startSnp, endSnp, nAnisG
     type(Parameters), intent(in) :: params
@@ -617,7 +613,6 @@ contains
   end function ParseGenotypeData
   
   function ParsePhaseData(PhaseFile, startSnp, endSnp, nAnisG, nSnp) result(Phase)
-    use Constants
     
     character(len=300) :: PhaseFile
     integer, intent(in) :: startSnp, endSnp, nAnisG, nSnp
@@ -859,7 +854,6 @@ contains
 
   subroutine HapCommonality(library, OutputPoint, params)
     !! This should probably be two routines - one to calculate, one to output
-    use Constants
     use HaplotypeLibraryDefinition
     use ParametersDefinition
     
@@ -896,7 +890,6 @@ contains
     use SurrogateDefinition
     use PedigreeDefinition
     use ParametersDefinition
-    use Constants
 
     character(len = 300) :: filout
     integer :: i, j, nSurrogates
@@ -992,7 +985,6 @@ contains
 
   subroutine MakeDirectories(params)
     use ParametersDefinition
-    use Constants
     
     type(Parameters), intent(in) :: params
     
@@ -1018,7 +1010,6 @@ contains
   subroutine WriteHapLib(library, currentcore, c, params)
     use ParametersDefinition
     use HaplotypeLibraryDefinition
-    use Constants
     use CoreDefinition
     use HaplotypeModule
     
@@ -1094,7 +1085,6 @@ contains
   end subroutine writeTimer
   
   subroutine WriteTestResults(results, c, Surrogates, p, OutputPoint, OutputSurrogates, params)
-    use Constants
     use SurrogateDefinition
     use PedigreeDefinition
     use CoreDefinition
@@ -1204,7 +1194,6 @@ contains
   end subroutine WriteTestResults
 
   subroutine CombineTestResults(nCores, params)
-    use Constants
     use ParametersDefinition
 
     integer, intent(in) :: nCores
@@ -1231,7 +1220,6 @@ contains
   end subroutine CombineTestResults
   
   subroutine WriteMistakes(c, TruePhase, p, OutputPoint, params)
-    use Constants
     use CoreDefinition
     use PedigreeDefinition
     use ParametersDefinition
@@ -1399,7 +1387,6 @@ contains
   !###################################################################################################################################################
 
   subroutine PrintTimerTitles(params)
-    use Constants
     use ParametersDefinition
 
     implicit none

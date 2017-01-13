@@ -1,5 +1,5 @@
 module HaplotypeLibraryDefinition
-  use Constants
+  use ConstantModule
   use HaplotypeModule
   implicit none
   private
@@ -231,7 +231,6 @@ contains
   end function limitedMatchWithError
   
   function limitedCompatPairsWithError(library, geno, ErrorAllow, limit, nAnisG) result(pairs)
-    use Constants
     use GenotypeModule
     class(HaplotypeLibrary) :: library
     type(Genotype), intent(in) :: geno

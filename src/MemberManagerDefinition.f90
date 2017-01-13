@@ -177,7 +177,6 @@ contains
   end subroutine createCluster
   
   function dist(input1, input2) result (d)
-    use Constants
     integer(kind=1), dimension(:), intent(in) :: input1, input2
     integer :: d
     

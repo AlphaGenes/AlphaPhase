@@ -1,5 +1,5 @@
 module HaplotypeLibraryPhasing
-  use Constants
+  use ConstantModule
   implicit none
 
   integer, parameter, private :: nMaxRounds = 100
@@ -40,7 +40,6 @@ contains
     ! following strategies listed in the section Step 2e of Hickey et al 2011.
 
     use HaplotypeLibraryDefinition
-    use Constants
     use CoreDefinition
     use Clustering
     use Random
@@ -251,7 +250,6 @@ contains
   end subroutine ImputeFromLib
 
   subroutine processComplement(c, animal, library, fully, percgenohaplodisagree)
-    use Constants
     use CoreDefinition
     use HaplotypeLibraryDefinition
     use GenotypeModule
@@ -393,7 +391,6 @@ contains
     use HaplotypeModule
     use GenotypeModule
     use Clustering
-    use Constants
 
     class(Core) :: c
     class(HaplotypeLibrary) :: library
