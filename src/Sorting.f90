@@ -1,9 +1,4 @@
 module Sorting
-  type sortElement
-    integer :: element
-    integer :: index
-  end type
-  
   character(:), dimension(:), pointer :: sortArray
   
   contains
