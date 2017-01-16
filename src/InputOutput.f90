@@ -7,7 +7,7 @@ module InputOutput
   implicit none
 
   integer, parameter, private :: lengan = 20
-  
+
 contains
 
   subroutine WriteOutResults(allCores, coreIndex, p, writeSwappable, params)
@@ -15,13 +15,13 @@ contains
     use CoreDefinition
     use ParametersDefinition
     use HaplotypeModule
-    
+
     type(Core), dimension(:), intent(in) :: allCores
     integer, dimension(:,:), intent(in) :: coreIndex
     type(Pedigree), intent(in) :: p
     logical :: writeSwappable
     type(Parameters), intent(in) :: params
-    
+
     integer(kind=1), dimension(:), allocatable :: tempPhase
 
     integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp, nCores
@@ -29,7 +29,7 @@ contains
     double precision, allocatable, dimension(:) :: CoreCount
     integer(kind=1), allocatable, dimension(:) :: TempSwap
     character(len=100) :: fmt
-    
+
     type(Haplotype), pointer :: hap1, hap2
 
     nAnisG = allCores(1)%getNAnisG()
@@ -44,96 +44,96 @@ contains
       allocate(tempPhase(nSnp))
       write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
       do i = 1, nAnisG
-	do j = 1, nCores
-	  hap1 => allCores(j)%phase(i,1)
-	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap1%toIntegerArray()
-	end do
-	write(15, fmt) p%getId(i), &
-	TempPhase
-	do j = 1, nCores
-	  hap2 => allCores(j)%phase(i,2)
-	  TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap2%toIntegerArray()
-	end do
-	write(15, fmt) p%getId(i), &
-	TempPhase
+        do j = 1, nCores
+          hap1 => allCores(j)%phase(i,1)
+          TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap1%toIntegerArray()
+        end do
+        write(15, fmt) p%getId(i), &
+          TempPhase
+        do j = 1, nCores
+          hap2 => allCores(j)%phase(i,2)
+          TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap2%toIntegerArray()
+        end do
+        write(15, fmt) p%getId(i), &
+          TempPhase
       end do
       deallocate(tempPhase)
       close(15)
     end if
-    
+
     if (params%outputCoreIndex) then
       open (unit = 25, file = "."//SEP//"PhasingResults"//SEP//"CoreIndex.txt", status = "unknown")
       do i = 1, nCores
-	write (25, *) i, CoreIndex(i,:)
+        write (25, *) i, CoreIndex(i,:)
       end do
       close(25)
     end if
-    
+
     if (params%outputSnpPhaseRate) then
       open (unit = 28, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
-	do j = 1, allCores(i)%getNCoreSnp()
-	  hap1 => allCores(i)%phase(j,1)
-	  hap2 => allCores(i)%phase(j,2)
-	  counter = 0
-	  do k = 1, nAnisG
-	    if ((hap1%getPhaseMod(j) == 0).or.(hap1%getPhaseMod(j) == 1)) counter = counter + 1
-	    if ((hap2%getPhaseMod(j) == 0).or.(hap2%getPhaseMod(j) == 1)) counter = counter + 1
-	  end do
-	  write (28, '(i10,f7.2)') coreIndex(i,1) + j - 1, (100 * (float(counter)/(2 * nAnisG)))
-	end do
+        do j = 1, allCores(i)%getNCoreSnp()
+          hap1 => allCores(i)%phase(j,1)
+          hap2 => allCores(i)%phase(j,2)
+          counter = 0
+          do k = 1, nAnisG
+            if ((hap1%getPhaseMod(j) == 0).or.(hap1%getPhaseMod(j) == 1)) counter = counter + 1
+            if ((hap2%getPhaseMod(j) == 0).or.(hap2%getPhaseMod(j) == 1)) counter = counter + 1
+          end do
+          write (28, '(i10,f7.2)') coreIndex(i,1) + j - 1, (100 * (float(counter)/(2 * nAnisG)))
+        end do
       end do
       close(28)
     end if
-    
+
     if (params%outputIndivPhaseRate) then
       open (unit = 30, file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate.txt", status = "unknown")
       allocate(CoreCount(nCores * 2))
       write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'f7.2)'
       do i = 1, nAnisG
-	l = 0
-	do j = 1, nCores
-	  hap1 => allCores(j)%phase(i,1)
-	  CounterP = allCores(j)%getNCoreSnp() - hap1%numberMissing()
-	  l = l + 1
-	  CoreCount(l) = (float(counterP)/allCores(j)%getNCoreSnp()) * 100
-	  hap2 => allCores(j)%phase(i,1)
-	  CounterM = allCores(j)%getNCoreSnp() - hap2%numberMissing()
-	  l = l + 1
-	  CoreCount(l) = (float(counterM)/allCores(j)%getNCoreSnp()) * 100
-	end do
-	write (30, fmt) p%getID(i), CoreCount(:)
+        l = 0
+        do j = 1, nCores
+          hap1 => allCores(j)%phase(i,1)
+          CounterP = allCores(j)%getNCoreSnp() - hap1%numberMissing()
+          l = l + 1
+          CoreCount(l) = (float(counterP)/allCores(j)%getNCoreSnp()) * 100
+          hap2 => allCores(j)%phase(i,1)
+          CounterM = allCores(j)%getNCoreSnp() - hap2%numberMissing()
+          l = l + 1
+          CoreCount(l) = (float(counterM)/allCores(j)%getNCoreSnp()) * 100
+        end do
+        write (30, fmt) p%getID(i), CoreCount(:)
       end do
       deallocate(CoreCount)
       close(30)
     end if
-    
+
     if (params%outputHapIndex) then
       open (unit = 33, file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry.txt", status = "unknown")
       allocate(WorkOut(nCores * 2))
       write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'i8)'
       do i = 1, nAnisG
-	k = 0
-	do j = 1, nCores
-	  k = k + 2
-	  WorkOut(k - 1) = AllCores(j)%getHapAnis(i,1)
-	  WorkOut(k) = AllCores(j)%getHapAnis(i,2)
-	end do
-	write (33, fmt) p%getID(i), WorkOut(:)
+        k = 0
+        do j = 1, nCores
+          k = k + 2
+          WorkOut(k - 1) = AllCores(j)%getHapAnis(i,1)
+          WorkOut(k) = AllCores(j)%getHapAnis(i,2)
+        end do
+        write (33, fmt) p%getID(i), WorkOut(:)
       end do
       deallocate(WorkOut)
       close(33)
     end if
-    
+
     if ((params.outputSwappable) .and. (writeSwappable)) then
       open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat.txt", status = "unknown")
       allocate(TempSwap(nCores))
       write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
       do i = 1, nAnisG
-	do j = 1, nCores
-	  TempSwap(j) = AllCores(j)%getSwappable(i)
-	end do
-	write (44, fmt) p%getID(i), TempSwap
+        do j = 1, nCores
+          TempSwap(j) = AllCores(j)%getSwappable(i)
+        end do
+        write (44, fmt) p%getID(i), TempSwap
       end do
       deallocate(TempSwap)
       close(44)
@@ -145,31 +145,31 @@ contains
     use CoreDefinition
     use ParametersDefinition
     use HaplotypeModule
-        
+
     type(Core), intent(in) :: c
     integer, intent(in) :: coreID
     integer, intent(in) :: coreStart
     type(Pedigree), intent(in) :: p
     logical :: writeSwappable
     class(Parameters) :: params
-  
+
     integer :: i, j, counter, CounterM, CounterP, nAnisG, nSnp
     integer, allocatable, dimension(:) :: WorkOut
     double precision, allocatable, dimension(:) :: CoreCount
     character(len=100) :: fmt
-    
+
     character(:), allocatable :: coreIDtxt
-    
+
     type(Haplotype), pointer :: hap1, hap2
-  
+
     nAnisG = c%getNAnisG()
     nSnp = c%getNCoreSnp()
-    
+
     allocate(WorkOut(2))
     allocate(CoreCount(2))
-    
+
     coreIDtxt = itoa(coreID)
-  
+
     if (params%outputFinalPhase) then
       open (unit = 15, file = "."//SEP//"PhasingResults"//SEP//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
       write(fmt, '(a,i10,a)') '(a20,', c%getNSnp(), 'i2)'
@@ -183,55 +183,55 @@ contains
       end do
       close(15)
     end if
-    
+
     if (params%outputSnpPhaseRate) then
       open (unit = 28, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nSnp
-	counter = 0
-	do j = 1, nAnisG
-	  hap1 => c%phase(j, 1)
-	  hap2 => c%phase(j, 2)
-	  if ((hap1%getPhaseMod(i) == 0).or.(hap1%getPhaseMod(i) == 1)) counter = counter + 1
-	  if ((hap2%getPhaseMod(i) == 0).or.(hap2%getPhaseMod(i) == 1)) counter = counter + 1
-	end do
-	write (28, '(i10,f7.2)') i + CoreStart - 1, (100 * (float(counter)/(2 * nAnisG)))
+        counter = 0
+        do j = 1, nAnisG
+          hap1 => c%phase(j, 1)
+          hap2 => c%phase(j, 2)
+          if ((hap1%getPhaseMod(i) == 0).or.(hap1%getPhaseMod(i) == 1)) counter = counter + 1
+          if ((hap2%getPhaseMod(i) == 0).or.(hap2%getPhaseMod(i) == 1)) counter = counter + 1
+        end do
+        write (28, '(i10,f7.2)') i + CoreStart - 1, (100 * (float(counter)/(2 * nAnisG)))
       end do
       close(28)
     end if
-    
+
     if (params%outputIndivPhaseRate) then
       open (unit = 30, file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
-	hap1 => c%phase(j, 1)
-	hap2 => c%phase(j, 2)
-	CounterP = c%getNCoreSnp() - hap1%numberMissing()
-	CounterM = c%getNCoreSnp() - hap2%numberMissing()
-	CoreCount(1) = (float(counterP)/(nSnp) * 100)
-	CoreCount(2) = (float(counterM)/(nSnp) * 100)
-	write(30, '(a20,2f7.2)') p%getID(i), CoreCount(:)
+        hap1 => c%phase(j, 1)
+        hap2 => c%phase(j, 2)
+        CounterP = c%getNCoreSnp() - hap1%numberMissing()
+        CounterM = c%getNCoreSnp() - hap2%numberMissing()
+        CoreCount(1) = (float(counterP)/(nSnp) * 100)
+        CoreCount(2) = (float(counterM)/(nSnp) * 100)
+        write(30, '(a20,2f7.2)') p%getID(i), CoreCount(:)
       end do
       close(30)
     end if
-    
+
     if (params%outputHapIndex) then
       open (unit = 33, file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
-	WorkOut(1) = c%getHapAnis(i, 1)
-	WorkOut(2) = c%getHapAnis(i, 2)
-	write (33, '(a20,2i8)') p%getID(i), WorkOut(:)
-      end do 
+        WorkOut(1) = c%getHapAnis(i, 1)
+        WorkOut(2) = c%getHapAnis(i, 2)
+        write (33, '(a20,2i8)') p%getID(i), WorkOut(:)
+      end do
       close(33)
     end if
-    
+
     if ((params%outputSwappable) .and. (writeSwappable)) then
       open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
-	write (44, '(a20,i2)') p%getID(i), c%getSwappable(i)
+        write (44, '(a20,i2)') p%getID(i), c%getSwappable(i)
       end do
       close(44)
     end if
   end subroutine writeOutCore
-  
+
   function itoa(i) result(res)
     character(:),allocatable :: res
     integer,intent(in) :: i
@@ -239,18 +239,18 @@ contains
     write(tmp,'(i0)') i
     res = trim(tmp)
   end function
-  
+
   subroutine CombineResults(nAnisG, CoreIndex, writeSwappable, params)
     use PedigreeDefinition
     use ParametersDefinition
-            
+
     integer, intent(in) :: nAnisG
     integer, dimension(:,:), intent(in) :: CoreIndex
     logical :: writeSwappable
     type(Parameters) :: params
-    
+
     integer :: nCores
-    
+
     integer, dimension(:), allocatable :: inUnits
     integer :: i, j, coreLength, inUnit
     character(:), allocatable :: coreIDtxt
@@ -259,186 +259,186 @@ contains
     double precision, dimension(2) :: tempIndivPhase
     double precision :: tempSnpPhase
     character(len=20) :: id
-    
+
     nCores = size(CoreIndex,1)
-   
+
     if (params%outputCoreIndex) then
       open (unit = 25, file = "."//SEP//"PhasingResults"//SEP//"CoreIndex.txt", status = "unknown")
       do i = 1, nCores
-	write (25, *) i, CoreIndex(i,:)
+        write (25, *) i, CoreIndex(i,:)
       end do
       close(25)
     end if
-    
+
     if (params%outputFinalPhase) then
       !!! FINAL PHASE !!!
       open (unit = 15, file = "."//SEP//"PhasingResults"//SEP//"FinalPhase.txt", status = "unknown")
       allocate(inUnits(nCores))
       do i = 1, nCores
-	coreIDtxt = itoa(i)
-	open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"FinalPhase" // coreIDtxt // ".txt", status = "old")    
+        coreIDtxt = itoa(i)
+        open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"FinalPhase" // coreIDtxt // ".txt", status = "old")
       end do
 
       do i = 1, nAnisG * 2
-	do j = 1, nCores
-	  coreLength  = CoreIndex(j,2) - CoreIndex(j,1) + 1
-	  allocate(tempPhase(coreLength))
-	  read(inUnits(j),'(a20,' // itoA(coreLength) // 'i2)') id, tempPhase
-	  if (j == 1) then
-	    write(15, '(a20)', advance = 'no') id
-	  end if
-	  if (j == nCores) then
-	    write(15, '(' // itoA(coreLength) // 'i2)', advance='yes') tempPhase
-	  else
-	    write(15, '(' // itoA(coreLength) // 'i2)', advance='no') tempPhase
-	  end if
-	  deallocate(tempPhase)
-	end do
+        do j = 1, nCores
+          coreLength  = CoreIndex(j,2) - CoreIndex(j,1) + 1
+          allocate(tempPhase(coreLength))
+          read(inUnits(j),'(a20,' // itoA(coreLength) // 'i2)') id, tempPhase
+          if (j == 1) then
+            write(15, '(a20)', advance = 'no') id
+          end if
+          if (j == nCores) then
+            write(15, '(' // itoA(coreLength) // 'i2)', advance='yes') tempPhase
+          else
+            write(15, '(' // itoA(coreLength) // 'i2)', advance='no') tempPhase
+          end if
+          deallocate(tempPhase)
+        end do
       end do
 
       do i = 1, nCores
-	close(inUnits(i))
+        close(inUnits(i))
       end do
 
       deallocate(inUnits)
       close(15)
     end if
-    
+
     if (params%outputHapIndex) then
-    !!! HAPINDCARRY !!!
+      !!! HAPINDCARRY !!!
       open (unit = 33, file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry.txt", status = "unknown")
       allocate(inUnits(nCores))
       do i = 1, nCores
-	coreIDtxt = itoa(i)
-	open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "old")
+        coreIDtxt = itoa(i)
+        open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "old")
       end do
 
       do i = 1, nAnisG
-	do j = 1, nCores
-	  read(inUnits(j),'(a20,2i8)') id, tempHapInd
-	  if (j == 1) then
-	    write(33, '(a20)', advance = 'no') id
-	  end if
-	  if (j == nCores) then
-	    write(33, '(2i8)', advance='yes') tempHapInd
-	  else
-	    write(33, '(2i8)', advance='no') tempHapInd
-	  end if
-	end do
+        do j = 1, nCores
+          read(inUnits(j),'(a20,2i8)') id, tempHapInd
+          if (j == 1) then
+            write(33, '(a20)', advance = 'no') id
+          end if
+          if (j == nCores) then
+            write(33, '(2i8)', advance='yes') tempHapInd
+          else
+            write(33, '(2i8)', advance='no') tempHapInd
+          end if
+        end do
       end do
 
       do i = 1, nCores
-	close(inUnits(i))
+        close(inUnits(i))
       end do
 
       deallocate(inUnits)
       close(33)
     end if
-    
+
     if (params%outputIndivPhaseRate) then
       !!! INDIVPHASE !!!
       open (unit = 30, file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate.txt", status = "unknown")
       allocate(inUnits(nCores))
       do i = 1, nCores
-	coreIDtxt = itoa(i)
-	open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate" // coreIDtxt // ".txt", status = "old")
+        coreIDtxt = itoa(i)
+        open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate" // coreIDtxt // ".txt", status = "old")
       end do
 
       do i = 1, nAnisG
-	do j = 1, nCores
-	  read(inUnits(j),'(a20,2f7.2)') id, tempIndivPhase
-	  if (j == 1) then
-	    write(30, '(a20)', advance = 'no') id
-	  end if
-	  if (j == nCores) then
-	    write(30, '(2f7.2)', advance='yes') tempIndivPhase
-	  else
-	    write(30, '(2f7.2)', advance='no') tempIndivPhase
-	  end if
-	end do
+        do j = 1, nCores
+          read(inUnits(j),'(a20,2f7.2)') id, tempIndivPhase
+          if (j == 1) then
+            write(30, '(a20)', advance = 'no') id
+          end if
+          if (j == nCores) then
+            write(30, '(2f7.2)', advance='yes') tempIndivPhase
+          else
+            write(30, '(2f7.2)', advance='no') tempIndivPhase
+          end if
+        end do
       end do
 
       do i = 1, nCores
-	close(inUnits(i))
+        close(inUnits(i))
       end do
 
       deallocate(inUnits)
       close(30)
     end if
-    
+
     if (params%outputSnpPhaseRate) then
       !!! SNPPHASE !!!
       open (unit = 28, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
-	coreLength  = CoreIndex(i,2) - CoreIndex(i,1) + 1
-	coreIDtxt = itoa(i)
-	open (newunit = inUnit, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate" // coreIDtxt // ".txt", status = "old")
-	do j = 1, coreLength
-	  read(inUnit,'(a10,f7.2)') id, tempSnpPhase
-	  write(28,'(a10,f7.2)') id, tempSnpPhase
-	end do
-	close(inUnit)
+        coreLength  = CoreIndex(i,2) - CoreIndex(i,1) + 1
+        coreIDtxt = itoa(i)
+        open (newunit = inUnit, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate" // coreIDtxt // ".txt", status = "old")
+        do j = 1, coreLength
+          read(inUnit,'(a10,f7.2)') id, tempSnpPhase
+          write(28,'(a10,f7.2)') id, tempSnpPhase
+        end do
+        close(inUnit)
       end do
       close(28)
     end if
- 
+
     !!! SWAPHAPMAT !!!
     if (params%outputSwappable .and. writeSwappable) then
       open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat.txt", status = "unknown")
       allocate(inUnits(nCores))
       do i = 1, nCores
-	coreIDtxt = itoa(i)
-	open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat" // coreIDtxt // ".txt", status = "old")
+        coreIDtxt = itoa(i)
+        open (newunit = inUnits(i), file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat" // coreIDtxt // ".txt", status = "old")
       end do
 
       do i = 1, nAnisG
-	do j = 1, nCores
-	  read(inUnits(j),'(a20,2i2)') id, tempIndivSwap
-	  if (j == 1) then
-	    write(44, '(a20)', advance = 'no') id
-	  end if
-	  if (j == nCores) then
-	    write(44, '(2i2)', advance='yes') tempIndivSwap
-	  else
-	    write(44, '(2i2)', advance='no') tempIndivSwap
-	  end if
-	end do
+        do j = 1, nCores
+          read(inUnits(j),'(a20,2i2)') id, tempIndivSwap
+          if (j == 1) then
+            write(44, '(a20)', advance = 'no') id
+          end if
+          if (j == nCores) then
+            write(44, '(2i2)', advance='yes') tempIndivSwap
+          else
+            write(44, '(2i2)', advance='no') tempIndivSwap
+          end if
+        end do
       end do
-    
+
       do i = 1, nCores
-	close(inUnits(i))
+        close(inUnits(i))
       end do
-    
+
       deallocate(inUnits)
       close(44)
     end if
-    
+
   end subroutine CombineResults
-  
+
   function ParsePedigreeData(params) result(p)
     use ParametersDefinition
     use PedigreeDefinition
     use NRMCode
     use Sorting
-        
+
     type(Parameters), intent(in) :: params
     type(Pedigree) :: p
-    
+
     integer :: i, truth, counter, nAnisG
     integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
-    
+
     integer, allocatable, dimension (:) :: DanRecode, DanPos !, DanDamGenotyped, DanSireGenotyped
     character(lengan), allocatable, dimension(:) :: DanArray
     integer spos, dpos
 
     integer :: nAnisRawPedigree
-    
+
     ! Removing Pedigree global variable as first step to moving to seperate subroutine
     character(lengan), allocatable :: ped(:,:)
     
     integer(kind = 4), allocatable, dimension (:), target :: SireGenotyped, DamGenotyped
     character(lengan), dimension(:), allocatable :: GenotypeId
-    
+
     call CountInData(nAnisRawPedigree, nAnisG, params)
 
     allocate(GenotypeId(nAnisG))
@@ -446,18 +446,18 @@ contains
     allocate(Ped(nAnisRawPedigree, 3))
     allocate(WorkVec(params%nSnp * 2))
     allocate(ReadingVector(params%nSnp))
-    
+
     if (trim(params%PedigreeFile) /= "NoPedigree") then
       open (unit = 2, file = trim(params%PedigreeFile), status = "old")
       do i = 1, nAnisRawPedigree
-	read(2, *) ped(i,:)
+        read(2, *) ped(i,:)
       enddo
       close(2)
     else
       open (unit = 3, file = trim(params%GenotypeFile), status = "old")
       do i = 1, nAnisRawPedigree
-	ped(i, 2:3) = "0"
-	read (3, *) ped(i, 1)
+        ped(i, 2:3) = "0"
+        read (3, *) ped(i, 1)
       enddo
       close (3)
     endif
@@ -465,23 +465,23 @@ contains
     GenoInPed = 0
 
     open (unit = 3, file = trim(params%GenotypeFile), status = "old")
-    
+
     allocate(DanArray(size(ped, 1)))
     allocate(DanPos(size(ped,1)))
     DanArray = adjustr(ped(:,1))
     call SortWithIndex(DanArray,DanPos)
-    
+
     do i = 1, nAnisG
       truth = 0
       if (params%GenotypeFileFormat == 1) then
-	read (3, *) GenotypeId(i), ReadingVector(:)
+        read (3, *) GenotypeId(i), ReadingVector(:)
       end if
       if (params%GenotypeFileFormat == 2) then
 	read (3, *) GenotypeId(i), ReadingVector(:)
 	read (3, *) GenotypeId(i), ReadingVector(:)
       end if
       if (params%GenotypeFileFormat == 3) then
-	read (3, *) GenotypeId(i), WorkVec(:)
+        read (3, *) GenotypeId(i), WorkVec(:)
       endif
       truth = BinarySearch(DanArray,adjustr(GenotypeID(i)))
       if (truth == 0) GenoInPed(i) = 1
@@ -489,7 +489,7 @@ contains
     deallocate(Ped)
     deallocate(DanArray)
     deallocate(DanPos)
-    
+
     close(3)
 
     if (trim(params%PedigreeFile) /= "NoPedigree") then
@@ -501,23 +501,23 @@ contains
     if (trim(params%PedigreeFile) /= "NoPedigree") then
       open (unit = 2, file = trim(params%PedigreeFile), status = "old")
       do i = 1, nAnisRawPedigree - count(GenoInPed(:) == 1)
-	read(2, *) ped(i,:)
+        read(2, *) ped(i,:)
       end do
       counter = nAnisRawPedigree - count(GenoInPed(:) == 1)
       do i = 1, nAnisG
-	if (GenoInPed(i) == 1) then
-	  counter = counter + 1
-	  ped(counter, 1) = GenotypeId(i)
-	  ped(counter, 2) = "0"
-	  ped(counter, 3) = "0"
-	endif
+        if (GenoInPed(i) == 1) then
+          counter = counter + 1
+          ped(counter, 1) = GenotypeId(i)
+          ped(counter, 2) = "0"
+          ped(counter, 3) = "0"
+        endif
       enddo
       close(2)
     else
       do i = 1, nAnisG
-	ped(i, 1) = GenotypeId(i)
-	ped(i, 2) = "0"
-	ped(i, 3) = "0"
+        ped(i, 1) = GenotypeId(i)
+        ped(i, 2) = "0"
+        ped(i, 3) = "0"
       enddo
 
     endif
@@ -529,29 +529,29 @@ contains
     allocate(DanPos(size(GenotypeID)))
     DanArray = adjustr(GenotypeID)
     call SortWithIndex(DanArray,DanPos)
-    
+
     allocate(DanRecode(size(ped,1)))
     do i = 1, size(ped,1)
       dpos = BinarySearch(DanArray, adjustr(ped(i,1)))
       if (dpos > 0) then
-	DanRecode(i) = DanPos(dpos)
+        DanRecode(i) = DanPos(dpos)
       else
-	DanRecode(i) = 0
+        DanRecode(i) = 0
       endif
     end do
-    
+
     SireGenotyped = 0
     DamGenotyped = 0
     do i = 1, size(ped,1)
       if (DanRecode(i) /= 0) then
-	spos = BinarySearch(DanArray, adjustr(ped(i,2)))
-	if (spos > 0) then
-	  SireGenotyped(DanRecode(i)) = DanPos(spos)
-	endif
-	dpos = BinarySearch(DanArray, adjustr(ped(i,3)))
-	if (dpos > 0) then
-	  DamGenotyped(DanRecode(i)) = DanPos(dpos)
-	endif
+        spos = BinarySearch(DanArray, adjustr(ped(i,2)))
+        if (spos > 0) then
+          SireGenotyped(DanRecode(i)) = DanPos(spos)
+        endif
+        dpos = BinarySearch(DanArray, adjustr(ped(i,3)))
+        if (dpos > 0) then
+          DamGenotyped(DanRecode(i)) = DanPos(dpos)
+        endif
       end if
     end do
 
@@ -561,10 +561,10 @@ contains
 
     p = Pedigree(sireGenotyped, damGenotyped, genotypeId)
   end function ParsePedigreeData
-  
+
   function ParseGenotypeData(startSnp, endSnp, nAnisG, params) result(Genos)
     use ParametersDefinition
-    
+
     integer, intent(in) :: startSnp, endSnp, nAnisG
     type(Parameters), intent(in) :: params
     integer(kind=1), allocatable, dimension(:,:) :: Genos
@@ -573,14 +573,14 @@ contains
     integer, allocatable, dimension (:) :: WorkVec, ReadingVector
     integer :: nReadSnp
     character(lengan) :: dummy
-    
+
     open (unit = 3, file = trim(params%GenotypeFile), status = "old")
 
     nReadSnp = endSnp - startSnp + 1
 
     allocate(Genos(nAnisG, nReadSnp))
     Genos = MissingGenotypeCode
-    
+
     allocate(WorkVec(params%nSnp * 2))
     allocate(ReadingVector(params%nSnp))
 
@@ -608,10 +608,10 @@ contains
 	end do
       endif
     enddo
-    
+
     close(3)
   end function ParseGenotypeData
-  
+
   function ParsePhaseData(PhaseFile, startSnp, endSnp, nAnisG, nSnp) result(Phase)
     
     character(len=300) :: PhaseFile
@@ -622,7 +622,7 @@ contains
     integer, allocatable, dimension (:) :: ReadingVector
     integer :: nReadSnp
     character(lengan) :: dummy
-    
+
     open (unit = 3, file = trim(PHaseFile), status = "old")
 
     nReadSnp = endSnp - startSnp + 1
@@ -636,221 +636,298 @@ contains
       read (3, *) dummy, ReadingVector(:)
       Phase(i,:,2) = ReadingVector(startSnp:endSnp)
     enddo
-    
+
     close(3)
   end function ParsePhaseData
 
   function ReadInParameterFile(filename) result (params)
     use ParametersDefinition
-        
+    use AlphaHouseMod, only: parseToFirstWhitespace,splitLineIntoTwoParts,toLower
     character(*), intent(in) :: filename
     type(Parameters) :: params
 
     double precision :: PercSurrDisagree
     integer :: TempInt, Graphics, status, cl
-    character (len = 300) :: dumC, FileFormat, OffsetVariable, hold
-    
+    integer :: unit
+    character (len = 300) :: dumC, OffsetVariable, hold, outputoption
+    character(len=300) :: first, line
+    character(len=:), allocatable::tag
+    character(len=300),dimension(:),allocatable :: second
+
     params = Parameters()
 
-    open (unit = 1, file = filename, status = "old")
-
-    read (1, *) dumC, params%PedigreeFile
-    read (1, *) dumC, params%GenotypeFile, FileFormat
-    if (trim(FileFormat) == 'GenotypeFormat') then
-      params%GenotypeFileFormat = 1
-    elseif (trim(FileFormat) == 'PhaseFormat') then
-      params%GenotypeFileFormat = 2
-    elseif (trim(FileFormat) == 'UnorderedFormat') then
-      params%GenotypeFileFormat = 3
-    else
-      print*, "The genotype file format is not correctly specified"
-      stop
-    endif
-
-    print *, " Parameter file read"
-    print *, " "
-    print *, " Using ", trim(params%PedigreeFile), " as the pedigree file"
-    print *, " Using ", trim(params%GenotypeFile), " as the genotype file"
-    print *, " "
-
-    read (1, *) dumC, params%nSnp
-    read (1, *) dumC, params%CoreAndTailLength
-    if (params%CoreAndTailLength > params%nSnp) then
-      print*, "GeneralCoreAndTailLength is too long"
-      stop
-    endif
-    read (1, *) dumC, params%Jump, OffsetVariable
-    if (params%Jump > params%nSnp) then
-      print*, "GeneralCoreLength is too long"
-      stop
-    endif
-
-    if (params%CoreAndTailLength < params%Jump) then
-      print *, "GeneralCoreAndTailLength is shorted than GenralCoreLength"
-      stop
-    end if
-
-    if (OffsetVariable == "Offset") then
-      params%Offset = .true.
-    endif
-    if (OffsetVariable == "NotOffset") then
-      params%Offset = .false.
-    endif
-
-    if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
-      print*, "Offset variable is not properly parameterised"
-      stop
-    endif
-    read (1, *) dumC, params%UseSurrsN
-    read (1, *) dumC, PercSurrDisagree
-    read (1, *) dumC, params%PercGenoHaploDisagree
-    read (1, *) dumC, params%GenotypeMissingErrorPercentage
-    read (1, *) dumC, params%NrmThresh
-    read(1, *) dumC, hold
-    if (hold .eq. "Impute") then
-      params%outputFinalPhase = .false. 
-      params%outputCoreIndex = .true. 
-      params%outputSnpPhaseRate = .false. 
-      params%outputIndivPhaseRate = .false. 
-      params%outputHapIndex = .false. 
-      params%outputSwappable = .false. 
-      params%outputHapCommonality = .false. 
-      params%outputSurrogates = .false. 
-      params%outputSurrogatesSummary = .false. 
-      params%outputHaplotypeLibraryText = .false. 
-      params%outputHaplotypeLibraryBinary = .true. 
-      params%outputPhasingYield = .false. 
-      params%outputTimer = .false. 
-      params%outputIndivMistakes = .false. 
-      params%outputIndivMistakesPercent = .false. 
-      params%outputCoreMistakesPercent = .false. 
-      params%outputMistakes = .false.
-    end if
-    if ((hold .eq. "Full") .or. (hold .eq. "1")) then
-      params%outputFinalPhase = .true. 
-      params%outputCoreIndex = .true. 
-      params%outputSnpPhaseRate = .true. 
-      params%outputIndivPhaseRate = .true. 
-      params%outputHapIndex = .true. 
-      params%outputSwappable = .true. 
-      params%outputHapCommonality = .true. 
-      params%outputSurrogates = .true. 
-      params%outputSurrogatesSummary = .true. 
-      params%outputHaplotypeLibraryText = .true. 
-      params%outputHaplotypeLibraryBinary = .true. 
-      params%outputPhasingYield = .true. 
-      params%outputTimer = .true. 
-      params%outputIndivMistakes = .true. 
-      params%outputIndivMistakesPercent = .true. 
-      params%outputCoreMistakesPercent = .true. 
-      params%outputMistakes = .true.
-    end if
-    if ((hold .eq. "Standard") .or. (hold .eq. "0")) then
-      params%outputFinalPhase = .true. 
-      params%outputCoreIndex = .true. 
-      params%outputSnpPhaseRate = .true. 
-      params%outputIndivPhaseRate = .true. 
-      params%outputHapIndex = .true. 
-      params%outputSwappable = .true. 
-      params%outputHapCommonality = .false.
-      params%outputSurrogates = .false. 
-      params%outputSurrogatesSummary = .false. 
-      params%outputHaplotypeLibraryText = .false. 
-      params%outputHaplotypeLibraryBinary = .true. 
-      params%outputPhasingYield = .true. 
-      params%outputTimer = .true. 
-      params%outputIndivMistakes = .false. 
-      params%outputIndivMistakesPercent = .false. 
-      params%outputCoreMistakesPercent = .false. 
-      params%outputMistakes = .false.
-    end if
-    read (1, *) dumC, Graphics
-    read (1, *) dumC, TempInt
-    params%Simulation = (TempInt == 1)
-    read (1, *) dumC, params%TruePhaseFile
-
-    read (1, *, iostat=status) dumC, tempInt
-    if (status == 0) then
-      params%readCoreAtTime = (tempInt==1)
-    else
-      params%readCoreAtTime = .false.
-    end if
-
-    read (1, *, iostat=status) dumC, params%itterateType
-    if (status /= 0) then
-      params%itterateType = "Off"
-    end if
-
-    read(1, *, iostat=status) dumC, hold
-    if (status == 0) then
-      if (hold(1:1) == "*") then
-	read(hold,"(X,I2)") cl
-	call get_command_argument(cl,hold)
-	read(hold,*) params%itterateNumber
-      else
-	read(hold,*) params%itterateNumber
+    open(newunit=unit, file=filename, action="read", status="old")
+    
+    !!! DEFAULT VALUES !!!
+    params%readCoreAtTime = .false.
+    params%itterateType = "Off"
+    params%itterateNumber = 200
+    params%numIter = 1
+    params%startCoreChar = "1"
+    params%endCoreChar = "Combine"
+    params%minHapFreq = 1
+    params%library = "None"
+    
+    status = 0
+    READFILE: do while (status==0)
+      read(unit,"(A)", IOStat=status)  line
+      if (len_trim(line)==0) then
+        CYCLE
       end if
-    else
-      params%itterateNumber = 200
-    end if
-    
-    read(1, *, iostat=status) dumC, hold
-    if (status == 0) then
-      if (hold(1:1) == "*") then
-	read(hold,"(X,I2)") cl
-	call get_command_argument(cl,hold)
-	read(hold,*) params%numIter
+
+      call splitLineIntoTwoParts(trim(line), first, second)
+      tag = parseToFirstWhitespace(first)
+      if (first(1:1)=="=" .or. len(trim(line))==0) then
+        cycle
       else
-	read(hold,*) params%numIter
-      end if
-    else
-      params%numIter = 1
-    end if
-    if (params%itterateType .eq. "Off") then
-      params%numIter = 1
-    end if
+        select case(trim(tag))
 
-    read (1, *, iostat=status) dumC, params%startCoreChar, params%endCoreChar
-    if (status /= 0) then
-      params%startCoreChar = "1"
-      params%endCoreChar = "Combine"
-    end if
-    
-    read (1, *, iostat=status) dumC, hold
-    if (status == 0) then
-      if (hold(1:1) == "*") then
-	read(hold,"(X,I2)") cl
-	call get_command_argument(cl,hold)
-	read(hold,*) params%minHapFreq
-      else
-	read(hold,*) params%minHapFreq
-      end if
-    else
-      params%minHapFreq = 1
-    end if
-    
-    read(1, *, iostat=status) dumC, params%library
-    if (status /= 0) then
-      params%library = "None"
-    end if
-    
-    read(1, *, iostat=status) dumC, params%nChips, params%ChipsSnps, params%ChipsAnimals
-    if (status /= 0) then
-      params%nChips = 1
-    end if
+      case("pedigreefile")
+        if (.not. allocated(second)) then
+          write(*, "(A,A)") "No pedigree file specified. Using default filename: ", params%PedigreeFile
+        else
+          write(params%PedigreeFile, "(A)") second(1)
+        end if
 
-    PercSurrDisagree = PercSurrDisagree/100
-    params%NumSurrDisagree = int(params%UseSurrsN * PercSurrDisagree)
-    params%PercGenoHaploDisagree = params%PercGenoHaploDisagree/100
-    params%GenotypeMissingErrorPercentage = params%GenotypeMissingErrorPercentage/100
+      case("genotypefile")
+        if (.not. allocated(second)) then
+          write(*, "(A,A)") "No genotype file specified. Using default filename: ", params%Genotypefile
+        else
+          write(params%Genotypefile, "(A)") second(1)
+          if (size(second) >1) then
+            select case(trim(toLower(second(2))))
+            case('GenotypeFormat')
+              params%GenotypeFileFormat = 1
+            case('PhaseFormat')
+              params%GenotypeFileFormat = 2
+            case('UnorderedFormat')
+              params%GenotypeFileFormat = 3
+            end select
+          endif
+        endif
 
-    close (1)
+      case("numberofsnp")
+        read(second(1), *) params%nSnp
 
-    if (Graphics == 1) then
-      print*, "Graphics option is not yet functional"
-      stop
+      case("generalcoreandtaillength")
+        read(second(1), *) params%CoreAndTailLength
+
+      case("generalcorelength")
+
+        if (size(second) <2) then
+          write(*,*) "GeneralCoreLength incorrectly specified"
+        endif
+        read (second(1), *) params%Jump
+        read (second(2), *)OffsetVariable
+
+      case("usethisnumberofsurrogates")
+        read(second(1), *) params%UseSurrsN
+
+      case("percentagesurrdisagree")
+        read(second(1), *) PercSurrDisagree
+
+
+      case("percentagegenohaplodisagree")
+        read(second(1),*) params%PercGenoHaploDisagree
+
+      case("genotypemissingerrorpercentage")
+        read(second(1), *) params%GenotypeMissingErrorPercentage
+
+      case("nrmthresh")
+        read(second(1), *) params%NrmThresh
+
+      case("fulloutput")
+        read(second(1),*) outputoption
+
+
+      case("graphics")
+        read(second(1), *) graphics
+
+      case("simulation")
+        read(second(1), *) tempInt
+        params%Simulation = (TempInt == 1)
+
+
+      case("truephasefile")
+        read(second(1), *) params%TruePhaseFile
+
+      case("coreattime")
+        if (.not. allocated(second)) then
+          params%readCoreAtTime = .false.
+        else
+          read(second(1), *) tempInt
+          params%readCoreAtTime = (tempInt==1)
+        endif
+
+      case("iteratemethod")
+
+        if (allocated(second)) then
+          read(second(1), *) params%itterateType
+        endif
+
+      case("iteratesubsetsize")
+        if(allocated(second)) then
+          read(second(1), *) hold
+          if (hold(1:1) == "*") then
+            read(hold,"(X,I2)") cl
+            call get_command_argument(cl,hold)
+            read(hold,*) params%itterateNumber
+          else
+            read(hold,*) params%itterateNumber
+          end if
+        end if
+
+      case("iterateiterations")
+        if (allocated(second)) then
+          read(second(1), *) hold
+          if (hold(1:1) == "*") then
+            read(hold,"(X,I2)") cl
+            call get_command_argument(cl,hold)
+            read(hold,*) params%numIter
+          else
+            read(hold,*) params%numIter
+          end if
+        end if
+        if (params%itterateType .eq. "Off") then
+          params%numIter = 1
+        end if
+
+
+      case("cores")
+        if (size(second) == 2) then
+          read(second(1), *) params%startCoreChar
+          read(second(2), *) params%endCoreChar
+        endif
+	
+      case("minhapfreq")
+        if(allocated(second)) then
+          read (second, *) dumC, hold
+          if (hold(1:1) == "*") then
+            read(hold,"(X,I2)") cl
+            call get_command_argument(cl,hold)
+            read(hold,*) params%minHapFreq
+          else
+            read(hold,*) params%minHapFreq
+          end if
+        end if
+
+      case("library")
+        if (allocated(second)) then
+          read(second(1), *) params%library
+       endif
+
+      case default
+        write(*,"(A,A)") trim(tag), " is not valid for the AlphaPhase Spec File."
+        cycle
+      end select
     end if
-  end function ReadInParameterFile
+  end do READFILE
+
+
+  close (unit)
+
+  print *, " Parameter file read"
+  print *, " "
+  print *, " Using ", trim(params%PedigreeFile), " as the pedigree file"
+  print *, " Using ", trim(params%GenotypeFile), " as the genotype file"
+  print *, " "
+
+  if (params%CoreAndTailLength > params%nSnp) then
+    print*, "GeneralCoreAndTailLength is too long"
+    stop
+  endif
+  if (params%Jump > params%nSnp) then
+    print*, "GeneralCoreLength is too long"
+    stop
+  endif
+  if (params%CoreAndTailLength < params%Jump) then
+    print *, "GeneralCoreAndTailLength is shorted than GenralCoreLength"
+    stop
+  end if
+
+  if (OffsetVariable == "Offset") then
+    params%Offset = .true.
+  endif
+  if (OffsetVariable == "NotOffset") then
+    params%Offset = .false.
+  endif
+
+  if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
+    print*, "Offset variable is not properly parameterised"
+    stop
+  endif
+
+  if (Graphics == 1) then
+    print*, "Graphics option is not yet functional"
+    stop
+  end if
+
+
+  if (outputoption .eq. "Impute") then
+    params%outputFinalPhase = .false.
+    params%outputCoreIndex = .true.
+    params%outputSnpPhaseRate = .false.
+    params%outputIndivPhaseRate = .false.
+    params%outputHapIndex = .false.
+    params%outputSwappable = .false.
+    params%outputHapCommonality = .false.
+    params%outputSurrogates = .false.
+    params%outputSurrogatesSummary = .false.
+    params%outputHaplotypeLibraryText = .false.
+    params%outputHaplotypeLibraryBinary = .true.
+    params%outputPhasingYield = .false.
+    params%outputTimer = .false.
+    params%outputIndivMistakes = .false.
+    params%outputIndivMistakesPercent = .false.
+    params%outputCoreMistakesPercent = .false.
+    params%outputMistakes = .false.
+  end if
+  if ((outputoption .eq. "Full") .or. (outputoption .eq. "1")) then
+    params%outputFinalPhase = .true.
+    params%outputCoreIndex = .true.
+    params%outputSnpPhaseRate = .true.
+    params%outputIndivPhaseRate = .true.
+    params%outputHapIndex = .true.
+    params%outputSwappable = .true.
+    params%outputHapCommonality = .true.
+    params%outputSurrogates = .true.
+    params%outputSurrogatesSummary = .true.
+    params%outputHaplotypeLibraryText = .true.
+    params%outputHaplotypeLibraryBinary = .true.
+    params%outputPhasingYield = .true.
+    params%outputTimer = .true.
+    params%outputIndivMistakes = .true.
+    params%outputIndivMistakesPercent = .true.
+    params%outputCoreMistakesPercent = .true.
+    params%outputMistakes = .true.
+  end if
+  if ((outputoption .eq. "Standard") .or. (outputoption .eq. "0")) then
+    params%outputFinalPhase = .true.
+    params%outputCoreIndex = .true.
+    params%outputSnpPhaseRate = .true.
+    params%outputIndivPhaseRate = .true.
+    params%outputHapIndex = .true.
+    params%outputSwappable = .true.
+    params%outputHapCommonality = .false.
+    params%outputSurrogates = .false.
+    params%outputSurrogatesSummary = .false.
+    params%outputHaplotypeLibraryText = .false.
+    params%outputHaplotypeLibraryBinary = .true.
+    params%outputPhasingYield = .true.
+    params%outputTimer = .true.
+    params%outputIndivMistakes = .false.
+    params%outputIndivMistakesPercent = .false.
+    params%outputCoreMistakesPercent = .false.
+    params%outputMistakes = .false.
+  end if
+
+  PercSurrDisagree = PercSurrDisagree/100
+  params%NumSurrDisagree = int(params%UseSurrsN * PercSurrDisagree)
+  params%PercGenoHaploDisagree = params%PercGenoHaploDisagree/100
+  params%GenotypeMissingErrorPercentage = params%GenotypeMissingErrorPercentage/100
+
+end function ReadInParameterFile
+
 
   subroutine HapCommonality(library, OutputPoint, params)
     !! This should probably be two routines - one to calculate, one to output
