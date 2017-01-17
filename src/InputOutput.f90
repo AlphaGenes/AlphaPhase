@@ -647,7 +647,7 @@ contains
     type(Parameters) :: params
 
     double precision :: PercSurrDisagree
-    integer :: TempInt, Graphics, status, cl
+    integer :: TempInt, status, cl
     integer :: unit
     character (len = 300) :: dumC, OffsetVariable, hold, outputoption
     character(len=300) :: first, line
@@ -723,15 +723,10 @@ contains
       case("genotypemissingerrorpercentage")
         read(second(1), *) params%GenotypeMissingErrorPercentage
 
-      case("nrmthresh")
-        read(second(1), *) params%NrmThresh
 
       case("fulloutput")
         read(second(1),*) outputoption
 
-
-      case("graphics")
-        read(second(1), *) graphics
 
       case("simulation")
         read(second(1), *) tempInt
@@ -797,6 +792,15 @@ contains
         if (allocated(second)) then
           read(second(1), *) params%library
        endif
+       
+      case("graphics")
+	write(*,"(A)") "graphics is no longer a valid option for the AlphaPhase Spec File."
+	
+      case("coreattime")
+	write(*,"(A)") "coreattime is no longer a valid option for the AlphaPhase Spec File."
+
+      case("nrmthresh")
+        write(*,"(A)") "nrmthresh is no longer a valid option for the AlphaPhase Spec File."
 
       case default
         write(*,"(A,A)") trim(tag), " is not valid for the AlphaPhase Spec File."
@@ -808,6 +812,7 @@ contains
 
   close (unit)
 
+  print *
   print *, " Parameter file read"
   print *, " "
   print *, " Using ", trim(params%PedigreeFile), " as the pedigree file"
@@ -838,12 +843,6 @@ contains
     print*, "Offset variable is not properly parameterised"
     stop
   endif
-
-  if (Graphics == 1) then
-    print*, "Graphics option is not yet functional"
-    stop
-  end if
-
 
   if (outputoption .eq. "Impute") then
     params%outputFinalPhase = .false.

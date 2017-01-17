@@ -15,7 +15,6 @@ module ParametersDefinition
     integer :: NumSurrDisagree
     double precision :: PercGenoHaploDisagree
     double precision :: GenotypeMissingErrorPercentage
-    double precision :: NrmThresh
     logical :: Simulation
     character (len = 300) :: PedigreeFile, TruePhaseFile, Library ! Used in a really weird way that should probably be refactored
 
