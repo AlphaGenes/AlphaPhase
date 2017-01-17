@@ -19,7 +19,6 @@ module ParametersDefinition
     logical :: Simulation
     character (len = 300) :: PedigreeFile, TruePhaseFile, Library ! Used in a really weird way that should probably be refactored
 
-    logical :: readCoreAtTime
     character (len = 300) :: itterateType
     integer :: itterateNumber
     integer :: numIter
@@ -56,7 +55,7 @@ module ParametersDefinition
 contains
   function newParameters result(params)
     type(Parameters) :: params
-    params%readCoreAtTime = .false.
+    params%itterateNumber = 1
     !! Place holder - should probably contain lots of defaults !!
   end function newParameters
     

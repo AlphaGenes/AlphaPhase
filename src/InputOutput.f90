@@ -659,7 +659,6 @@ contains
     open(newunit=unit, file=filename, action="read", status="old")
     
     !!! DEFAULT VALUES !!!
-    params%readCoreAtTime = .false.
     params%itterateType = "Off"
     params%itterateNumber = 200
     params%numIter = 1
@@ -751,16 +750,8 @@ contains
       case("truephasefile")
         read(second(1), *) params%TruePhaseFile
 
-      case("coreattime")
-        if (.not. allocated(second)) then
-          params%readCoreAtTime = .false.
-        else
-          read(second(1), *) tempInt
-          params%readCoreAtTime = (tempInt==1)
-        endif
 
       case("iteratemethod")
-
         if (allocated(second)) then
           read(second(1), *) params%itterateType
         endif

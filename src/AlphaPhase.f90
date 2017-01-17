@@ -49,7 +49,7 @@ program Rlrplhi
   character(len=4096) :: cmd
   
  integer :: startCore, endCore
-  logical :: combine, printOldProgress, writeSwappable, outputSurrogates
+  logical :: combine, singleRun, printOldProgress, writeSwappable, outputSurrogates
     
   type(MemberManager) :: manager
   
@@ -84,32 +84,34 @@ program Rlrplhi
   TailIndex => calculateTails(CoreIndex, params%nSnp, params%Jump, params%CoreAndTailLength)
   nCores = size(CoreIndex,1)  
     
-  if (.not. params%readCoreAtTime) then
-    allocate(AllHapAnis(nAnisG, 2, nCores))
-    allocate(AllPhase(nAnisG, params%nSnp, 2))
-    allocate(AllCores(nCores))
-    if (params%GenotypeFileFormat /= 2) then
-      allocate(AllGenos(nAnisG,params%nSnp))
-      AllGenos = ParseGenotypeData(1,params%nSnp,nAnisG,params)
-    else
-      AllPhase = ParsePhaseData(params%GenotypeFile,1,params%nSnp,nAnisG,params%nSnp)
-    end if
-    
-    if (params%Simulation) then
-      allocate(AllTruePhase(nAnisG, params%nSnp, 2))
-      AllTruePhase = ParsePhaseData(params%TruePhaseFile, 1, params%nSnp, nAnisG, params%nSnp)
-    end if
+  allocate(AllHapAnis(nAnisG, 2, nCores))
+  allocate(AllPhase(nAnisG, params%nSnp, 2))
+  allocate(AllCores(nCores))
+  if (params%GenotypeFileFormat /= 2) then
+    allocate(AllGenos(nAnisG,params%nSnp))
+    AllGenos = ParseGenotypeData(1,params%nSnp,nAnisG,params)
+  else
+    AllPhase = ParsePhaseData(params%GenotypeFile,1,params%nSnp,nAnisG,params%nSnp)
   end if
-  
+
+  if (params%Simulation) then
+    allocate(AllTruePhase(nAnisG, params%nSnp, 2))
+    AllTruePhase = ParsePhaseData(params%TruePhaseFile, 1, params%nSnp, nAnisG, params%nSnp)
+  end if  
     
   threshold = int(params%GenotypeMissingErrorPercentage*params%CoreAndTailLength)
   
+  singleRun = .true.
   if (params%startCoreChar .eq. "Combine") then
-    startCore = nCores
+    startCore = nCores + 1
     combine = .true.
+    singleRun = .false.
   else
     read(params%startCoreChar, '(i10)') startCore
     combine = .false.
+    if (startCore /= 1) then
+      singleRun = .false.
+    end if
   end if
   
   if (params%endCoreChar .eq. "Combine") then
@@ -118,6 +120,7 @@ program Rlrplhi
   else
     read(params%endCoreChar, '(i10)') endCore
     combine = .false.
+    singleRun = .false.
   end if
   
   printOldProgress = (params%ItterateType .eq. "Off")
@@ -140,11 +143,7 @@ program Rlrplhi
 
     if (params%GenotypeFileFormat /= 2) then
       allocate(Genos(nAnisG, EndSurrSnp-startSurrSnp+1))
-      if (params%readCoreAtTime) then
-	Genos = ParseGenotypeData(StartSurrSnp,EndSurrSnp,nAnisG,params)
-      else
-	Genos = AllGenos(:,StartSurrSnp:EndSurrSnp)
-      end if
+      Genos = AllGenos(:,StartSurrSnp:EndSurrSnp)
       
       c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1)
 	
@@ -209,11 +208,7 @@ program Rlrplhi
       deallocate(Genos)
     else
       allocate(Phase(nAnisG,EndCoreSnp-StartCoreSnp+1,2))
-      if (params%readCoreAtTime) then
-	Phase = ParsePhaseData(params%GenotypeFile,StartCoreSnp,EndCoreSnp,nAnisG,params%nSnp)
-      else
-	Phase = AllPhase(:,StartCoreSnp:EndCoreSnp,:)
-      end if
+      Phase = AllPhase(:,StartCoreSnp:EndCoreSnp,:)
       c = Core(Phase)
       do i = 1, nAnisG
 	call c%setHaplotype(i,1,Haplotype(Phase(i,:,1)))
@@ -230,7 +225,7 @@ program Rlrplhi
       call HapCommonality(library, h, params)
     end if
     
-    if (params%readCoreAtTime .or. .not. combine) then
+    if (.not. singleRun) then
       call WriteOutCore(c, h, CoreIndex(h,1), p, writeSwappable, params)
     else
       do i = 1, size(AllPhase,1)
@@ -247,11 +242,7 @@ program Rlrplhi
     
     if (params%Simulation) then
       allocate(TruePhase(nAnisG,EndCoreSnp-StartCoreSnp+1,2))
-      if (params%readCoreAtTime) then
-	TruePhase = ParsePhaseData(params%TruePhaseFile,StartCoreSnp,EndCoreSnp,nAnisG,params%nSnp)
-      else
-	TruePhase = AllTruePhase(:,StartCoreSnp:EndCoreSnp,:)
-      end if
+      TruePhase = AllTruePhase(:,StartCoreSnp:EndCoreSnp,:)
       
       call Flipper(c,TruePhase)
       results = TestResults(c,TruePhase)
@@ -262,20 +253,18 @@ program Rlrplhi
     end if
   end do
   
-  if (params%readCoreAtTime .and. combine) then
+  if ((.not. SingleRun) .and. combine) then
     call CombineResults(nAnisG,CoreIndex,writeSwappable,params)
   else
     call WriteOutResults(AllCores,CoreIndex,p,writeSwappable, params)
   end if
-  if (.not. params%readCoreAtTime) then
-    deallocate(AllHapAnis)
-    deallocate(AllPhase)
-    if (params%GenotypeFileFormat /= 2) then
-      deallocate(AllGenos)
-    end if
-    if (params%Simulation) then
-      deallocate(AllTruePhase)
-    end if
+  deallocate(AllHapAnis)
+  deallocate(AllPhase)
+  if (params%GenotypeFileFormat /= 2) then
+    deallocate(AllGenos)
+  end if
+  if (params%Simulation) then
+    deallocate(AllTruePhase)
   end if
   if (params%Simulation) then
     call CombineTestResults(nCores,params)
