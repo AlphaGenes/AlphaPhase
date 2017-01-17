@@ -658,15 +658,6 @@ contains
 
     open(newunit=unit, file=filename, action="read", status="old")
     
-    !!! DEFAULT VALUES !!!
-    params%itterateType = "Off"
-    params%itterateNumber = 200
-    params%numIter = 1
-    params%startCoreChar = "1"
-    params%endCoreChar = "Combine"
-    params%minHapFreq = 1
-    params%library = "None"
-    
     status = 0
     READFILE: do while (status==0)
       read(unit,"(A)", IOStat=status)  line
