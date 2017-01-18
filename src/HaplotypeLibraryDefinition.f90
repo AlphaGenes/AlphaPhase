@@ -433,7 +433,7 @@ contains
     
     overhang = 64 - (library%nSnps - (sections - 1) * 64)
     do i = 64 - overhang + 1, 64
-        all(sections) = ibclr(all(sections), i)
+        all(sections) = ibclr(all(sections), i - 1)
     end do
     
   end function allZero
@@ -488,7 +488,7 @@ contains
     
     overhang = 64 - (library%nSnps - (sections - 1) * 64)
     do i = 64 - overhang + 1, 64
-        all(sections) = ibclr(all(sections), i)
+        all(sections) = ibclr(all(sections), i - 1)
     end do
     
   end function allZeroOrMissing

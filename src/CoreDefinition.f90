@@ -50,27 +50,32 @@ module CoreDefinition
 
 contains
 
-  function newCore(genos, startCoreSnp, endCoreSnp) result(c)
+  function newCore(genos, startTailSnp, startCoreSnp, endCoreSnp, endTailSnp) result(c)
     
-    integer(kind = 1), dimension(:,:), intent(in) :: genos
-    integer, intent(in) :: startCoreSnp, endCoreSnp
+    type(Genotype), pointer, dimension(:), intent(in) :: genos
+    integer, intent(in) :: startCoreSnp, endCoreSnp, startTailSnp, endTailSnp
     type(Core) :: c
+    type(Genotype) :: tempFullGeno
     
     integer :: nAnisG, i
     
+    
     nAnisG = size(genos,1)
-    c%nCoreAndTailSnps = size(genos,2)
+    c%nCoreAndTailSnps = endTailSnp - startTailSnp + 1
     c%nCoreSnps = endCoreSnp - startCoreSnp + 1
     
     allocate(c%coreAndTailGenos(nAnisG))
     allocate(c%coreGenos(nAnisG))
     allocate(c%phase(nAnisG,2))
+    
     do i = 1, nAnisG
-      c%coreGenos(i) = Genotype(genos(i,startCoreSnp:endCoreSnp))
-      c%coreAndTailGenos(i) = Genotype(genos(i,:))
+      tempFullGeno = Genos(i)
+      c%coreGenos(i) = tempFullGeno%subset(startCoreSnp, endCoreSnp)
+      c%coreAndTailGenos(i) = tempFullGeno%subset(startTailSnp, endTailSnp)
       c%phase(i,1) = Haplotype(c%nCoreSnps)
       c%phase(i,2) = Haplotype(c%nCoreSnps)
     end do
+    
     allocate(c%fullyphased(nAnisG,2))
     allocate(c%hapAnis(nAnisG,2))
     

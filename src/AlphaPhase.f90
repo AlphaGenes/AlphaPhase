@@ -31,7 +31,7 @@ program Rlrplhi
   
   integer, allocatable, dimension (:,:,:) :: AllHapAnis
   integer(kind=1), allocatable, dimension(:,:,:) :: AllPhase, Phase, AllTruePhase, TruePhase
-  integer(kind=1), allocatable, dimension(:,:) :: AllGenos, Genos
+  type(Genotype), pointer, dimension(:) :: Genos
   integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
   integer, dimension (:,:), pointer :: CoreIndex, TailIndex
   integer :: nCores
@@ -88,8 +88,7 @@ program Rlrplhi
   allocate(AllPhase(nAnisG, params%nSnp, 2))
   allocate(AllCores(nCores))
   if (params%GenotypeFileFormat /= 2) then
-    allocate(AllGenos(nAnisG,params%nSnp))
-    AllGenos = ParseGenotypeData(1,params%nSnp,nAnisG,params)
+    Genos => ParseGenotypeData(nAnisG,params)
   else
     AllPhase = ParsePhaseData(params%GenotypeFile,1,params%nSnp,nAnisG,params%nSnp)
   end if
@@ -142,11 +141,7 @@ program Rlrplhi
     print *, total
 
     if (params%GenotypeFileFormat /= 2) then
-      allocate(Genos(nAnisG, EndSurrSnp-startSurrSnp+1))
-      Genos = AllGenos(:,StartSurrSnp:EndSurrSnp)
-      
-      c = Core(Genos, startCoreSnp-startSurrSnp+1, endCoreSnp-startSurrSnp+1)
-	
+      c = Core(Genos, startSurrSnp, startCoreSnp, endCoreSnp, endSurrSnp)
       if (params%library .eq. "None") then
 	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
       else
@@ -204,8 +199,6 @@ program Rlrplhi
 	total = etime(elapsed)
 	print *, total
       end do
-
-      deallocate(Genos)
     else
       allocate(Phase(nAnisG,EndCoreSnp-StartCoreSnp+1,2))
       Phase = AllPhase(:,StartCoreSnp:EndCoreSnp,:)
@@ -260,9 +253,6 @@ program Rlrplhi
   end if
   deallocate(AllHapAnis)
   deallocate(AllPhase)
-  if (params%GenotypeFileFormat /= 2) then
-    deallocate(AllGenos)
-  end if
   if (params%Simulation) then
     deallocate(AllTruePhase)
   end if

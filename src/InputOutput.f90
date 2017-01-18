@@ -562,52 +562,51 @@ contains
     p = Pedigree(sireGenotyped, damGenotyped, genotypeId)
   end function ParsePedigreeData
 
-  function ParseGenotypeData(startSnp, endSnp, nAnisG, params) result(Genos)
+  function ParseGenotypeData(nAnisG, params) result(Genos)
     use ParametersDefinition
+    use GenotypeModule
 
-    integer, intent(in) :: startSnp, endSnp, nAnisG
+    integer, intent(in) :: nAnisG
     type(Parameters), intent(in) :: params
-    integer(kind=1), allocatable, dimension(:,:) :: Genos
+    type(Genotype), pointer, dimension(:) :: Genos
 
     integer :: i, j, k
-    integer, allocatable, dimension (:) :: WorkVec, ReadingVector
-    integer :: nReadSnp
+    integer(kind=1), allocatable, dimension(:) :: WorkVec, ReadingVector
     character(lengan) :: dummy
 
+    allocate(Genos(nAnisG))
+    
     open (unit = 3, file = trim(params%GenotypeFile), status = "old")
-
-    nReadSnp = endSnp - startSnp + 1
-
-    allocate(Genos(nAnisG, nReadSnp))
-    Genos = MissingGenotypeCode
 
     allocate(WorkVec(params%nSnp * 2))
     allocate(ReadingVector(params%nSnp))
+    
+    print *, nAnisG, params%GenotypeFileFormat
 
-    Genos = MissingGenotypeCode
     do i = 1, nAnisG
       if (params%GenotypeFileFormat == 1) then
 	read (3, *) dummy, ReadingVector(:)
-	!do j = 1, nSnp
-	do j = startSnp, endSnp
+	do j = 1, params%nSnp
 	  if ((ReadingVector(j) /= 0).and.(ReadingVector(j) /= 1).and.(ReadingVector(j) /= 2)) ReadingVector(j) = MissingGenotypeCode
-	  Genos(i, j - startSnp + 1) = ReadingVector(j)
 	end do
+	Genos(i) = Genotype(ReadingVector)
       end if
       if (params%GenotypeFileFormat == 3) then
 	read (3, *) dummy, WorkVec(:)
 	k = 0
-	do j = startSnp*2-1,endSnp*2
-	  if (mod(j, 2) == 0) then
-	    k = k + 1
-	    if ((WorkVec(j - 1) == 1).and.(WorkVec(j) == 1)) Genos(i, k) = 0
-	    if ((WorkVec(j - 1) == 1).and.(WorkVec(j) == 2)) Genos(i, k) = 1
-	    if ((WorkVec(j - 1) == 2).and.(WorkVec(j) == 1)) Genos(i, k) = 1
-	    if ((WorkVec(j - 1) == 2).and.(WorkVec(j) == 2)) Genos(i, k) = 2
-	  endif
+	do j = 1, params%nSnp
+	  ReadingVector(j) = MissingGenotypeCode
+	  if ((WorkVec(j*2 - 1) == 1).and.(WorkVec(j*2) == 1)) ReadingVector(j) = 0
+	  if ((WorkVec(j*2 - 1) == 1).and.(WorkVec(j*2) == 2)) ReadingVector(j) = 1
+	  if ((WorkVec(j*2 - 1) == 2).and.(WorkVec(j*2) == 1)) ReadingVector(j) = 1
+	  if ((WorkVec(j*2 - 1) == 2).and.(WorkVec(j*2) == 2)) ReadingVector(j) = 2
 	end do
+	Genos(i) = Genotype(ReadingVector)
       endif
     enddo
+    
+    deallocate(WorkVec)
+    deallocate(ReadingVector)
 
     close(3)
   end function ParseGenotypeData
@@ -686,11 +685,11 @@ contains
           write(params%Genotypefile, "(A)") second(1)
           if (size(second) >1) then
             select case(trim(toLower(second(2))))
-            case('GenotypeFormat')
+            case('genotypeformat')
               params%GenotypeFileFormat = 1
-            case('PhaseFormat')
+            case('phaseformat')
               params%GenotypeFileFormat = 2
-            case('UnorderedFormat')
+            case('unorderedformat')
               params%GenotypeFileFormat = 3
             end select
           endif
