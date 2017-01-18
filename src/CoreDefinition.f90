@@ -39,6 +39,7 @@ module CoreDefinition
     
     procedure, public :: setSwappable
     procedure, public :: getSwappable
+    procedure, public :: flipHaplotypes
     
     final :: destroy
   end type Core
@@ -88,26 +89,29 @@ contains
     c%swappable = 0
   end function newCore
   
-  function newPhaseCore(phase) result(c)
+  function newPhaseCore(phase, startSnp, endSnp) result(c)
     
-    integer(kind=1), dimension(:,:,:), intent(in) :: phase
+    type(Haplotype), dimension(:,:), intent(in) :: phase
+    integer, intent(in) :: startSnp, endSnp
     type(Core) :: c
     
-    integer :: nAnisG, nSnp, i
+    integer :: nAnisG, i
+    type(Haplotype) :: tempFullHaplotype
     
     nAnisG = size(phase,1)
-    nSnp = size(phase,2)
     
     allocate(c%phase(nAnisG,2))
     allocate(c%fullyphased(nAnisG,2))
     allocate(c%hapAnis(nAnisG,2))
     
-    c%nCoreSnps = nSnp
-    c%nCoreAndTailSnps = nSnp
+    c%nCoreSnps = endSnp - startSnp + 1
+    c%nCoreAndTailSnps = c%nCoreSnps
     c%fullyPhased = .false.
     do i = 1, size(phase,1)
-      c%phase(i,1) = Haplotype(phase(i,:,1))
-      c%phase(i,2) = Haplotype(phase(i,:,2))
+      tempFullHaplotype = Phase(i,1)
+      c%phase(i,1) = tempFullHaplotype%subset(startSnp,endSnp)
+      tempFullHaplotype = Phase(i,2)
+      c%phase(i,2) = tempFullHaplotype%subset(startSnp,endSnp)
     end do
     c%hapAnis = MissingHaplotypeCode
   end function newPhaseCore
@@ -289,6 +293,62 @@ contains
     
     g => c%coreGenos(animal)
   end function getCoreGenos
+  
+  subroutine flipHaplotypes(c, TruePhase)
+    use HaplotypeModule
+
+    class(Core) :: c
+    type(Haplotype), dimension(:,:), pointer, intent(in) :: TruePhase
+
+    integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth
+    type(Haplotype), pointer :: W1, W2
+    type(Haplotype), pointer :: hap1, hap2, truehap1, truehap2
+    integer :: HA1, HA2
+    logical :: FP1, FP2
+
+    integer :: nAnisG, nSnp
+
+    nAnisG = c%getNAnisG()
+    nSnp = c%getNCoreSnp()
+
+    do i = 1, nAnisG
+      CountAgreeStay1 = 0
+      CountAgreeStay2 = 0
+      CountAgreeSwitch1 = 0
+      CountAgreeSwitch2 = 0
+      truth = 0
+      hap1 => c%phase(i,1)
+      hap2 => c%phase(i,2)
+      truehap1 => TruePhase(i,1)
+      truehap2 => TruePhase(i,2)
+      !! This could be done with bit ops but is not a priority given it's only used when comparing to known phase
+      do j = 1, nSnp
+	if (truehap1.getPhaseMod(j) == hap1%getPhaseMod(j)) CountAgreeStay1 = CountAgreeStay1 + 1
+	if (truehap2.getPhaseMod(j) == hap1%getPhaseMod(j)) CountAgreeSwitch1 = CountAgreeSwitch1 + 1
+	if (truehap1.getPhaseMod(j) == hap2%getPhaseMod(j)) CountAgreeSwitch2 = CountAgreeSwitch2 + 1
+	if (truehap2.getPhaseMod(j) == hap2%getPhaseMod(j)) CountAgreeStay2 = CountAgreeStay2 + 1
+      end do
+      if ((CountAgreeSwitch2 > CountAgreeStay2).and.(CountAgreeStay1 <= CountAgreeSwitch1)) truth = 1
+      if ((CountAgreeSwitch1 > CountAgreeStay1).and.(CountAgreeStay2 <= CountAgreeSwitch2)) truth = 1
+      if (truth == 1) then
+	W1 => c%phase(i,1)
+	W2 => c%phase(i,2)
+	call c%setHaplotype(i,1,W2)
+	call c%setHaplotype(i,2,W1)
+	
+	HA1 = c%hapAnis(i,1)
+	HA2 = c%hapAnis(i,2)
+	c%hapAnis(i,1) = HA2
+	c%hapAnis(i,2) = HA1
+	
+	FP1 = c%fullyPhased(i,1)
+	FP2 = c%fullyPhased(i,2)
+	c%fullyPhased(i,1) = FP2
+	c%fullyPhased(i,2) = FP1
+      end if
+    end do
+
+  end subroutine flipHaplotypes
     
 end module CoreDefinition
 

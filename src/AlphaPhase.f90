@@ -29,9 +29,8 @@ program Rlrplhi
   type(Parameters) :: params
   type(TestResults) :: results
   
-  integer, allocatable, dimension (:,:,:) :: AllHapAnis
-  integer(kind=1), allocatable, dimension(:,:,:) :: AllPhase, Phase, AllTruePhase, TruePhase
   type(Genotype), pointer, dimension(:) :: Genos
+  type(Haplotype), pointer, dimension(:,:) :: Phase, TruePhase, CoreTruePhase
   integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
   integer, dimension (:,:), pointer :: CoreIndex, TailIndex
   integer :: nCores
@@ -39,10 +38,8 @@ program Rlrplhi
   integer :: nAnisG
   integer :: subsetCount
   type(HaplotypeLibrary) :: globalLibrary
-  
-  type(Core), allocatable, dimension(:) :: AllCores
-  
   type(Haplotype), pointer :: hap
+  type(Core), allocatable, dimension(:) :: AllCores
   
   !Linux max path length is 4096 which is more than windows or mac (all according to google)
   character(len=4096) :: specfile
@@ -84,18 +81,15 @@ program Rlrplhi
   TailIndex => calculateTails(CoreIndex, params%nSnp, params%Jump, params%CoreAndTailLength)
   nCores = size(CoreIndex,1)  
     
-  allocate(AllHapAnis(nAnisG, 2, nCores))
-  allocate(AllPhase(nAnisG, params%nSnp, 2))
   allocate(AllCores(nCores))
   if (params%GenotypeFileFormat /= 2) then
     Genos => ParseGenotypeData(nAnisG,params)
   else
-    AllPhase = ParsePhaseData(params%GenotypeFile,1,params%nSnp,nAnisG,params%nSnp)
+    Phase => ParsePhaseData(params%GenotypeFile,nAnisG,params%nSnp)
   end if
 
   if (params%Simulation) then
-    allocate(AllTruePhase(nAnisG, params%nSnp, 2))
-    AllTruePhase = ParsePhaseData(params%TruePhaseFile, 1, params%nSnp, nAnisG, params%nSnp)
+    TruePhase => ParsePhaseData(params%TruePhaseFile,nAnisG,params%nSnp)
   end if  
     
   threshold = int(params%GenotypeMissingErrorPercentage*params%CoreAndTailLength)
@@ -200,13 +194,7 @@ program Rlrplhi
 	print *, total
       end do
     else
-      allocate(Phase(nAnisG,EndCoreSnp-StartCoreSnp+1,2))
-      Phase = AllPhase(:,StartCoreSnp:EndCoreSnp,:)
-      c = Core(Phase)
-      do i = 1, nAnisG
-	call c%setHaplotype(i,1,Haplotype(Phase(i,:,1)))
-	call c%setHaplotype(i,2,Haplotype(Phase(i,:,2)))
-      end do
+      c = Core(Phase,StartCoreSnp,EndCoreSnp)
       library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
       call UpdateHapLib(c,library)
       deallocate(Phase)
@@ -221,28 +209,22 @@ program Rlrplhi
     if (.not. singleRun) then
       call WriteOutCore(c, h, CoreIndex(h,1), p, writeSwappable, params)
     else
-      do i = 1, size(AllPhase,1)
-	hap => c%phase(i,1)
-	AllPhase(i,startCoreSnp:endCoreSnp,1) = hap%toIntegerArray()
-	hap => c%phase(i,2)
-	AllPhase(i,startCoreSnp:endCoreSnp,2) = hap%toIntegerArray()
-      end do
-      AllHapAnis(:,1,h) = c%hapAnis(:,1)
-      AllHapAnis(:,2,h) = c%hapAnis(:,2)
-
       AllCores(h) = c
     end if
     
     if (params%Simulation) then
-      allocate(TruePhase(nAnisG,EndCoreSnp-StartCoreSnp+1,2))
-      TruePhase = AllTruePhase(:,StartCoreSnp:EndCoreSnp,:)
-      
-      call Flipper(c,TruePhase)
-      results = TestResults(c,TruePhase)
+      allocate(CoreTruePhase(nAnisG,2))
+      do i = 1, nAnisG
+	hap => TruePhase(i,1)
+	CoreTruePhase(i,1) = hap%subset(startCoreSnp,endCoreSnp)
+	hap => TruePhase(i,2)
+	CoreTruePhase(i,2) = hap%subset(startCoreSnp,endCoreSnp)
+      end do
+      call c%flipHaplotypes(CoreTruePhase)
+      results = TestResults(c,CoreTruePhase)
       call WriteTestResults(results,c,surrogates,p,h,outputSurrogates,params)
-      call WriteMistakes(c,TruePhase,p,h,params)
-      
-      deallocate(TruePhase)
+      call WriteMistakes(c,CoreTruePhase,p,h,params)      
+      deallocate(CoreTruePhase)
     end if
   end do
   
@@ -250,11 +232,6 @@ program Rlrplhi
     call CombineResults(nAnisG,CoreIndex,writeSwappable,params)
   else
     call WriteOutResults(AllCores,CoreIndex,p,writeSwappable, params)
-  end if
-  deallocate(AllHapAnis)
-  deallocate(AllPhase)
-  if (params%Simulation) then
-    deallocate(AllTruePhase)
   end if
   if (params%Simulation) then
     call CombineTestResults(nCores,params)

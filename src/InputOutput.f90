@@ -571,15 +571,13 @@ contains
     type(Genotype), pointer, dimension(:) :: Genos
 
     integer :: i, j, k
-    integer(kind=1), allocatable, dimension(:) :: WorkVec, ReadingVector
+    integer(kind=1), dimension(params%nSnp * 2) :: WorkVec
+    integer(kind=1), dimension(params%nSnp) :: ReadingVector
     character(lengan) :: dummy
 
     allocate(Genos(nAnisG))
     
     open (unit = 3, file = trim(params%GenotypeFile), status = "old")
-
-    allocate(WorkVec(params%nSnp * 2))
-    allocate(ReadingVector(params%nSnp))
     
     print *, nAnisG, params%GenotypeFileFormat
 
@@ -604,36 +602,31 @@ contains
 	Genos(i) = Genotype(ReadingVector)
       endif
     enddo
-    
-    deallocate(WorkVec)
-    deallocate(ReadingVector)
 
     close(3)
   end function ParseGenotypeData
 
-  function ParsePhaseData(PhaseFile, startSnp, endSnp, nAnisG, nSnp) result(Phase)
+  function ParsePhaseData(PhaseFile, nAnisG, nSnp) result(Phase)
+    use HaplotypeModule
     
     character(len=300) :: PhaseFile
-    integer, intent(in) :: startSnp, endSnp, nAnisG, nSnp
-    integer(kind=1), allocatable, dimension(:,:,:) :: Phase
+    integer, intent(in) :: nAnisG, nSnp
+    type(Haplotype), pointer, dimension(:,:) :: Phase
 
     integer :: i
-    integer, allocatable, dimension (:) :: ReadingVector
-    integer :: nReadSnp
+    integer(kind=1), dimension (nSnp) :: ReadingVector
     character(lengan) :: dummy
 
-    open (unit = 3, file = trim(PHaseFile), status = "old")
+    open (unit = 3, file = trim(PhaseFile), status = "old")
 
-    nReadSnp = endSnp - startSnp + 1
 
-    allocate(Phase(nAnisG, nReadSnp, 2))
-    allocate(ReadingVector(nSnp))
+    allocate(Phase(nAnisG, 2))
 
     do i = 1, nAnisG
       read (3, *) dummy, ReadingVector(:)
-      Phase(i,:,1) = ReadingVector(startSnp:endSnp)
+      Phase(i,1) = Haplotype(ReadingVector)
       read (3, *) dummy, ReadingVector(:)
-      Phase(i,:,2) = ReadingVector(startSnp:endSnp)
+      Phase(i,2) = Haplotype(ReadingVector)
     enddo
 
     close(3)
@@ -1283,8 +1276,7 @@ end function ReadInParameterFile
     use HaplotypeModule
     
     type(Core), intent(in) :: c
-    !! Probably should be consistent about what we call this
-    integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase
+    type(Haplotype), dimension(:,:), intent(in) :: TruePhase
     type(Pedigree), intent(in) :: p
     integer, intent(in) :: OutputPoint
     class(Parameters), intent(in) :: params
@@ -1293,7 +1285,7 @@ end function ReadInParameterFile
     integer(kind = 1), allocatable, dimension(:) :: MistakePhase
     character(len = 300) :: filout
     
-    type(Haplotype), pointer :: hap1, hap2
+    type(Haplotype), pointer :: hap1, hap2, trueHap1, trueHap2
     
     if (params%outputMistakes) then
     
@@ -1305,11 +1297,13 @@ end function ReadInParameterFile
       do i = 1, c%getNAnisG()
 	hap1 => c%phase(i, 1)
 	hap2 => c%phase(i, 2)
+	trueHap1 = TruePhase(i,1)
+	trueHap2 = TruePhase(i,2)
 	do j = 1, c%getNCoreSnp()
 	  if (hap1%getPhaseMod(j) == MissingPhaseCode) then
 	    MistakePhase(j) = MissingPhaseCode
 	  else
-	    if (TruePhase(i, j, 1) == hap1 % getPhaseMod(j)) then
+	    if (trueHap1%getPhaseMod(j) == hap1 % getPhaseMod(j)) then
 	      MistakePhase(j) = 1
 	    else
 	      MistakePhase(j) = 5
@@ -1324,7 +1318,7 @@ end function ReadInParameterFile
 	  if (hap2%getPhaseMod(j) == MissingPhaseCode) then
 	    MistakePhase(j) = MissingPhaseCode
 	  else
-	    if (TruePhase(i, j, 2) == hap2 % getPhaseMod(j)) then
+	    if (trueHap2%getPhaseMod(j) == hap2 % getPhaseMod(j)) then
 	      MistakePhase(j) = 1
 	    else
 	      MistakePhase(j) = 5

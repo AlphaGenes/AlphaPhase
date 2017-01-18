@@ -28,15 +28,15 @@ contains
     use CoreDefinition
     
     type(Core) :: c
-    integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase    
+    type(Haplotype), dimension(:,:), pointer, intent(in) :: TruePhase    
     type(TestResults) :: results
     
     integer :: i, j, k
-    integer(kind=1) :: p, g
+    integer(kind=1) :: p, t, g
     logical :: het, miss, error
     
     type(Genotype), pointer :: geno
-    type(Haplotype), pointer:: hap1, hap2
+    type(Haplotype), pointer:: hap1, hap2, trueHap1, trueHap2
     
     print*, " "
     print*, " Checking simulation"
@@ -49,11 +49,13 @@ contains
       geno => c%getCoreGenos(i)
       hap1 => c%phase(i,1)
       hap2 => c%phase(i,1)
+      trueHap1 => TruePhase(i,1)
+      trueHap2 => TruePhase(i,2)
       do j = 1, c%getNCoreSnp()
 	g = geno%getGenotype(j)
 	het = (g == 1)
 	miss = (g == MissingGenotypeCode)
-	error = ((.not. miss) .and. ( (TruePhase(i,j,1) + TruePhase(i,j,2)) /= g))
+	error = ((.not. miss) .and. ( (trueHap1%getPhaseMod(j) + trueHap2%getPhaseMod(j)) /= g))
 	do k = 1, 2
 	  if (k == 1) then
 	    p = hap1%getPhaseMod(j)
@@ -72,7 +74,12 @@ contains
 	      results%countA(i,k,ERROR_,NOTPHASED_) = results%countA(i,k,ERROR_,NOTPHASED_) + 1
 	    end if
 	  else
-	    if (p == TruePhase(i,j,k)) then
+	    if (k == 1) then
+	      t = truehap1%getPhaseMod(j)
+	    else
+	      t = truehap2%getPhaseMod(j)
+	    end if
+	    if (p == t) then
 	      results%countA(i,k,ALL_,CORRECT_) = results%countA(i,k,ALL_,CORRECT_) + 1
 	      if (het) then
 		results%countA(i,k,HET_,CORRECT_) = results%countA(i,k,HET_,CORRECT_) + 1
@@ -152,48 +159,5 @@ contains
 
     c = results%countA(animal,phase,group,state)
   end function counts 
-
-  subroutine Flipper(c, TruePhase)
-    use HaplotypeModule
-    !! This needs a new home
-    use CoreDefinition
-
-    type(Core) :: c
-    integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase
-
-    integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth
-    type(Haplotype), pointer :: W1, W2
-    type(Haplotype), pointer :: hap1, hap2
-
-    integer :: nAnisG, nSnp
-
-    nAnisG = c%getNAnisG()
-    nSnp = c%getNCoreSnp()
-
-    do i = 1, nAnisG
-      CountAgreeStay1 = 0
-      CountAgreeStay2 = 0
-      CountAgreeSwitch1 = 0
-      CountAgreeSwitch2 = 0
-      truth = 0
-      hap1 => c%phase(i,1)
-      hap2 => c%phase(i,1)
-      do j = 1, nSnp
-	if (TruePhase(i, j, 1) == hap1%getPhaseMod(j)) CountAgreeStay1 = CountAgreeStay1 + 1
-	if (TruePhase(i, j, 2) == hap1%getPhaseMod(j)) CountAgreeSwitch1 = CountAgreeSwitch1 + 1
-	if (TruePhase(i, j, 1) == hap2%getPhaseMod(j)) CountAgreeSwitch2 = CountAgreeSwitch2 + 1
-	if (TruePhase(i, j, 2) == hap2%getPhaseMod(j)) CountAgreeStay2 = CountAgreeStay2 + 1
-      end do
-      if ((CountAgreeSwitch2 > CountAgreeStay2).and.(CountAgreeStay1 <= CountAgreeSwitch1)) truth = 1
-      if ((CountAgreeSwitch1 > CountAgreeStay1).and.(CountAgreeStay2 <= CountAgreeSwitch2)) truth = 1
-      if (truth == 1) then
-	W1 => c%phase(i,1)
-	W2 => c%phase(i,2)
-	call c%setHaplotype(i,1,W2)
-	call c%setHaplotype(i,2,W1)
-      end if
-    end do
-
-  end subroutine Flipper
 
 end module TestResultDefinition
