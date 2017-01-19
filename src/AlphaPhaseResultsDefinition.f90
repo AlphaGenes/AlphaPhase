@@ -16,6 +16,7 @@ module AlphaPhaseResultsDefinition
     integer, dimension(:), allocatable :: ids
     integer, dimension(:), allocatable :: startIndexes
     integer, dimension(:), allocatable :: endIndexes
+    integer :: nCores
   end type AlphaPhaseResults
   
   interface AlphaPhaseResults
@@ -45,6 +46,8 @@ contains
     allocate(results%ids(nCores))
     allocate(results%startIndexes(nCores))
     allocate(results%endIndexes(nCores))
+    
+    results%nCores = nCores
   end function newAlphaPhaseResults
   
 end module AlphaPhaseResultsDefinition

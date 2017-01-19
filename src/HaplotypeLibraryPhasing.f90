@@ -34,7 +34,7 @@ contains
     
   end subroutine UpdateHapLib
 
-  subroutine ImputeFromLib(library, c, nGlobalHapsIter, PercGenoHaploDisagree, minHapFreq)
+  subroutine ImputeFromLib(library, c, nGlobalHapsIter, PercGenoHaploDisagree, minHapFreq, quiet)
     ! Impute the phase for gametes that are not completely phased by LRP 
     ! by matching their phased loci to haplotypes in the Haplotype Library,
     ! following strategies listed in the section Step 2e of Hickey et al 2011.
@@ -51,6 +51,7 @@ contains
     integer, intent(inout) :: nGlobalHapsIter
     double precision, intent(in) :: PercGenoHaploDisagree
     integer, intent(in) :: minHapFreq
+    logical, intent(in) :: quiet
 
     integer :: i, nHapsOld, ErrorAllow, HapM, HapP
     integer, pointer, dimension(:,:) :: CandPairs
@@ -67,10 +68,9 @@ contains
 
     ErrorAllow = int(PercGenoHaploDisagree * c % getNCoreSnp())
 
-!    if ((nGlobalHapsIter == 1) .and. (ItterateType .eq. "Off")) then
-    if (nGlobalHapsIter == 1) then
+    if ((nGlobalHapsIter == 1) .and. (.not. quiet)) then
       print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
-    endif
+    end if
     nHapsOld = 0
 
     do while (nHapsOld /= library % getSize())
@@ -238,7 +238,9 @@ contains
 	  deallocate(CandHapsPat)
 	endif
       end do
-      print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
+      if (.not. quiet) then
+	print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
+      end if
     enddo
 
     call complementPhaseSnps(c)

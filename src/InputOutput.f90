@@ -10,14 +10,14 @@ module InputOutput
 
 contains
 
-  subroutine WriteOutResults(allCores, coreIndex, p, writeSwappable, params)
+  subroutine WriteOutResults(allCores, startIndex, endIndex, p, writeSwappable, params)
     use PedigreeDefinition
     use CoreDefinition
     use ParametersDefinition
     use HaplotypeModule
 
     type(Core), dimension(:), intent(in) :: allCores
-    integer, dimension(:,:), intent(in) :: coreIndex
+    integer, dimension(:), intent(in) :: startIndex, endIndex
     type(Pedigree), intent(in) :: p
     logical :: writeSwappable
     type(Parameters), intent(in) :: params
@@ -46,13 +46,13 @@ contains
       do i = 1, nAnisG
         do j = 1, nCores
           hap1 => allCores(j)%phase(i,1)
-          TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap1%toIntegerArray()
+          TempPhase(startIndex(j):endIndex(j)) = hap1%toIntegerArray()
         end do
         write(15, fmt) p%getId(i), &
           TempPhase
         do j = 1, nCores
           hap2 => allCores(j)%phase(i,2)
-          TempPhase(coreIndex(j,1):coreIndex(j,2)) = hap2%toIntegerArray()
+          TempPhase(startIndex(j):endIndex(j)) = hap2%toIntegerArray()
         end do
         write(15, fmt) p%getId(i), &
           TempPhase
@@ -64,7 +64,7 @@ contains
     if (params%outputCoreIndex) then
       open (unit = 25, file = "."//SEP//"PhasingResults"//SEP//"CoreIndex.txt", status = "unknown")
       do i = 1, nCores
-        write (25, *) i, CoreIndex(i,:)
+        write (25, *) i, startIndex(i), endIndex(i)
       end do
       close(25)
     end if
@@ -80,7 +80,7 @@ contains
             if ((hap1%getPhaseMod(j) == 0).or.(hap1%getPhaseMod(j) == 1)) counter = counter + 1
             if ((hap2%getPhaseMod(j) == 0).or.(hap2%getPhaseMod(j) == 1)) counter = counter + 1
           end do
-          write (28, '(i10,f7.2)') coreIndex(i,1) + j - 1, (100 * (float(counter)/(2 * nAnisG)))
+          write (28, '(i10,f7.2)') startIndex(i) + j - 1, (100 * (float(counter)/(2 * nAnisG)))
         end do
       end do
       close(28)
@@ -249,15 +249,16 @@ contains
     res = trim(tmp)
   end function
 
-  subroutine CombineResults(nAnisG, CoreIndex, writeSwappable, params)
+  subroutine CombineResults(nAnisG, writeSwappable, params)
     use PedigreeDefinition
     use ParametersDefinition
+    use CoreUtils
 
     integer, intent(in) :: nAnisG
-    integer, dimension(:,:), intent(in) :: CoreIndex
     logical :: writeSwappable
     type(Parameters) :: params
 
+    integer, dimension(:,:), pointer :: CoreIndex
     integer :: nCores
 
     integer, dimension(:), allocatable :: inUnits
@@ -268,6 +269,12 @@ contains
     double precision, dimension(2) :: tempIndivPhase
     double precision :: tempSnpPhase
     character(len=20) :: id
+    
+    if (params%library .eq. "None") then
+      CoreIndex => CalculateCores(params%nSnp, params%Jump, params%offset)    
+    else
+      CoreIndex => getCoresFromHapLib(params%library)
+    end if
 
     nCores = size(CoreIndex,1)
 
@@ -1227,73 +1234,6 @@ end function ReadInParameterFile
       close(31)
     end if
   end subroutine CombineTestResults
-  
-  subroutine WriteMistakes(c, TruePhase, p, OutputPoint, params)
-    use CoreDefinition
-    use PedigreeDefinition
-    use ParametersDefinition
-    use HaplotypeModule
-    
-    type(Core), intent(in) :: c
-    type(Haplotype), dimension(:,:), intent(in) :: TruePhase
-    type(Pedigree), intent(in) :: p
-    integer, intent(in) :: OutputPoint
-    class(Parameters), intent(in) :: params
-    
-    integer :: i, j
-    integer(kind = 1), allocatable, dimension(:) :: MistakePhase
-    character(len = 300) :: filout
-    
-    type(Haplotype), pointer :: hap1, hap2, trueHap1, trueHap2
-    
-    if (params%outputMistakes) then
-    
-      allocate(MistakePhase(c%getNCoreSnp()))
-
-      write (filout, '(".",a1,"Simulation",a1,"Mistakes",i0,".txt")') SEP, SEP, OutputPoint
-      open (unit = 18, FILE = filout, status = 'unknown') 
-
-      do i = 1, c%getNAnisG()
-	hap1 => c%phase(i, 1)
-	hap2 => c%phase(i, 2)
-	trueHap1 = TruePhase(i,1)
-	trueHap2 = TruePhase(i,2)
-	do j = 1, c%getNCoreSnp()
-	  if (hap1%getPhaseMod(j) == MissingPhaseCode) then
-	    MistakePhase(j) = MissingPhaseCode
-	  else
-	    if (trueHap1%getPhaseMod(j) == hap1 % getPhaseMod(j)) then
-	      MistakePhase(j) = 1
-	    else
-	      MistakePhase(j) = 5
-	    end if
-	  endif
-	end do
-
-	write (18, '(a20,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3)') p % getID(i),&
-	MistakePhase
-	
-	do j = 1, c%getNCoreSnp()
-	  if (hap2%getPhaseMod(j) == MissingPhaseCode) then
-	    MistakePhase(j) = MissingPhaseCode
-	  else
-	    if (trueHap2%getPhaseMod(j) == hap2 % getPhaseMod(j)) then
-	      MistakePhase(j) = 1
-	    else
-	      MistakePhase(j) = 5
-	    end if
-	  endif
-	end do
-
-	write (18, '(a20,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3,20000i3)') p % getID(i),&
-	MistakePhase
-      end do
-
-      close(18)
-      
-    end if
-    
-  end subroutine WriteMistakes
   
   function BinarySearch(array, val) result(pos)
     character(*), dimension(:), intent(in) :: array

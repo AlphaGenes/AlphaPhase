@@ -16,6 +16,7 @@ SET(ALPHAPHASE_src
             ${SRCALPHAPHASE}/SurrogateDefinition.f90
             ${SRCALPHAPHASE}/TestResultDefinition.f90        
             ${SRCALPHAPHASE}/Clustering.f90
+	    ${SRCALPHAPHASE}/AlphaPhaseFunctions.f90
 	    ${SRCALPHAPHASE}/AlphaPhaseResultsDefinition.f90
             ${SRCALPHAPHASE}/AlphaPhase.f90 
             
