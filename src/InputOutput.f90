@@ -1088,13 +1088,13 @@ end function ReadInParameterFile
     end if
     
     do i = 1, nHaps
-      if (params%outputHaplotypeLibraryText) then
-	hap = library%getHap(i)
+      hap = library%getHap(i)
+      if (params%outputHaplotypeLibraryText) then	
 	write (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
 	i, library%getHapFreq(i), " ", hap%toIntegerArray()
       end if
       if (params%outputHaplotypeLibraryBinary) then
-	write (34) library%getHap(i)
+	write (34) hap%toIntegerArray()
       end if
     end do
 
