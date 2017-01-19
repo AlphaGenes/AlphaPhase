@@ -41,7 +41,7 @@ contains
 
     use HaplotypeLibraryDefinition
     use CoreDefinition
-    use Clustering
+    use ClusteringModule
     use Random
     use GenotypeModule
     use HaplotypeModule
@@ -392,7 +392,7 @@ contains
     use HaplotypeLibraryDefinition
     use HaplotypeModule
     use GenotypeModule
-    use Clustering
+    use ClusteringModule
 
     class(Core) :: c
     class(HaplotypeLibrary) :: library

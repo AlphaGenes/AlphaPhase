@@ -435,7 +435,7 @@ contains
     use ParametersDefinition
     use PedigreeDefinition
     use NRMCode
-    use Sorting
+    use SortingModule
 
     type(Parameters), intent(in) :: params
     type(Pedigree) :: p

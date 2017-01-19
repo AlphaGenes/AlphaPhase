@@ -22,7 +22,7 @@ module SurrogateDefinition
 
 contains
   function newSurrogate(cs, threshold, writeProgress) result(definition)
-    use Clustering
+    use ClusteringModule
     use CoreSubSetDefinition
     
     class(CoreSubSet), intent(in) :: cs    
