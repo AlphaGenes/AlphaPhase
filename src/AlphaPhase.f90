@@ -9,6 +9,7 @@ program Rlrplhi
   use TestResultDefinition
   use CoreUtils
   use InputOutput
+  use AlphaPhaseResultsDefinition
   
   use LongRangePhasing
   use HaplotypeLibraryPhasing
@@ -27,7 +28,7 @@ program Rlrplhi
   type(CoreSubset) :: cs
   type(Pedigree) :: p
   type(Parameters) :: params
-  type(TestResults) :: results
+  type(TestResults) :: test
   
   type(Genotype), pointer, dimension(:) :: Genos
   type(Haplotype), pointer, dimension(:,:) :: Phase, TruePhase, CoreTruePhase
@@ -39,14 +40,17 @@ program Rlrplhi
   integer :: subsetCount
   type(HaplotypeLibrary) :: globalLibrary
   type(Haplotype), pointer :: hap
+  type(Haplotype), target :: stupid, tempHap
   type(Core), allocatable, dimension(:) :: AllCores
+  type(AlphaPhaseResults) :: results
+  integer :: id
   
   !Linux max path length is 4096 which is more than windows or mac (all according to google)
   character(len=4096) :: specfile
   character(len=4096) :: cmd
   
- integer :: startCore, endCore
-  logical :: combine, singleRun, printOldProgress, writeSwappable, outputSurrogates
+  integer :: startCore, endCore
+  logical :: combine, singleRun, printOldProgress, writeSwappable, singleSurrogates
     
   type(MemberManager) :: manager
   
@@ -117,10 +121,12 @@ program Rlrplhi
   end if
   
   printOldProgress = (params%ItterateType .eq. "Off")
-  outputSurrogates = (params%ItterateType .eq. "Off") .and. (params%numIter == 1)
+  singleSurrogates = (params%ItterateType .eq. "Off") .and. (params%numIter == 1)
   writeSwappable = (params%GenotypeFileFormat /= 2)
   
  
+  results = AlphaPhaseResults(endCore-startCore+1,singleSurrogates,params%Simulation)
+  
   do h = startCore, endCore
     StartCoreSnp = CoreIndex(h, 1)
     EndCoreSnp = CoreIndex(h, 2)
@@ -130,9 +136,6 @@ program Rlrplhi
     print*, " "
     print*, " "
     print*, " Starting Core", h, "/", nCores
-    
-    total = etime(elapsed)
-    print *, total
 
     if (params%GenotypeFileFormat /= 2) then
       c = Core(Genos, startSurrSnp, startCoreSnp, endCoreSnp, endSurrSnp)
@@ -150,17 +153,11 @@ program Rlrplhi
 	  cs = CoreSubSet(c, p, manager%getNext())
 
 	  surrogates = Surrogate(cs, threshold, printOldProgress)
-	  if (outputSurrogates) then
-	    call writeSurrogates(surrogates, h, p, params)
+	  if (singleSurrogates) then
+	    results%surrogates(h-startCore+1) = surrogates
 	  end if
-	  total = etime(elapsed)
-	  print *, total
 	  call Erdos(surrogates, cs, params%numsurrdisagree, params%useSurrsN, printOldProgress)
-	  total = etime(elapsed)
-	  print *, total
 	  call CheckCompatHapGeno(cs, params%percgenohaplodisagree, printOldProgress)
-	  total = etime(elapsed)
-	  print *, total
 
 	  subsetCount = subsetCount + 1
 	  if (.not. printOldProgress) then
@@ -189,27 +186,18 @@ program Rlrplhi
 	    c%getPercentFullyPhased(), "% Haplotypes fully phased"
 	  print '(33x, f6.2, a16, f6.2, a16)', c%getYield(1), "% Paternal yield, ", c%getYield(2), "% Maternal Yield"
 	end if
-
-	total = etime(elapsed)
-	print *, total
       end do
     else
       c = Core(Phase,StartCoreSnp,EndCoreSnp)
       library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
       call UpdateHapLib(c,library)
-      deallocate(Phase)
-    end if
-   
-    call WriteHapLib(library, h, c, params)
+    end if    
     
-    if (params%outputHapCommonality) then
-      call HapCommonality(library, h, params)
-    end if
+    if (params%ItterateType .eq. "Off") then
+      print*, "   ", "Final iteration found ", library%getSize(), "haplotypes"
     
-    if (.not. singleRun) then
-      call WriteOutCore(c, h, CoreIndex(h,1), p, writeSwappable, params)
-    else
-      AllCores(h) = c
+      print*, ""
+      write (*, '(a4,a30,f5.2,a1)') "   ", "Final yield for this core was ", c%getTotalYield(), "%"
     end if
     
     if (params%Simulation) then
@@ -221,21 +209,50 @@ program Rlrplhi
 	CoreTruePhase(i,2) = hap%subset(startCoreSnp,endCoreSnp)
       end do
       call c%flipHaplotypes(CoreTruePhase)
-      results = TestResults(c,CoreTruePhase)
-      call WriteTestResults(results,c,surrogates,p,h,outputSurrogates,params)
-      call WriteMistakes(c,CoreTruePhase,p,h,params)      
+      results%testResults(h-startCore+1) = TestResults(c,CoreTruePhase)
       deallocate(CoreTruePhase)
     end if
+   
+    results%libraries(h-startCore+1) = library
+    results%cores(h-startCore+1) = c
+    results%ids(h-startCore+1) = h
+    results%startIndexes(h-startCore+1) = CoreIndex(h,1)
+    results%endIndexes(h-startCore+1) = CoreIndex(h,2)
   end do
   
   if ((.not. SingleRun) .and. combine) then
     call CombineResults(nAnisG,CoreIndex,writeSwappable,params)
   else
-    call WriteOutResults(AllCores,CoreIndex,p,writeSwappable, params)
+    call WriteOutResults(results%cores,CoreIndex,p,writeSwappable, params)
   end if
   if (params%Simulation) then
     call CombineTestResults(nCores,params)
   end if
+  
+  do i = 1, endCore-startCore+1
+    id = results%ids(i)
+    call WriteHapLib(results%libraries(i), id, params)
+    if (params%outputHapCommonality) then
+      call HapCommonality(results%libraries(i), id, params)
+    end if
+    if (.not. singleRun) then
+      call WriteOutCore(results%cores(i), id, results%startIndexes(i), p, writeSwappable, params)
+    end if
+    if (singleSurrogates) then
+      call writeSurrogates(results%surrogates(i), id, p, params)
+    end if
+    if (params%Simulation) then
+      call WriteTestResults(results%testResults(i),results%cores(i),p,id,params)
+      allocate(CoreTruePhase(nAnisG,2))
+      do j = 1, nAnisG
+	hap => TruePhase(j,1)
+	CoreTruePhase(j,1) = hap%subset(startCoreSnp,endCoreSnp)
+	hap => TruePhase(j,2)
+	CoreTruePhase(j,2) = hap%subset(startCoreSnp,endCoreSnp)
+      end do
+      call WriteMistakes(results%cores(i),CoreTruePhase,p,id,params)  
+    end if
+  end do
   
   deallocate(CoreIndex,TailIndex)
   

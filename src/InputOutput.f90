@@ -138,6 +138,15 @@ contains
       deallocate(TempSwap)
       close(44)
     end if
+    
+    !! This is a bit hacky and should probably be changed.  Just didn't want it where it was!
+    if (params%outputPhasingYield) then
+      do j = 1,nCores
+	open (unit = 29, file = "."//SEP//"PhasingResults"//SEP//"PhasingYield.txt", status = "unknown", position = "append")
+	write (29, '(i10,f7.2)') j, AllCores(j)%getTotalYield()
+	close(29)
+      end do
+    end if
   end subroutine WriteOutResults
 
   subroutine writeOutCore(c, coreID, coreStart, p, writeSwappable, params)
@@ -578,8 +587,6 @@ contains
     allocate(Genos(nAnisG))
     
     open (unit = 3, file = trim(params%GenotypeFile), status = "old")
-    
-    print *, nAnisG, params%GenotypeFileFormat
 
     do i = 1, nAnisG
       if (params%GenotypeFileFormat == 1) then
@@ -1057,14 +1064,13 @@ end function ReadInParameterFile
 
   end subroutine MakeDirectories  
   
-  subroutine WriteHapLib(library, currentcore, c, params)
+  subroutine WriteHapLib(library, currentcore, params)
     use ParametersDefinition
     use HaplotypeLibraryDefinition
     use CoreDefinition
     use HaplotypeModule
     
     type(HaplotypeLibrary), intent(in) :: library
-    type(Core), intent(in) :: c
     integer, intent(in) :: currentcore
     type(Parameters) :: params
 
@@ -1104,21 +1110,6 @@ end function ReadInParameterFile
     if (params%outputHaplotypeLibraryBinary) then
       close(34)
     end if
-
-    if (params%ItterateType .eq. "Off") then
-      print*, "   ", "Final iteration found ", nHaps, "haplotypes"
-    
-      print*, ""
-      write (*, '(a4,a30,f5.2,a1)') "   ", "Final yield for this core was ", c%getTotalYield(), "%"
-    end if
-    
-    !! This really shouldn't be here since it has nothing to do with the haplotype library
-    if (params%outputPhasingYield) then
-      open (unit = 29, file = "."//SEP//"PhasingResults"//SEP//"PhasingYield.txt", status = "unknown", position = "append")
-      write (29, '(i10,f7.2)') CurrentCore, c%getTotalYield()
-      close(29)
-    end if
-
   end subroutine WriteHapLib
   
   subroutine writeTimer(hours, minutes, seconds, params)
@@ -1134,7 +1125,7 @@ end function ReadInParameterFile
     end if
   end subroutine writeTimer
   
-  subroutine WriteTestResults(results, c, Surrogates, p, OutputPoint, OutputSurrogates, params)
+  subroutine WriteTestResults(results, c, p, OutputPoint, params)
     use SurrogateDefinition
     use PedigreeDefinition
     use CoreDefinition
@@ -1143,11 +1134,8 @@ end function ReadInParameterFile
 
     type(TestResults), intent(in) :: results
     type(Core), intent(in) :: c
-    type(Surrogate), intent(in) :: surrogates
     type(Pedigree), intent(in) :: p
     type(Parameters), intent(in) :: params
-    !! Probably should be consistent about what we call this
-    logical, intent(in) :: OutputSurrogates
     integer, intent(in) :: OutputPoint
 
     integer :: i, k, nSurrogates
@@ -1161,21 +1149,6 @@ end function ReadInParameterFile
       write (filout, '(".",a1,"Simulation",a1,"IndivMistakes",i0,".txt")') SEP, SEP, OutputPoint
       open (unit = 17, FILE = filout, status = 'unknown')
       do i = 1, nAnisG
-	if (outputSurrogates) then
-	  nSurrogates = 0
-	  do k = i, nAnisG
-	    if ((surrogates%numOppose(i, k) <= surrogates%threshold) .and. &
-!	      (surrogates%numIncommon(i, k) >= surrogates%incommonThreshold)) then
-	      surrogates%enoughIncommon(i, k)) then
-	      nSurrogates = nSurrogates + 1
-	    end if
-	  enddo
-	  write (17, '(a20,a3,3i5,a3)', advance='no') p % getID(i), "|", &
-	  count(surrogates % partition(i,:) == 1), count(surrogates % partition(i,:) == 2), nSurrogates, "|"
-	else
-	  write (17, '(a20,a3,3i5,a3)', advance='no') p % getID(i), "|", &
-	  -1, -1, -1, "|"
-	end if
 	write(17, '(6i6,a6,6i6,a6,6i6,a6,6i6)') &
 	results%counts(i,1,ALL_,CORRECT_), results%counts(i,2,ALL_,CORRECT_), &
 	results%counts(i,1,ALL_,NOTPHASED_), results%counts(i,2,ALL_,NOTPHASED_), &
@@ -1198,20 +1171,6 @@ end function ReadInParameterFile
       open (unit = 20, FILE = filout, status = 'unknown')
 
       do i = 1, nAnisG
-	if (outputSurrogates) then
-	  nSurrogates = 0
-	  do k = i, nAnisG
-	    if ((surrogates%numOppose(i,k) <= surrogates%threshold) .and. &
-	    surrogates%enoughIncommon(i,k)) then
-	      nSurrogates = nSurrogates + 1
-	    end if
-	  enddo
-	  write (20, '(a20,a3,3i5,a3)',advance='no') p % getId(i), "|", &
-	  count(surrogates % partition(i,:) == 1), count(surrogates % partition(i,:) == 2), nSurrogates, "|"
-	else
-	  write (20, '(a20,a3,3i5,a3)', advance='no') p % getID(i), "|", &
-	  -1, -1, -1, "|"
-	end if
 	write (20, '(6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') &
 	results%percent(i,1,ALL_,CORRECT_), results%percent(i,2,ALL_,CORRECT_), &
 	results%percent(i,1,ALL_,NOTPHASED_), results%percent(i,2,ALL_,NOTPHASED_), &
