@@ -3,7 +3,6 @@ module TestResultDefinition
   use GenotypeModule
   use HaplotypeModule
   implicit none
-!  private
   
   type, public :: TestResults
     private

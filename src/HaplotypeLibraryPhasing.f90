@@ -189,7 +189,7 @@ contains
 	    CandPairs => library % limitedCompatPairsWithError(c % coreGenos(i), ErrorAllow, CandHaps, c % getNAnisG())
 
 	    ! If we've found matching pairs                
-	    if ((size(CandPairs, 1) > 0).and.((size(CandPairs, 1) * size(CandPairs, 1)) < c % getNAnisG())) then !Note the 200 number is a fudge
+	    if ((size(CandPairs, 1) > 0).and.((size(CandPairs, 1) * size(CandPairs, 1)) < c % getNAnisG())) then
 
 	      ! Check how many paternal candidates haplotypes
 	      SinglePat = all(CandPairs(:, 1) == CandPairs(1, 1))

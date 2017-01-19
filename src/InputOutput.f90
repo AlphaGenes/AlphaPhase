@@ -125,7 +125,7 @@ contains
       close(33)
     end if
 
-    if ((params.outputSwappable) .and. (writeSwappable)) then
+    if ((params%outputSwappable) .and. (writeSwappable)) then
       open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat.txt", status = "unknown")
       allocate(TempSwap(nCores))
       write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
@@ -139,13 +139,12 @@ contains
       close(44)
     end if
     
-    !! This is a bit hacky and should probably be changed.  Just didn't want it where it was!
     if (params%outputPhasingYield) then
+      open (unit = 29, file = "."//SEP//"PhasingResults"//SEP//"PhasingYield.txt", status = "unknown")
       do j = 1,nCores
-	open (unit = 29, file = "."//SEP//"PhasingResults"//SEP//"PhasingYield.txt", status = "unknown", position = "append")
 	write (29, '(i10,f7.2)') j, AllCores(j)%getTotalYield()
-	close(29)
       end do
+      close(29)
     end if
   end subroutine WriteOutResults
 
@@ -449,7 +448,6 @@ contains
 
     integer :: nAnisRawPedigree
 
-    ! Removing Pedigree global variable as first step to moving to seperate subroutine
     character(lengan), allocatable :: ped(:,:)
     
     integer(kind = 4), allocatable, dimension (:), target :: SireGenotyped, DamGenotyped
@@ -948,8 +946,6 @@ end function ReadInParameterFile
 
   end subroutine HapCommonality
 
-  !########################################################################################################################################################################
-
   subroutine WriteSurrogates(definition, OutputPoint, p, params)
     use SurrogateDefinition
     use PedigreeDefinition
@@ -999,8 +995,6 @@ end function ReadInParameterFile
 
   end subroutine WriteSurrogates
 
-!#################################################################################################################################################################
-
   subroutine CountInData(nAnisRawPedigree, nAnisG, params)
     use ParametersDefinition
     
@@ -1044,8 +1038,6 @@ end function ReadInParameterFile
     if (trim(params%PedigreeFile) == "NoPedigree") nAnisRawPedigree = nAnisG
 
   end subroutine CountInData
-
-!########################################################################################################################################################################################################
 
   subroutine MakeDirectories(params)
     use ParametersDefinition
@@ -1310,7 +1302,6 @@ end function ReadInParameterFile
     library = HaplotypeLibrary(filename,500)
   end function getHaplotypeLibrary
   
-  !####################################################################################################################################################################
   subroutine Header
     print*, ""
     print*, "                              **********************                         "
@@ -1322,9 +1313,7 @@ end function ReadInParameterFile
     print*, "                    Software For Phasing and Imputing Genotypes               "
   end subroutine Header
 
-  !####################################################################################################################################################################
-
-  subroutine Titles
+   subroutine Titles
 
     call Header
     print*, ""
@@ -1333,8 +1322,6 @@ end function ReadInParameterFile
     print*, ""
 
   end subroutine Titles
-
-  !###################################################################################################################################################
 
   subroutine PrintTimerTitles(params)
     use ParametersDefinition
@@ -1364,8 +1351,6 @@ end function ReadInParameterFile
     PRINT '(A107,A7,I3,A9,I3,A9,F6.2)', "Time Elapsed", "Hours", INT(Hours), "Minutes", INT(Minutes), "Seconds", Seconds
     call writeTimer(INT(Hours),INT(Minutes),Seconds,params)
   end subroutine PrintTimerTitles
-
-  !###################################################################################################################################################
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)

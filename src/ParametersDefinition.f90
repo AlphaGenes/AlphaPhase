@@ -3,8 +3,6 @@ module ParametersDefinition
   private
   
   type, public:: Parameters
-    !! Having all these as public and having them accessed directly is probably a bad idea but is easiest for now until we do
-    !! something consistent across the AlphaSuite
     character(len=300) GenotypeFile
     integer :: GenotypeFileFormat
     integer :: nSnp   ! Possibly doesn't need to be a parameter  
@@ -16,7 +14,7 @@ module ParametersDefinition
     double precision :: PercGenoHaploDisagree
     double precision :: GenotypeMissingErrorPercentage
     logical :: Simulation
-    character (len = 300) :: PedigreeFile, TruePhaseFile, Library ! Used in a really weird way that should probably be refactored
+    character (len = 300) :: PedigreeFile, TruePhaseFile, Library
 
     character (len = 300) :: itterateType
     integer :: itterateNumber

@@ -257,7 +257,7 @@ contains
       cmp = a1-a2
   end function
 
-  subroutine CheckCompatHapGeno(c, PercGenoHaploDisagree, printProgress)
+  subroutine CheckCompatHapGeno(c, PercGenoHaploDisagree)
     use CoreSubsetDefinition
     use GenotypeModule
     use HaplotypeModule
@@ -265,7 +265,6 @@ contains
     
     class(CoreSubset) :: c
     double precision, intent(in) :: PercGenoHaploDisagree
-    logical, intent(in) :: printProgress
 
     type(Genotype), pointer :: genos
     type(Haplotype), pointer :: hap1, hap2
@@ -293,15 +292,6 @@ contains
 	call genos%setHaplotypeIfError(hap2,error)
       endif
     end do
-
-    
-    !! THIS REALLY SHOULDN'T BE HERE!!
-    if (printProgress) then
-      print*, " "
-      write (*, '(a3,f6.2,a45)') "  ", c%getYield(1), "% was the Paternal allele yield for this core"
-      write (*, '(a3,f6.2,a45)') "  ", c%getYield(2), "% was the Maternal allele yield for this core"
-    end if
-    
   end subroutine CheckCompatHapGeno
 
 end module LongRangePhasing
