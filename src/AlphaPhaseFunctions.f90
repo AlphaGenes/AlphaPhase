@@ -207,7 +207,6 @@ contains
     TailIndex => calculateTails(CoreIndex, params%nSnp, params%Jump, params%CoreAndTailLength)
     nCores = size(CoreIndex,1) 
 
-    ! This shouldn't be here like this...
     if (params%startCoreChar .eq. "Combine") then
       startCore = nCores + 1
     else

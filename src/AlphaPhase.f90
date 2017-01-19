@@ -54,9 +54,9 @@ program AlphaPhase
     Genos => ParseGenotypeData(nAnisG,params)
     if (params%Simulation) then
       TruePhase => ParsePhaseData(params%TruePhaseFile,nAnisG,params%nSnp)
-      results = phaseAndCreateLibraries(Genos, p, params, TruePhase)
+      results = phaseAndCreateLibraries(Genos, p, params, TruePhase, quiet = .false.)
     else
-      results = phaseAndCreateLibraries(Genos, p, params) 
+      results = phaseAndCreateLibraries(Genos, p, params, quiet = .false.) 
     end if    
   else
     Phase => ParsePhaseData(params%GenotypeFile,nAnisG,params%nSnp)
