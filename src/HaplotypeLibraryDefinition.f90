@@ -9,7 +9,7 @@ module HaplotypeLibraryDefinition
     type(Haplotype), dimension(:), allocatable :: newstore
     integer, dimension(:), allocatable :: hapFreq
     integer :: size
-    integer :: nSnps
+    integer, public :: nSnps
     integer :: storeSize, stepSize
   contains
     private

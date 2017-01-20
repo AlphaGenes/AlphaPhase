@@ -10,7 +10,6 @@ module ParametersDefinition
     integer :: NumSurrDisagree
     double precision :: PercGenoHaploDisagree
     double precision :: GenotypeMissingErrorPercentage
-    character (len = 300) :: Library
 
     character (len = 300) :: itterateType
     integer :: itterateNumber
@@ -33,7 +32,6 @@ contains
     params%startCoreChar = "1"
     params%endCoreChar = "Combine"
     params%minHapFreq = 1
-    params%library = "None"
   end function newParameters
     
 end module ParametersDefinition

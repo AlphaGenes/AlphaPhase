@@ -70,6 +70,24 @@ contains
       TailIndex(i,2) = min(nSnp,CoreIndex(i,2) + rtail)
     end do
   end function CalculateTails
+  
+  function getCoresFromLibraries(libraries) result(CoreIndex)
+    use HaplotypeLibraryDefinition
+    
+    type(HaplotypeLibrary), dimension(:), intent(in) :: libraries
+    integer, dimension(:,:), pointer :: CoreIndex
+
+    integer :: i
+    
+    allocate(CoreIndex(size(libraries),2))
+    
+    start = 1
+    do i = 1, size(libraries)
+      CoreIndex(i,1) = start
+      start = start + libraries(i)%nSnps
+      CoreIndex(i,2) = start - 1
+    end do
+  end function getCoresFromLibraries
    
 end module CoreUtils
 

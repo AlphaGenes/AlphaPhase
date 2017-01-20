@@ -20,10 +20,11 @@ module AlphaPhaseFunctions
   implicit none
   
 contains
-  function phaseAndCreateLibraries(genos, p, params, truePhase, quiet) result(results)
+  function phaseAndCreateLibraries(genos, p, params, existingLibraries, truePhase, quiet) result(results)
     type(Genotype), pointer, dimension(:), intent(in) :: genos
     type(Pedigree), intent(in) :: p
     type(Parameters) :: params
+    type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
     type(Haplotype), pointer, dimension(:,:), intent(in), optional :: truePhase
     logical, optional :: quiet
 
@@ -58,10 +59,10 @@ contains
     nAnisG = p%getNAnis()
     nSnp = genos(1)%getLength()
 
-    if (params%library .eq. "None") then
+    if (.not. present(existingLibraries)) then
       CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    
     else
-      CoreIndex => getCoresFromHapLib(params%library)
+      CoreIndex => getCoresFromLibraries(existingLibraries)
     end if
     TailIndex => calculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
     nCores = size(CoreIndex,1)  
@@ -108,10 +109,10 @@ contains
       end if
 
       c = Core(Genos, startSurrSnp, startCoreSnp, endCoreSnp, endSurrSnp)
-      if (params%library .eq. "None") then
+      if (.not. present(existingLibraries)) then
 	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
       else
-	library = getHaplotypeLibrary(params%library, h)
+	library = existingLibraries(h)
       end if
 
       do i = 1, params%NumIter	
@@ -191,9 +192,10 @@ contains
     end do
   end function phaseAndCreateLibraries
   
-  function createLibraries(phase, params) result (results)
+  function createLibraries(phase, params, existingLibraries) result (results)
     type(Haplotype), pointer, dimension(:,:), intent(in) :: phase
     type(Parameters) :: params
+    type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
     
     type(AlphaPhaseResults) :: results
 
@@ -207,10 +209,10 @@ contains
 
     nSnp = phase(1,1)%getLength()
 
-    if (params%library .eq. "None") then
+    if (.not. present(existingLibraries)) then
       CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    
     else
-      CoreIndex => getCoresFromHapLib(params%library)
+      CoreIndex => getCoresFromLibraries(existingLibraries)
     end if
     TailIndex => calculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
     nCores = size(CoreIndex,1) 
@@ -236,7 +238,11 @@ contains
       EndSurrSnp = TailIndex(h, 2)
 
       c = Core(Phase,StartCoreSnp,EndCoreSnp)
-      library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+      if (.not. present(existingLibraries)) then
+	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+      else
+	library = existingLibraries(h)
+      end if
       call UpdateHapLib(c,library) 
 
       results%libraries(h-startCore+1) = library

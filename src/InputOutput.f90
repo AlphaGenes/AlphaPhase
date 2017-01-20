@@ -1251,9 +1251,37 @@ end function ReadInParameterFile
     end do
     
     pos = 0
-  end function
-  
+  end function  
 
+  function getHaplotypeLibraries(directory) result (libraries)
+    use HaplotypeLibraryDefinition
+    
+    character(*), intent(in) :: directory
+    type(HaplotypeLibrary), dimension(:), pointer :: libraries
+    
+    character(4096) :: filename
+    integer :: nLibs, i
+    logical :: ex
+    
+    i = 0
+    nLibs = 0
+    ex = .true.
+    do while (ex)
+      i = i + 1
+      write (filename, '(a, a, "HapLib", i0, ".bin")') trim(directory), SEP, i
+      inquire(FILE=filename,EXIST=ex)
+      if (ex) then
+	nLibs = nLibs + 1
+      end if
+    end do
+
+    allocate(libraries(nLibs))
+    do i = 1, nLibs
+      write (filename, '(a, a, "HapLib", i0, ".bin")') trim(directory), SEP, i
+      libraries(i) = HaplotypeLibrary(filename,500)
+    end do
+  end function getHaplotypeLibraries
+  
   function getCoresFromHapLib(directory) result (CoreIndex)
     character(*), intent(in) :: directory
     integer, dimension(:,:), pointer :: CoreIndex
@@ -1287,19 +1315,6 @@ end function ReadInParameterFile
       start = start + nSnps
     end do
   end function getCoresFromHapLib
-  
-  function getHaplotypeLibrary(directory, index) result (library)
-    use HaplotypeLibraryDefinition
-    
-    character(*), intent(in) :: directory
-    integer, intent(in) :: index
-    type(HaplotypeLibrary) :: library
-    
-    character(4096) :: filename
-    
-    write (filename, '(a, a, "HapLib", i0, ".bin")') trim(directory), SEP, index
-    library = HaplotypeLibrary(filename,500)
-  end function getHaplotypeLibrary
   
   subroutine Header
     print*, ""

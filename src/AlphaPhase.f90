@@ -17,6 +17,7 @@ program AlphaPhase
   type(ProgramParameters) :: params
   type(Pedigree) :: p 
   type(Haplotype), pointer, dimension(:,:) :: Phase, TruePhase
+  type(HaplotypeLibrary), dimension(:), pointer :: existingLibraries
   integer :: id
   integer :: nAnisG
   type(AlphaPhaseResults) :: results
@@ -54,9 +55,19 @@ program AlphaPhase
     Genos => ParseGenotypeData(nAnisG,params)
     if (params%Simulation) then
       TruePhase => ParsePhaseData(params%TruePhaseFile,nAnisG,params%nSnp)
-      results = phaseAndCreateLibraries(Genos, p, params%params, TruePhase, quiet = .false.)
+      if (params%Library .ne. "None") then
+	existingLibraries => getHaplotypeLibraries(params%library)
+	results = phaseAndCreateLibraries(Genos, p, params%params, existingLibraries, TruePhase, quiet = .false.)
+      else
+	results = phaseAndCreateLibraries(Genos, p, params%params, truePhase = TruePhase, quiet = .false.)
+      end if
     else
-      results = phaseAndCreateLibraries(Genos, p, params%params, quiet = .false.) 
+      if (params%Library .ne. "None") then
+	existingLibraries => getHaplotypeLibraries(params%library)
+	results = phaseAndCreateLibraries(Genos, p, params%params, existingLibraries, quiet = .false.) 
+      else
+	results = phaseAndCreateLibraries(Genos, p, params%params, quiet = .false.) 
+      end if
     end if    
   else
     Phase => ParsePhaseData(params%GenotypeFile,nAnisG,params%nSnp)

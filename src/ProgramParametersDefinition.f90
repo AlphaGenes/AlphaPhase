@@ -41,6 +41,7 @@ contains
     type(ProgramParameters) :: programParams
     
     programParams%params = Parameters()
+    programParams%library = "None"
   end function newProgramParameters
     
 end module ProgramParametersDefinition
