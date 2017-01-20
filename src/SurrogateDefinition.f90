@@ -182,6 +182,11 @@ contains
 	      definition%partition(i, j) = 1
 	    end if
 	  endif
+	  if (definition%numoppose(cs%getSire(i), j) > threshold) then
+	    if (definition%enoughIncommon(cs%getSire(i), j)) then
+	      definition%partition(i, j) = 2
+	    end if
+	  end if
 	enddo
 	definition%method(i) = 2
       endif
@@ -195,6 +200,11 @@ contains
 	      definition%partition(i, j) = 2
 	    end if
 	  endif
+	  if (definition%numoppose(cs%getDam(i), j) > threshold) then
+	    if (definition%enoughIncommon(cs%getDam(i), j)) then
+	      definition%partition(i, j) = 1
+	    end if
+	  end if
 	enddo
 	definition%method(i) = 3
       endif
