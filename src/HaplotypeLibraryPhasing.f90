@@ -64,7 +64,7 @@ contains
     type(Genotype), pointer :: geno
     type(Haplotype), pointer :: hap1, hap2
 
-    logical :: singlePat, singleMat
+    logical :: singlePat, singleMat, oneNotTwo, twoNotOne
 
     ErrorAllow = int(PercGenoHaploDisagree * c % getNCoreSnp())
 
@@ -82,18 +82,17 @@ contains
 	hap1 => c%phase(i,1)
 	hap2 => c%phase(i,2)
 	ErrorAllow = int(PercGenoHaploDisagree * geno % numNotMissing())
+	
+	oneNotTwo = c % getFullyPhased(i, 1) .and. (.not.c % getFullyPhased(i, 2))
+	twoNotOne = c % getFullyPhased(i, 2) .and. (.not.c % getFullyPhased(i, 1))
 
 	! If only one of the gametes is completely phased (Section Step 2e.i Hickey et al. 2011): PATERNAL HAPLOTYPE
-	if (c % getFullyPhased(i, 1) .and. (.not.c % getFullyPhased(i, 2))) then
+	if (oneNotTwo) then
 	  call processComplement(c, i, library, 1, PercGenoHaploDisagree)
 	end if
 
 	! If only one of the gametes is completely phased (Section Step 2e.i Hickey et al. 2011): MATERNAL HAPLOTYPE
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	! Haplotype 2 can get fully phased above and this will run despite both haplotypes now being phased
-	! Affects results, likely due to error being allowed when phasing paternal from maternal in this step
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	if (c % getFullyPhased(i, 2) .and. (.not.c % getFullyPhased(i, 1))) then
+	if (twoNotOne) then
 	  call processComplement(c, i, library, 2, PercGenoHaploDisagree)
 	end if
 
