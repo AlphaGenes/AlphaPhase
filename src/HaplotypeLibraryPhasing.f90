@@ -117,9 +117,7 @@ contains
 	  if (size(CandHapsMat, 1) == 1) HapM = CandHapsMat(1)
 
 	  ! If only one maternal candidate haplotype and many paternal candidate haplotypes
-	  !! There's some odd logic here - if we have one paternal and maternal we end up keeping HapP as the
-	  !! paternal even if it's not compitable with the mat.  May be checked later.
-	  if ((size(CandHapsMat, 1) == 1).AND.(size(CandHapsPat, 1) > 0)) then
+	  if ((size(CandHapsMat, 1) == 1).AND.(size(CandHapsPat, 1) > 1)) then
 	    comp = geno%complement(library%getHap(HapM))
 	    matches => library % limitedMatchWithError(comp, ErrorAllow, CandHapsPat)
 	    if (size(matches) == 1) then
@@ -128,14 +126,22 @@ contains
 	    deallocate(matches)
 	  end if
 
-	  ! If only one paternal candidate haplotype and one / many maternal candidate haplotypes
-	  if ((size(CandHapsPat, 1) == 1).and.(size(CandHapsMat, 1) > 0)) then
+	  ! If only one paternal candidate haplotype and many maternal candidate haplotypes
+	  if ((size(CandHapsPat, 1) == 1).and.(size(CandHapsMat, 1) > 1)) then
 	    comp = geno%complement(library%getHap(HapP))
 	    matches => library % limitedMatchWithError(comp, ErrorAllow, CandHapsMat)
 	    if (size(matches) == 1) then
 	      HapM = matches(1)
 	    end if
 	    deallocate(matches)
+	  end if
+	  
+	  ! If one paternal candidate and one maternal candidate and they are incompatible use neither
+	  if ((size(CandHapsPat, 1) == 1).and.(size(CandHapsMat, 1) == 1)) then
+	    if (.not. geno%compatibleHaplotypes(library%getHap(HapP), library%getHap(HapM), ErrorAllow)) then
+	      HapP = 0
+	      HapM = 0
+	    end if
 	  end if
 
 	  ! If only have one paternal candidate haplotype
