@@ -18,6 +18,8 @@ OPTION(USE_HDF5 "Use hdf"
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../alphacmakefiles/cmake/modules")
 set(CMAKE_MACOSX_RPATH 0)
 
+INCLUDE(${CMAKE_MODULE_PATH}/setVersion.cmake)
+
 ############################################################
 # Define the actual files and folders that make up the build
 ############################################################
