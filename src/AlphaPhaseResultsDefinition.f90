@@ -17,6 +17,9 @@ module AlphaPhaseResultsDefinition
     integer, dimension(:), allocatable :: startIndexes
     integer, dimension(:), allocatable :: endIndexes
     integer :: nCores
+    
+    contains 
+      procedure :: getFullPhase
   end type AlphaPhaseResults
   
   interface AlphaPhaseResults
@@ -49,6 +52,31 @@ contains
     
     results%nCores = nCores
   end function newAlphaPhaseResults
+  
+  function getFullPhase(results) result(haps)
+    class(AlphaPhaseResults) :: results
+    type(Haplotype), dimension(:,:), pointer :: haps
+    
+    integer :: nAnisG, nSnp
+    integer :: i, j, k
+    
+    nAnisG = results%cores(1)%getNAnisG()
+    nSnp = 0
+    do i = 1, size(results%cores)
+      nSnp = nSnp + results%cores(i)%getNCoreSnp()
+    end do
+    
+    allocate(haps(nAnisG,2))
+    
+    do i = 1, nAnisG
+      do j = 1, 2
+	haps(i,j) = Haplotype(nSnp)
+	do k = 1, size(results%cores)
+	  call haps(i,j)%setSubset(results%cores(k)%phase(i,j), results%startIndexes(k))
+	end do
+      end do
+    end do
+  end function getFullPhase
   
 end module AlphaPhaseResultsDefinition
     
