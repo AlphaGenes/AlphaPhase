@@ -38,7 +38,7 @@ contains
     integer, dimension (:,:), pointer :: CoreIndex, TailIndex
     integer :: nCores
     integer :: nGlobalHapsIter
-    integer :: nAnisG
+    integer :: nAnisG, nSnp
     integer :: subsetCount
     type(HaplotypeLibrary) :: globalLibrary
     type(Haplotype), pointer :: hap
@@ -56,13 +56,14 @@ contains
     end if
 
     nAnisG = p%getNAnis()
+    nSnp = genos(1)%getLength()
 
     if (params%library .eq. "None") then
-      CoreIndex => CalculateCores(params%nSnp, params%Jump, params%offset)    
+      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    
     else
       CoreIndex => getCoresFromHapLib(params%library)
     end if
-    TailIndex => calculateTails(CoreIndex, params%nSnp, params%Jump, params%CoreAndTailLength)
+    TailIndex => calculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
     nCores = size(CoreIndex,1)  
 
     threshold = int(params%GenotypeMissingErrorPercentage*params%CoreAndTailLength)
@@ -92,7 +93,7 @@ contains
     printOldProgress = (params%ItterateType .eq. "Off") .and. (.not. quietInternal)
     singleSurrogates = (params%ItterateType .eq. "Off") .and. (params%numIter == 1)
 
-    results = AlphaPhaseResults(endCore-startCore+1,singleSurrogates,params%Simulation)
+    results = AlphaPhaseResults(endCore-startCore+1,singleSurrogates,present(TruePhase))
 
     do h = startCore, endCore
       StartCoreSnp = CoreIndex(h, 1)
@@ -202,15 +203,16 @@ contains
     type(Core) :: c
     integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
     integer, dimension (:,:), pointer :: CoreIndex, TailIndex    
-    integer :: startCore, endCore, nCores
+    integer :: startCore, endCore, nCores, nSnp
 
+    nSnp = phase(1,1)%getLength()
 
     if (params%library .eq. "None") then
-      CoreIndex => CalculateCores(params%nSnp, params%Jump, params%offset)    
+      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    
     else
       CoreIndex => getCoresFromHapLib(params%library)
     end if
-    TailIndex => calculateTails(CoreIndex, params%nSnp, params%Jump, params%CoreAndTailLength)
+    TailIndex => calculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
     nCores = size(CoreIndex,1) 
 
     if (params%startCoreChar .eq. "Combine") then

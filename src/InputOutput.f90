@@ -13,14 +13,14 @@ contains
   subroutine WriteOutResults(allCores, startIndex, endIndex, p, writeSwappable, params)
     use PedigreeDefinition
     use CoreDefinition
-    use ParametersDefinition
+    use ProgramParametersDefinition
     use HaplotypeModule
 
     type(Core), dimension(:), intent(in) :: allCores
     integer, dimension(:), intent(in) :: startIndex, endIndex
     type(Pedigree), intent(in) :: p
     logical :: writeSwappable
-    type(Parameters), intent(in) :: params
+    type(ProgramParameters), intent(in) :: params
 
     integer(kind=1), dimension(:), allocatable :: tempPhase
 
@@ -151,7 +151,7 @@ contains
   subroutine writeOutCore(c, coreID, coreStart, p, writeSwappable, params)
     use PedigreeDefinition
     use CoreDefinition
-    use ParametersDefinition
+    use ProgramParametersDefinition
     use HaplotypeModule
 
     type(Core), intent(in) :: c
@@ -159,7 +159,7 @@ contains
     integer, intent(in) :: coreStart
     type(Pedigree), intent(in) :: p
     logical :: writeSwappable
-    class(Parameters) :: params
+    class(ProgramParameters) :: params
 
     integer :: i, j, counter, CounterM, CounterP, nAnisG, nSnp
     integer, allocatable, dimension(:) :: WorkOut
@@ -250,12 +250,12 @@ contains
 
   subroutine CombineResults(nAnisG, writeSwappable, params)
     use PedigreeDefinition
-    use ParametersDefinition
+    use ProgramParametersDefinition
     use CoreUtils
 
     integer, intent(in) :: nAnisG
     logical :: writeSwappable
-    type(Parameters) :: params
+    type(ProgramParameters) :: params
 
     integer, dimension(:,:), pointer :: CoreIndex
     integer :: nCores
@@ -270,7 +270,7 @@ contains
     character(len=20) :: id
     
     if (params%library .eq. "None") then
-      CoreIndex => CalculateCores(params%nSnp, params%Jump, params%offset)    
+      CoreIndex => CalculateCores(params%nSnp, params%params%Jump, params%params%offset)    
     else
       CoreIndex => getCoresFromHapLib(params%library)
     end if
@@ -431,12 +431,12 @@ contains
   end subroutine CombineResults
 
   function ParsePedigreeData(params) result(p)
-    use ParametersDefinition
+    use ProgramParametersDefinition
     use PedigreeDefinition
     use NRMCode
     use SortingModule
 
-    type(Parameters), intent(in) :: params
+    type(ProgramParameters), intent(in) :: params
     type(Pedigree) :: p
 
     integer :: i, truth, counter, nAnisG
@@ -577,11 +577,11 @@ contains
   end function ParsePedigreeData
 
   function ParseGenotypeData(nAnisG, params) result(Genos)
-    use ParametersDefinition
+    use ProgramParametersDefinition
     use GenotypeModule
 
     integer, intent(in) :: nAnisG
-    type(Parameters), intent(in) :: params
+    type(ProgramParameters), intent(in) :: params
     type(Genotype), pointer, dimension(:) :: Genos
 
     integer :: i, j, k
@@ -645,10 +645,10 @@ contains
   end function ParsePhaseData
 
   function ReadInParameterFile(filename) result (params)
-    use ParametersDefinition
+    use ProgramParametersDefinition
     use AlphaHouseMod, only: parseToFirstWhitespace,splitLineIntoTwoParts,toLower
     character(*), intent(in) :: filename
-    type(Parameters) :: params
+    type(ProgramParameters) :: params
 
     double precision :: PercSurrDisagree
     integer :: TempInt, status, cl
@@ -658,7 +658,7 @@ contains
     character(len=:), allocatable::tag
     character(len=300),dimension(:),allocatable :: second
 
-    params = Parameters()
+    params = ProgramParameters()
 
     open(newunit=unit, file=filename, action="read", status="old")
     
@@ -704,28 +704,28 @@ contains
         read(second(1), *) params%nSnp
 
       case("generalcoreandtaillength")
-        read(second(1), *) params%CoreAndTailLength
+        read(second(1), *) params%params%CoreAndTailLength
 
       case("generalcorelength")
 
         if (size(second) <2) then
           write(*,*) "GeneralCoreLength incorrectly specified"
         endif
-        read (second(1), *) params%Jump
+        read (second(1), *) params%params%Jump
         read (second(2), *)OffsetVariable
 
       case("usethisnumberofsurrogates")
-        read(second(1), *) params%UseSurrsN
+        read(second(1), *) params%params%UseSurrsN
 
       case("percentagesurrdisagree")
         read(second(1), *) PercSurrDisagree
 
 
       case("percentagegenohaplodisagree")
-        read(second(1),*) params%PercGenoHaploDisagree
+        read(second(1),*) params%params%PercGenoHaploDisagree
 
       case("genotypemissingerrorpercentage")
-        read(second(1), *) params%GenotypeMissingErrorPercentage
+        read(second(1), *) params%params%GenotypeMissingErrorPercentage
 
 
       case("fulloutput")
@@ -743,7 +743,7 @@ contains
 
       case("iteratemethod")
         if (allocated(second)) then
-          read(second(1), *) params%itterateType
+          read(second(1), *) params%params%itterateType
         endif
 
       case("iteratesubsetsize")
@@ -752,9 +752,9 @@ contains
           if (hold(1:1) == "*") then
             read(hold,"(X,I2)") cl
             call get_command_argument(cl,hold)
-            read(hold,*) params%itterateNumber
+            read(hold,*) params%params%itterateNumber
           else
-            read(hold,*) params%itterateNumber
+            read(hold,*) params%params%itterateNumber
           end if
         end if
 
@@ -764,20 +764,20 @@ contains
           if (hold(1:1) == "*") then
             read(hold,"(X,I2)") cl
             call get_command_argument(cl,hold)
-            read(hold,*) params%numIter
+            read(hold,*) params%params%numIter
           else
-            read(hold,*) params%numIter
+            read(hold,*) params%params%numIter
           end if
         end if
-        if (params%itterateType .eq. "Off") then
-          params%numIter = 1
+        if (params%params%itterateType .eq. "Off") then
+          params%params%numIter = 1
         end if
 
 
       case("cores")
         if (size(second) == 2) then
-          read(second(1), *) params%startCoreChar
-          read(second(2), *) params%endCoreChar
+          read(second(1), *) params%params%startCoreChar
+          read(second(2), *) params%params%endCoreChar
         endif
 	
       case("minhapfreq")
@@ -786,9 +786,9 @@ contains
           if (hold(1:1) == "*") then
             read(hold,"(X,I2)") cl
             call get_command_argument(cl,hold)
-            read(hold,*) params%minHapFreq
+            read(hold,*) params%params%minHapFreq
           else
-            read(hold,*) params%minHapFreq
+            read(hold,*) params%params%minHapFreq
           end if
         end if
 
@@ -823,24 +823,24 @@ contains
   print *, " Using ", trim(params%GenotypeFile), " as the genotype file"
   print *, " "
 
-  if (params%CoreAndTailLength > params%nSnp) then
+  if (params%params%CoreAndTailLength > params%nSnp) then
     print*, "GeneralCoreAndTailLength is too long"
     stop
   endif
-  if (params%Jump > params%nSnp) then
+  if (params%params%Jump > params%nSnp) then
     print*, "GeneralCoreLength is too long"
     stop
   endif
-  if (params%CoreAndTailLength < params%Jump) then
+  if (params%params%CoreAndTailLength < params%params%Jump) then
     print *, "GeneralCoreAndTailLength is shorted than GenralCoreLength"
     stop
   end if
 
   if (OffsetVariable == "Offset") then
-    params%Offset = .true.
+    params%params%Offset = .true.
   endif
   if (OffsetVariable == "NotOffset") then
-    params%Offset = .false.
+    params%params%Offset = .false.
   endif
 
   if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
@@ -907,21 +907,20 @@ contains
   end if
 
   PercSurrDisagree = PercSurrDisagree/100
-  params%NumSurrDisagree = int(params%UseSurrsN * PercSurrDisagree)
-  params%PercGenoHaploDisagree = params%PercGenoHaploDisagree/100
-  params%GenotypeMissingErrorPercentage = params%GenotypeMissingErrorPercentage/100
+  params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
+  params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100
+  params%params%GenotypeMissingErrorPercentage = params%params%GenotypeMissingErrorPercentage/100
 
 end function ReadInParameterFile
 
 
   subroutine HapCommonality(library, OutputPoint, params)
-    !! This should probably be two routines - one to calculate, one to output
     use HaplotypeLibraryDefinition
-    use ParametersDefinition
+    use ProgramParametersDefinition
     
     type(HaplotypeLibrary), intent(in) :: library
     integer, intent(in) :: OutputPoint
-    class(Parameters), intent(in) :: params
+    class(ProgramParameters), intent(in) :: params
     
     integer :: i, SizeCore, nHaps
     character(len = 300) :: filout
@@ -949,7 +948,7 @@ end function ReadInParameterFile
   subroutine WriteSurrogates(definition, OutputPoint, p, params)
     use SurrogateDefinition
     use PedigreeDefinition
-    use ParametersDefinition
+    use ProgramParametersDefinition
 
     character(len = 300) :: filout
     integer :: i, j, nSurrogates
@@ -957,7 +956,7 @@ end function ReadInParameterFile
     type(Surrogate), intent(in) :: definition
     integer, intent(in) :: OutputPoint
     type(Pedigree), intent(in) :: p
-    type(Parameters), intent(in) :: params
+    type(ProgramParameters), intent(in) :: params
 
     integer :: nAnisG
     character(len=100) :: fmt
@@ -996,9 +995,9 @@ end function ReadInParameterFile
   end subroutine WriteSurrogates
 
   subroutine CountInData(nAnisRawPedigree, nAnisG, params)
-    use ParametersDefinition
+    use ProgramParametersDefinition
     
-    type(Parameters), intent(in) :: params
+    type(ProgramParameters), intent(in) :: params
     integer, intent(out) :: nAnisRawPedigree, nAnisG
 
     integer :: k
@@ -1040,9 +1039,9 @@ end function ReadInParameterFile
   end subroutine CountInData
 
   subroutine MakeDirectories(params)
-    use ParametersDefinition
+    use ProgramParametersDefinition
     
-    type(Parameters), intent(in) :: params
+    type(ProgramParameters), intent(in) :: params
     
     print*, ""
     call system(RMDIR // "Miscellaneous")
@@ -1064,14 +1063,14 @@ end function ReadInParameterFile
   end subroutine MakeDirectories  
   
   subroutine WriteHapLib(library, currentcore, params)
-    use ParametersDefinition
+    use ProgramParametersDefinition
     use HaplotypeLibraryDefinition
     use CoreDefinition
     use HaplotypeModule
     
     type(HaplotypeLibrary), intent(in) :: library
     integer, intent(in) :: currentcore
-    type(Parameters) :: params
+    type(ProgramParameters) :: params
 
     integer :: i, SizeCore, nHaps
     character(len = 300) :: filout
@@ -1112,10 +1111,10 @@ end function ReadInParameterFile
   end subroutine WriteHapLib
   
   subroutine writeTimer(hours, minutes, seconds, params)
-    use ParametersDefinition
+    use ProgramParametersDefinition
     integer, intent(in) :: hours, minutes
     real, intent(in) :: seconds
-    type(Parameters), intent(in) :: params
+    type(ProgramParameters), intent(in) :: params
          
     if (params%outputTimer) then
       open (unit = 32, file = "."//SEP//"PhasingResults"//SEP//"Timer.txt", status = "unknown")
@@ -1129,12 +1128,12 @@ end function ReadInParameterFile
     use PedigreeDefinition
     use CoreDefinition
     use TestResultDefinition
-    use ParametersDefinition
+    use ProgramParametersDefinition
 
     type(TestResults), intent(in) :: results
     type(Core), intent(in) :: c
     type(Pedigree), intent(in) :: p
-    type(Parameters), intent(in) :: params
+    type(ProgramParameters), intent(in) :: params
     integer, intent(in) :: OutputPoint
 
     integer :: i, k, nSurrogates
@@ -1202,10 +1201,10 @@ end function ReadInParameterFile
   end subroutine WriteTestResults
 
   subroutine CombineTestResults(nCores, params)
-    use ParametersDefinition
+    use ProgramParametersDefinition
 
     integer, intent(in) :: nCores
-    type(Parameters) :: params
+    type(ProgramParameters) :: params
 
     character(len = 300) :: filout
     double precision, allocatable, dimension(:,:) :: AverageMatrix
@@ -1324,11 +1323,11 @@ end function ReadInParameterFile
   end subroutine Titles
 
   subroutine PrintTimerTitles(params)
-    use ParametersDefinition
+    use ProgramParametersDefinition
 
     implicit none
 
-    class(Parameters), intent(in) :: params
+    class(ProgramParameters), intent(in) :: params
 
     real :: etime ! Declare the type of etime()
     real :: elapsed(2) ! For receiving user and system time

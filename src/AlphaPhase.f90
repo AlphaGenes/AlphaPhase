@@ -1,5 +1,5 @@
 program AlphaPhase
-  use ParametersDefinition
+  use ProgramParametersDefinition
   use InputOutput
   use AlphaPhaseResultsDefinition
   use AlphaPhaseFunctions
@@ -14,7 +14,7 @@ program AlphaPhase
   implicit none
 
   type(Genotype), pointer, dimension(:) :: genos
-  type(Parameters) :: params
+  type(ProgramParameters) :: params
   type(Pedigree) :: p 
   type(Haplotype), pointer, dimension(:,:) :: Phase, TruePhase
   integer :: id
@@ -54,18 +54,18 @@ program AlphaPhase
     Genos => ParseGenotypeData(nAnisG,params)
     if (params%Simulation) then
       TruePhase => ParsePhaseData(params%TruePhaseFile,nAnisG,params%nSnp)
-      results = phaseAndCreateLibraries(Genos, p, params, TruePhase, quiet = .false.)
+      results = phaseAndCreateLibraries(Genos, p, params%params, TruePhase, quiet = .false.)
     else
-      results = phaseAndCreateLibraries(Genos, p, params, quiet = .false.) 
+      results = phaseAndCreateLibraries(Genos, p, params%params, quiet = .false.) 
     end if    
   else
     Phase => ParsePhaseData(params%GenotypeFile,nAnisG,params%nSnp)
-    results = createLibraries(Phase, params)
+    results = createLibraries(Phase, params%params)
   end if
   
-  singleSurrogates = (params%ItterateType .eq. "Off") .and. (params%numIter == 1)
-  singleRun = (params%StartCoreChar .eq. "1") .and. (params%EndCoreChar .eq. "Combine")
-  combine = (params%EndCoreChar .eq. "Combine")
+  singleSurrogates = (params%params%ItterateType .eq. "Off") .and. (params%params%numIter == 1)
+  singleRun = (params%params%StartCoreChar .eq. "1") .and. (params%params%EndCoreChar .eq. "Combine")
+  combine = (params%params%EndCoreChar .eq. "Combine")
   
   do i = 1, results%nCores
     id = results%ids(i)

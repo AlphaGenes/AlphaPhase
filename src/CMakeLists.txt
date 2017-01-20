@@ -10,6 +10,7 @@ SET(ALPHAPHASE_src
             ${SRCALPHAPHASE}/LongRangePhasing.f90
             ${SRCALPHAPHASE}/MemberManagerDefinition.f90
             ${SRCALPHAPHASE}/ParametersDefinition.f90
+	    ${SRCALPHAPHASE}/ProgramParametersDefinition.f90
             ${SRCALPHAPHASE}/PedigreeDefinition.f90
             ${SRCALPHAPHASE}/Random.f90
             ${SRCALPHAPHASE}/SurrogateDefinition.f90
