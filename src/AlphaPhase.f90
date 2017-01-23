@@ -4,9 +4,6 @@ program AlphaPhase
   use AlphaPhaseResultsDefinition
   use AlphaPhaseFunctions
   
-  use LongRangePhasing
-  use HaplotypeLibraryPhasing
-  
   use InputOutput
   
   use HaplotypeModule
