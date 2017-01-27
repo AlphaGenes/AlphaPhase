@@ -38,7 +38,7 @@ contains
 
     integer :: nAnisG, nSnp
     
-    integer :: i, j, k, Counter, truth, nSnpCommon
+    integer :: i, j, k, Counter, nSnpCommon
     integer, allocatable, dimension(:) :: SurrogateList, ProgCount
     integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam
 
@@ -144,7 +144,6 @@ contains
       if ((cs%getSire(i) /= 0).and.(cs%getDam(i) /= 0)) then
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
-	  truth = 0
 	  if ((definition%numoppose((cs%getSire(i)), j) <=  threshold) &
 	    .and.(definition%numoppose((cs%getDam(i)), j) > threshold)) then
 	    if (definition%enoughIncommon(cs%getSire(i), j) &
@@ -224,14 +223,17 @@ contains
 	end do
 	if (DumSire /= 0) then
 	  definition%partition(i, DumSire) = 1
-	  truth = 0
 	  do aj = 1, numPassThres(i)
 	    j = passThres(i, aj)
 	    if ((i == cs%getSire(j)).or.(i == cs%getDam(j))) then
 	      if (definition%numoppose(j, DumSire) > threshold) then
 		if (definition%enoughIncommon(j, DumSire)) then
 		  definition%partition(i, j) = 2
-		  truth = 1
+		  exit
+		end if
+	      else
+		if (definition%enoughIncommon(j, DumSire)) then
+		  definition%partition(i, j) = 1
 		  exit
 		end if
 	      endif

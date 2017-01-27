@@ -782,7 +782,7 @@ contains
 	
       case("minhapfreq")
         if(allocated(second)) then
-          read (second, *) dumC, hold
+          read (second, *) hold
           if (hold(1:1) == "*") then
             read(hold,"(X,I2)") cl
             call get_command_argument(cl,hold)
@@ -1136,7 +1136,7 @@ end function ReadInParameterFile
     type(ProgramParameters), intent(in) :: params
     integer, intent(in) :: OutputPoint
 
-    integer :: i, k, nSurrogates
+    integer :: i
     integer :: nAnisG, nSnp
     character(len = 300) :: filout
 
@@ -1147,7 +1147,7 @@ end function ReadInParameterFile
       write (filout, '(".",a1,"Simulation",a1,"IndivMistakes",i0,".txt")') SEP, SEP, OutputPoint
       open (unit = 17, FILE = filout, status = 'unknown')
       do i = 1, nAnisG
-	write(17, '(6i6,a6,6i6,a6,6i6,a6,6i6)') &
+	write(17, '(a20,6i6,a6,6i6,a6,6i6,a6,6i6)') p % getID(i), &
 	results%counts(i,1,ALL_,CORRECT_), results%counts(i,2,ALL_,CORRECT_), &
 	results%counts(i,1,ALL_,NOTPHASED_), results%counts(i,2,ALL_,NOTPHASED_), &
 	results%counts(i,1,ALL_,INCORRECT_), results%counts(i,2,ALL_,INCORRECT_), "|", &
@@ -1169,7 +1169,7 @@ end function ReadInParameterFile
       open (unit = 20, FILE = filout, status = 'unknown')
 
       do i = 1, nAnisG
-	write (20, '(6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') &
+	write (20, '(a20,6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') p % getID(i), &
 	results%percent(i,1,ALL_,CORRECT_), results%percent(i,2,ALL_,CORRECT_), &
 	results%percent(i,1,ALL_,NOTPHASED_), results%percent(i,2,ALL_,NOTPHASED_), &
 	results%percent(i,1,ALL_,INCORRECT_), results%percent(i,2,ALL_,INCORRECT_), "|", &

@@ -77,7 +77,7 @@ contains
     type(HaplotypeLibrary), dimension(:), intent(in) :: libraries
     integer, dimension(:,:), pointer :: CoreIndex
 
-    integer :: i
+    integer :: i, start
     
     allocate(CoreIndex(size(libraries),2))
     
