@@ -83,6 +83,11 @@ contains
 	hap2 => c%phase(i,2)
 	ErrorAllow = int(PercGenoHaploDisagree * geno % numNotMissing())
 	
+	!! USE MIN PRESENT  BUT THEN BOTH COULD BE TRUE AND...
+	!! IF THERE'S OVERLAP IN PRESENT SNPS...
+	!! SOLUTION MAY JUST BE TO NOT CHANGE STUFF THAT ALREADY EXISTS?
+	!! NOT SURE THAT'S IN KEEPING WITH THE PHILOSPHY THOUGH
+	!! SIMILAR PROBLEMS FURTHER ON I THINK
 	oneNotTwo = c % getFullyPhased(i, 1) .and. (.not.c % getFullyPhased(i, 2))
 	twoNotOne = c % getFullyPhased(i, 2) .and. (.not.c % getFullyPhased(i, 1))
 

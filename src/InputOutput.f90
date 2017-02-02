@@ -433,7 +433,6 @@ contains
   function ParsePedigreeData(params) result(p)
     use ProgramParametersDefinition
     use PedigreeDefinition
-    use NRMCode
     use SortingModule
 
     type(ProgramParameters), intent(in) :: params

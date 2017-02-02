@@ -2,10 +2,8 @@ program AlphaPhase
   use ProgramParametersDefinition
   use InputOutput
   use AlphaPhaseResultsDefinition
-  use AlphaPhaseFunctions
-  
-  use InputOutput
-  
+  use AlphaPhaseFunctions  
+  use InputOutput  
   use HaplotypeModule
   
   implicit none
@@ -24,7 +22,7 @@ program AlphaPhase
   !Linux max path length is 4096 which is more than windows or mac (all according to google)
   character(len=4096) :: specfile
   character(len=4096) :: cmd
-  
+ 
   if (Command_Argument_Count() > 0) then
     call get_command_argument(1,cmd)
     if (cmd(1:2) .eq. "-v") then

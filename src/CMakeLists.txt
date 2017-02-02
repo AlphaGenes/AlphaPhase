@@ -1,23 +1,23 @@
 
 # Alphaphase library
 SET(ALPHAPHASE_src
-            ${SRCALPHAPHASE}/CoreDefinition.f90
-            ${SRCALPHAPHASE}/CoreUtils.f90
-            ${SRCALPHAPHASE}/CoreSubsetDefinition.f90
-            ${SRCALPHAPHASE}/HaplotypeLibraryDefinition.f90
-            ${SRCALPHAPHASE}/HaplotypeLibraryPhasing.f90
-            ${SRCALPHAPHASE}/InputOutput.f90
-            ${SRCALPHAPHASE}/LongRangePhasing.f90
-            ${SRCALPHAPHASE}/MemberManagerDefinition.f90
-            ${SRCALPHAPHASE}/ParametersDefinition.f90
-	    ${SRCALPHAPHASE}/ProgramParametersDefinition.f90
-            ${SRCALPHAPHASE}/PedigreeDefinition.f90
-            ${SRCALPHAPHASE}/Random.f90
-            ${SRCALPHAPHASE}/SurrogateDefinition.f90
-            ${SRCALPHAPHASE}/TestResultDefinition.f90        
-	    ${SRCALPHAPHASE}/AlphaPhaseFunctions.f90
-	    ${SRCALPHAPHASE}/AlphaPhaseResultsDefinition.f90
-            ${SRCALPHAPHASE}/AlphaPhase.f90 
+            CoreDefinition.f90
+            CoreUtils.f90
+            CoreSubsetDefinition.f90
+            HaplotypeLibraryDefinition.f90
+            HaplotypeLibraryPhasing.f90
+            InputOutput.f90
+            LongRangePhasing.f90
+            MemberManagerDefinition.f90
+            ParametersDefinition.f90
+	    ProgramParametersDefinition.f90
+            PedigreeDefinition.f90
+            Random.f90
+            SurrogateDefinition.f90
+            TestResultDefinition.f90        
+	    AlphaPhaseFunctions.f90
+	    AlphaPhaseResultsDefinition.f90
+            AlphaPhase.f90 
             
 )
 
