@@ -14,7 +14,7 @@ module HaplotypeLibraryDefinition
   contains
     private
     procedure, public :: hasHap
-    procedure :: addHap
+    procedure, public :: addHap
     procedure, public :: getHap
     procedure, public :: getHaps
     procedure, public :: matchWithError
@@ -60,32 +60,72 @@ contains
     allocate(library%newstore(library%storeSize))
   end function newHaplotypeLibrary
   
-  function haplotypeLibraryFromFile(filename, stepsize) result(library)
+  function haplotypeLibraryFromFile(filename, stepsize, text) result(library)
     type(HaplotypeLibrary) :: library
     character(*), intent(in) :: filename
     integer, intent(in) :: stepSize
+    logical, optional, intent(in) :: text
     
     integer(kind=1), dimension(:), allocatable ::holdHap
-    integer :: i, j
+    integer :: i, j, f
+    character(len=10000) :: line
+    logical :: binary
     
-    open (unit=2001,file=trim(filename),status="old",form="unformatted")
+    binary = .true.
+    if (present(text)) then
+      if (text) then
+	binary = .false.
+      end if
+    end if
+    
+    if (binary) then 
+      open (unit=2001,file=trim(filename),status="old",form="unformatted")
 
-    ! Read the number of Hap in the library and how long they are
-    read(2001) library%storeSize,library%nSnps
-    
-    library%size = 0
-    library%stepSize = stepSize
-    allocate(library % hapFreq(library%storeSize))
-    library % hapFreq = 0
-    
-    allocate(library%newstore(library%storeSize))
+      ! Read the number of Hap in the library and how long they are
+      read(2001) library%storeSize,library%nSnps
 
-    allocate(holdHap(library%nSnps))
-    do i=1,library%storeSize
-      read(2001) holdHap
-      j = library%matchAddHap(Haplotype(holdHap))
-    enddo
-    close (2001)
+      library%size = 0
+      library%stepSize = stepSize
+      allocate(library % hapFreq(library%storeSize))
+      library % hapFreq = 0
+
+      allocate(library%newstore(library%storeSize))
+
+      allocate(holdHap(library%nSnps))
+      do i=1,library%storeSize
+	read(2001) holdHap
+	j = library%addHap(Haplotype(holdHap))
+      enddo
+      close (2001)
+    else
+      library%storeSize = 0
+      open(unit=2001,file=trim(filename),status="old")
+      do
+	read(2001,'(14X,A10000)', iostat=i) line
+	if (i == 0) then
+	  library%storeSize = library%storeSize + 1
+	else
+	  exit
+	endif
+      enddo
+      
+      library%nSnps = len(trim(line))
+      library%size = 0
+      library%stepSize = stepSize
+      allocate(library % hapFreq(library%storeSize))
+      library % hapFreq = 0
+      allocate(library%newstore(library%storeSize))
+      allocate(holdHap(library%nSnps))
+      
+      rewind(2001)
+      do i = 1, library%storeSize
+	read(2001,'(6X,I6,2X,'//itoa(library%nSnps)//'I1)') f, holdHap
+	j = library%addHap(Haplotype(holdHap))
+	library%hapFreq(i) = f
+      end do
+      close(2001)
+      
+    end if
     
   end function haplotypeLibraryFromFile
   
@@ -196,6 +236,41 @@ contains
     deallocate(tempMatches)
   end function matchWithError
   
+  function matchWithErrorAndMinOverlap(library, hap, allowedError, minOverlap) result(matches)
+    class(HaplotypeLibrary) :: library
+    type(Haplotype), intent(in) :: hap
+    integer, intent(in) :: allowedError
+    integer, intent(in) :: minOverlap
+    integer, dimension(:), pointer :: matches
+
+    integer, dimension(:), allocatable :: tempMatches
+    integer :: i, e, num, invalid
+    
+    allocate(tempMatches(library % size))
+
+    num = 0
+    
+    invalid = hap%numberError()
+    
+    if (invalid <= allowedError) then
+
+      do i = 1, library%size
+	e = invalid + library%newstore(i)%mismatchesMod(hap)
+
+	if (e <= allowedError) then
+	  if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	    num = num + 1
+	    tempMatches(num) = i
+	  end if
+	end if
+      end do
+    end if
+    
+    allocate(matches(num))
+    matches(:) = tempMatches(1:num)
+    deallocate(tempMatches)
+  end function matchWithErrorAndMinOverlap
+  
   function limitedMatchWithError(library, hap, allowedError, limit) result(matches)
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
@@ -230,7 +305,46 @@ contains
     deallocate(tempMatches)
   end function limitedMatchWithError
   
+  function limitedMatchWithErrorAndMinOverlap(library, hap, allowedError, minOverlap, limit) result(matches)
+    class(HaplotypeLibrary) :: library
+    type(Haplotype), intent(in) :: hap
+    integer, intent(in) :: allowedError
+    integer, dimension(:), intent(in) :: limit
+    integer, intent(in) :: minOverlap
+    integer, dimension(:), pointer :: matches
+
+    integer, dimension(:), allocatable :: tempMatches
+    integer :: i, k, e, num, invalid    
+
+    allocate(tempMatches(library % size))
+
+    num = 0
+    
+    invalid = hap%numberError()
+    
+    if (invalid <= allowedError) then
+
+      do k = 1, size(limit)
+	i = limit(k)
+	e = invalid + library%newstore(i)%mismatchesMod(hap)
+
+	if (e <= allowedError) then
+	  if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	    num = num + 1
+	    tempMatches(num) = i
+	  end if
+	end if
+      end do
+    end if
+    
+    allocate(matches(num))
+    matches(:) = tempMatches(1:num)
+    deallocate(tempMatches)
+  end function limitedMatchWithErrorAndMinOverlap
+  
   function limitedCompatPairsWithError(library, geno, ErrorAllow, limit, nAnisG) result(pairs)
+    !!!! THIS IS TRICKY WITH THE MULTI-HD STUFF - SEE NOTES !!!!
+    
     use GenotypeModule
     class(HaplotypeLibrary) :: library
     type(Genotype), intent(in) :: geno
@@ -554,6 +668,14 @@ contains
       all(i) = IAND(aom(i), NOT(am(i)))
     end do
     
-  end function oneOneNoZeros  
+  end function oneOneNoZeros
+  
+  function itoa(i) result(res)
+    character(:),allocatable :: res
+    integer,intent(in) :: i
+    character(range(i)+2) :: tmp
+    write(tmp,'(i0)') i
+    res = trim(tmp)
+  end function
 
 end module HaplotypeLibraryDefinition
