@@ -4,33 +4,29 @@ module CoreSubsetDefinition
   use PedigreeDefinition
   
   implicit none
-  private
 
-  type, public :: CoreSubset
-    private
+  type :: CoreSubset
     type(Core), pointer :: parentCore
     type(Pedigree), pointer :: parentPedigree
     integer(kind = 4), allocatable, dimension(:) :: full2sub
     integer(kind = 4), allocatable, dimension(:) :: sub2full
     integer :: nAnisG
   contains
-    private
-    procedure, public :: getCoreAndTailGenos
-    procedure, public :: getCoreGenos
-    procedure, public :: getSingleCoreAndTailGenos
-    procedure, public :: getSingleCoreGenos
-    procedure, public :: getNAnisG
-    procedure, public :: getNSnp
-    procedure, public :: getNCoreSnp
-    procedure, public :: getNCoreTailSnp
-    procedure, public :: getSire
-    procedure, public :: getDam
-    procedure, public :: getYield
-    procedure, public :: getHaplotype
+    procedure :: getCoreAndTailGenosCoreSubset
+    procedure :: getCoreGenosCoreSubset
+    procedure :: getSingleCoreAndTailGenos
+    procedure :: getSingleCoreGenos
+    procedure :: getNAnisGCoreSubset
+    procedure :: getNSnpCoreSubset
+    procedure :: getNCoreSnpCoreSubset
+    procedure :: getNCoreTailSnpCoreSubset
+    procedure :: getSireCoreSubset
+    procedure :: getDamCoreSubset
+    procedure :: getYieldCoreSubset
+    procedure :: getHaplotypeCoreSubset    
+    procedure :: setSwappableCoreSubset
     
-    procedure, public :: setSwappable
-    
-    final :: destroy
+    final :: destroyCoreSubset
   end type CoreSubset
   
   interface CoreSubSet
@@ -65,42 +61,42 @@ contains
 
   end function newCoreSubset
   
-  subroutine destroy(set)
+  subroutine destroyCoreSubset(set)
     type(CoreSubSet) :: set
 
     if (allocated(set%full2sub)) then
       deallocate(set%full2sub)
       deallocate(set%sub2full)
     end if
-  end subroutine destroy
+  end subroutine destroyCoreSubset
   
-  function getNAnisG(set) result(num)
+  function getNAnisGCoreSubset(set) result(num)
     class(CoreSubSet) :: set
     integer :: num
     
     num = set%nAnisG
-  end function getNAnisG
+  end function getNAnisGCoreSubset
   
-  function getNSnp(set) result(num)
+  function getNSnpCoreSubset(set) result(num)
     class(CoreSubSet) :: set
     integer :: num
     
     num = set%parentCore%getNSnp()
-  end function getNSnp
+  end function getNSnpCoreSubset
   
-  function getNCoreSnp(set) result(num)
+  function getNCoreSnpCoreSubset(set) result(num)
     class(CoreSubSet) :: set
     integer :: num
     
     num = set%parentCore%getNCoreSnp()
-  end function getNCoreSnp
+  end function getNCoreSnpCoreSubset
   
-  function getNCoreTailSnp(set) result(num)
+  function getNCoreTailSnpCoreSubset(set) result(num)
     class(CoreSubSet) :: set
     integer :: num
     
     num = set%parentCore%getNCoreTailSnp()
-  end function getNCoreTailSnp
+  end function getNCoreTailSnpCoreSubset
   
   function getSingleCoreAndTailGenos(set,i) result (ctGenos)
         
@@ -124,7 +120,7 @@ contains
     return
   end function getSingleCoreGenos
   
-  function getCoreAndTailGenos(set) result (ctGenos)
+  function getCoreAndTailGenosCoreSubset(set) result (ctGenos)
         
     class(CoreSubset) :: set
     type(Genotype), dimension(:), pointer :: ctGenos
@@ -137,9 +133,9 @@ contains
     end do
     
     return
-  end function getCoreAndTailGenos
+  end function getCoreAndTailGenosCoreSubset
   
-  function getCoreGenos(set) result (cGenos)
+  function getCoreGenosCoreSubset(set) result (cGenos)
         
     class(CoreSubset) :: set
     type(Genotype), dimension(:), pointer :: cGenos
@@ -152,9 +148,9 @@ contains
     end do
     
     return
-  end function getCoreGenos
+  end function getCoreGenosCoreSubset
   
-  function getSire(set,animal) result(sire)
+  function getSireCoreSubset(set,animal) result(sire)
     class(CoreSubSet) :: set
     integer, intent(in) :: animal
     integer :: sire, s, p
@@ -162,17 +158,17 @@ contains
     s = set%sub2full(animal)
     p = set%parentPedigree%getSire(s)
     sire = set%full2sub(p)
-  end function getSire
+  end function getSireCoreSubset
   
-  function getDam(set,animal) result(dam)
+  function getDamCoreSubset(set,animal) result(dam)
     class(CoreSubSet) :: set
     integer, intent(in) :: animal
     integer :: dam
     
     dam = set%full2sub(set%parentPedigree%getDam(set%sub2full(animal)))
-  end function getDam
+  end function getDamCoreSubset
   
-  function getYield(set,phase) result (yield)
+  function getYieldCoreSubset(set,phase) result (yield)
     use HaplotypeModule
     class(CoreSubSet) :: set
     integer, intent(in) :: phase
@@ -188,17 +184,17 @@ contains
     end do
     
     yield = (float(counter)/(set%nAnisG * set%parentCore%getNCoreSnp())) * 100
-  end function getYield
+  end function getYieldCoreSubset
   
-  subroutine setSwappable(set, animal, val)
+  subroutine setSwappableCoreSubset(set, animal, val)
     class(CoreSubSet) :: set
     integer, intent(in) :: animal
     integer(kind=1), intent(in) :: val
     
     call set%parentCore%setSwappable(set%sub2full(animal),val)
-  end subroutine setSwappable
+  end subroutine setSwappableCoreSubset
   
-  function getHaplotype(set, animal, phase) result(hap)
+  function getHaplotypeCoreSubset(set, animal, phase) result(hap)
     use HaplotypeModule
     class(CoreSubSet), intent(in) :: set
     integer, intent(in) :: animal, phase
@@ -206,7 +202,7 @@ contains
     type(Haplotype), pointer :: hap
     
     hap => set%parentCore%phase(animal, phase)
-  end function getHaplotype
+  end function getHaplotypeCoreSubset
     
     
 end module CoreSubsetDefinition

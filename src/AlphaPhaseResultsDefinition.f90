@@ -6,9 +6,8 @@ module AlphaPhaseResultsDefinition
   use PedigreeDefinition
   implicit none
   
-  private
   
-  type, public :: AlphaPhaseResults
+  type :: AlphaPhaseResults
     type(Core), dimension(:), allocatable :: cores
     type(HaplotypeLibrary), dimension(:), allocatable :: libraries
     type(Surrogate), dimension(:), allocatable :: surrogates

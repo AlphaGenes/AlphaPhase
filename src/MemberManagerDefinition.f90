@@ -2,10 +2,8 @@ module MemberManagerDefinition
   use CoreDefinition
   
   implicit none
-  private
 
-  type, public :: MemberManager
-    private
+  type :: MemberManager
     
     type(Core), pointer :: c
     integer :: number
@@ -14,9 +12,8 @@ module MemberManagerDefinition
     logical :: noneLeft
     logical :: random
   contains
-    private
-    procedure, public :: hasNext
-    procedure, public :: getNext
+    procedure :: hasNext
+    procedure :: getNext
     final :: destroy      
   end type MemberManager
   

@@ -4,22 +4,20 @@ module TestResultDefinition
   use HaplotypeModule
   implicit none
   
-  type, public :: TestResults
-    private
-    
+  type:: TestResults
     integer, dimension(:,:,:,:), allocatable :: countA
   contains
-    procedure, public :: percentAll
-    procedure, public :: counts
-    procedure, public :: percent
+    procedure :: percentAll
+    procedure :: counts
+    procedure :: percent
   end type TestResults
   
   interface TestResults
     module procedure newResults
   end interface TestResults
   
-  integer, parameter, public :: ALL_ = 1, HET_ = 2, ERROR_ = 3, MISS_ = 4
-  integer, parameter, public :: CORRECT_ = 1, INCORRECT_ = 2, NOTPHASED_ = 3
+  integer, parameter :: ALL_ = 1, HET_ = 2, ERROR_ = 3, MISS_ = 4
+  integer, parameter :: CORRECT_ = 1, INCORRECT_ = 2, NOTPHASED_ = 3
 
 contains
 

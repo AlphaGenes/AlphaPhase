@@ -2,40 +2,37 @@ module HaplotypeLibraryDefinition
   use ConstantModule
   use HaplotypeModule
   implicit none
-  private
 
-  type, public :: HaplotypeLibrary
-    private
+  type :: HaplotypeLibrary
     type(Haplotype), dimension(:), allocatable :: newstore
     integer, dimension(:), allocatable :: hapFreq
     integer :: size
-    integer, public :: nSnps
+    integer :: nSnps
     integer :: storeSize, stepSize
   contains
-    private
-    procedure, public :: hasHap
-    procedure, public :: addHap
-    procedure, public :: getHap
-    procedure, public :: getHaps
-    procedure, public :: matchWithError
-    procedure, public :: limitedMatchWithError
-    procedure, public :: limitedCompatPairsWithError
-    procedure, public :: getSize
-    procedure, public :: getHapRel
-    procedure, public :: getNumSnps
-    procedure, public :: resetHapFreq
-    procedure, public :: incrementHapFreq
-    procedure, public :: getHapFreq
-    procedure, public :: getCompatHaps    
-    procedure, public :: matchAddHap
-    procedure, public :: getCompatHapsFreq
-    procedure, public :: allZero
-    procedure, public :: allOne
-    procedure, public :: allZeroOrMissing
-    procedure, public :: allOneOrMissing
-    procedure, public :: allMissing
-    procedure, public :: oneZeroNoOnes
-    procedure, public :: oneOneNoZeros
+    procedure :: hasHap
+    procedure :: addHap
+    procedure :: getHap
+    procedure :: getHaps
+    procedure :: matchWithError
+    procedure :: limitedMatchWithError
+    procedure :: limitedCompatPairsWithError
+    procedure :: getSize
+    procedure :: getHapRel
+    procedure :: getNumSnps
+    procedure :: resetHapFreq
+    procedure :: incrementHapFreq
+    procedure :: getHapFreq
+    procedure :: getCompatHaps    
+    procedure :: matchAddHap
+    procedure :: getCompatHapsFreq
+    procedure :: allZero
+    procedure :: allOne
+    procedure :: allZeroOrMissing
+    procedure :: allOneOrMissing
+    procedure :: allMissing
+    procedure :: oneZeroNoOnes
+    procedure :: oneOneNoZeros
     final :: destroy
   end type HaplotypeLibrary
   

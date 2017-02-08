@@ -3,45 +3,43 @@ module CoreDefinition
   use GenotypeModule
   use HaplotypeModule
   implicit none
-  private
 
-  type, public :: Core
+  type :: Core
     type(Genotype), dimension(:), pointer :: coreAndTailGenos
     type(Genotype), dimension(:), pointer :: coreGenos
     type(Haplotype), dimension(:,:), pointer :: phase
     logical, allocatable, dimension(:,:) :: fullyPhased
-    integer, dimension(:,:), allocatable, public :: hapAnis
+    integer, dimension(:,:), allocatable :: hapAnis
     
     integer(kind=1), dimension(:), allocatable :: swappable
     
     integer :: nCoreAndTailSnps, nCoreSnps
     
   contains
-    private
-    procedure, public :: getCoreAndTailGenos
-    procedure, public :: getNAnisG
-    procedure, public :: getNSnp
-    procedure, public :: getNCoreSnp
-    procedure, public :: getNCoreTailSnp
-    procedure, public :: getYield
-    procedure, public :: getTotalYield
-    procedure, public :: setHaplotype
-    procedure, public :: setHaplotypeToUnphased
-    procedure, public :: resetFullyPhased
-    procedure, public :: setFullyPhased
-    procedure, public :: getFullyPhased
-    procedure, public :: getPercentFullyPhased
-    procedure, public :: resetHapAnis
-    procedure, public :: setHapAnis
-    procedure, public :: getHapAnis
-    procedure, public :: getBothFullyPhased
-    procedure, public :: getCoreGenos
+    procedure :: getCoreAndTailGenos
+    procedure :: getNAnisG
+    procedure :: getNSnp
+    procedure :: getNCoreSnp
+    procedure :: getNCoreTailSnp
+    procedure :: getYield
+    procedure :: getTotalYield
+    procedure :: setHaplotype
+    procedure :: setHaplotypeToUnphased
+    procedure :: resetFullyPhased
+    procedure :: setFullyPhased
+    procedure :: getFullyPhased
+    procedure :: getPercentFullyPhased
+    procedure :: resetHapAnis
+    procedure :: setHapAnis
+    procedure :: getHapAnis
+    procedure :: getBothFullyPhased
+    procedure :: getCoreGenos
     
-    procedure, public :: setSwappable
-    procedure, public :: getSwappable
-    procedure, public :: flipHaplotypes
+    procedure :: setSwappable
+    procedure :: getSwappable
+    procedure :: flipHaplotypes
     
-    final :: destroy
+    final :: destroyCore
   end type Core
   
   interface Core
@@ -116,14 +114,14 @@ contains
     c%hapAnis = MissingHaplotypeCode
   end function newPhaseCore
   
-  subroutine destroy(c)
+  subroutine destroyCore(c)
     type(Core) :: c
     
     if (allocated(c%coreGenos)) then
       deallocate(c%fullyPhased)
       deallocate(c%hapAnis)
     end if
-  end subroutine destroy
+  end subroutine destroyCore
   
   function getCoreAndTailGenos(c) result (ctGenos)
         

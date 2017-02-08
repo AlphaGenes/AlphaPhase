@@ -1,9 +1,8 @@
 module ProgramParametersDefinition
   use ParametersDefinition
   implicit none
-  private
   
-  type, public:: ProgramParameters
+  type:: ProgramParameters
     character(len=300) GenotypeFile
     integer :: GenotypeFileFormat
     logical :: Simulation

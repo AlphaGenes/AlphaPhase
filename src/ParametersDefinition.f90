@@ -1,8 +1,7 @@
 module ParametersDefinition
   implicit none
-  private
   
-  type, public:: Parameters
+  type:: Parameters
     integer :: CoreAndTailLength
     integer :: Jump
     logical :: Offset

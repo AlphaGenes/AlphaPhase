@@ -32,9 +32,9 @@ contains
     integer :: highestErdos
     type(Haplotype), pointer :: hap
 
-    nAnisG = c%getNAnisG()
-    nSnp = c%getNCoreSnp()
-    genos => c%getCoreGenos()
+    nAnisG = c%getNAnisGCoreSubset()
+    nSnp = c%getNCoreSnpCoreSubset()
+    genos => c%getCoreGenosCoreSubset()
 
 
     allocate(surrList(nAnisG,nAnisG))
@@ -91,7 +91,7 @@ contains
 	if ((mod(i, 400) == 0) .and. printProgress) then
 	  print*, "   Phasing done for genotyped individual --- ", i
 	end if
-	hap => c%getHaplotype(i, side)
+	hap => c%getHaplotypeCoreSubset(i, side)
 	do j = 1, nSnp
 	  if (hap%isMissing(j)) then
 	    visited = .false.
@@ -272,24 +272,24 @@ contains
     integer :: i, CountError, ErrorAllow, counterMissing, nAnisG, nCoreSnp
     integer(kind=8), dimension(:), pointer :: error
     
-    nAnisG  = c%getNAnisG()
-    nCoreSnp = c%getNCoreSnp()
+    nAnisG  = c%getNAnisGCoreSubset()
+    nCoreSnp = c%getNCoreSnpCoreSubset()
 
     ErrorAllow = int(PercGenoHaploDisagree * nCoreSnp)
 
     do i = 1, nAnisG
       CountError = 0
       counterMissing = 0
-      hap1 => c%getHaplotype(i,1)
-      hap2 => c%getHaplotype(i,2)
+      hap1 => c%getHaplotypeCoreSubset(i,1)
+      hap2 => c%getHaplotypeCoreSubset(i,2)
       genos => c%getSingleCoreGenos(i)
       error => genos%getErrors(hap1,hap2)
       countError = bitCount(error)
       counterMissing = hap1%numberBothNotMissing(hap2)
       ErrorAllow = int(PercGenoHaploDisagree * counterMissing)
       if (CountError >= ErrorAllow) then
-	call genos%setHaplotypeIfError(hap1,error)
-	call genos%setHaplotypeIfError(hap2,error)
+	call genos%setHaplotypeFromGenotypeIfError(hap1,error)
+	call genos%setHaplotypeFromGenotypeIfError(hap2,error)
       endif
     end do
   end subroutine CheckCompatHapGeno

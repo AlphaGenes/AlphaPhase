@@ -133,8 +133,8 @@ contains
 	  if (.not. quietInternal) then
 	    if (printOldProgress) then
 	      print*, " "
-	      write (*, '(a3,f6.2,a45)') "  ", cs%getYield(1), "% was the Paternal allele yield for this core"
-	      write (*, '(a3,f6.2,a45)') "  ", cs%getYield(2), "% was the Maternal allele yield for this core"
+	      write (*, '(a3,f6.2,a45)') "  ", cs%getYieldCoreSubset(1), "% was the Paternal allele yield for this core"
+	      write (*, '(a3,f6.2,a45)') "  ", cs%getYieldCoreSubset(2), "% was the Maternal allele yield for this core"
 	    else
 	      print '(8x, i5, a20, f6.2, a16, f6.2, a16)', subsetCount, " Subsets completed, ", c%getYield(1), "% Paternal yield, ", &
 		c%getYield(2), "% Maternal Yield"

@@ -447,8 +447,8 @@ contains
 	call matchedHaplotype(c, animal, 1, library, TempHapVector(findloc(ClusterMember, 1)))
       end if
       if ((count(ClusterMember(:) == 2) > 1).and.(count(ClusterMember(:) == 2) > 1)) then
-	call geno%setHaplotype(hap1)
-	call geno%setHaplotype(hap2)
+	call geno%setHaplotypeFromGenotype(hap1)
+	call geno%setHaplotypeFromGenotype(hap2)
 	
 	i1 = 0
 	i2 = 0

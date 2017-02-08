@@ -1,19 +1,16 @@
 module SurrogateDefinition
   use GenotypeMOdule
   implicit none
-  private
 
-  type, public :: Surrogate
-    private
-    integer(kind = 2), allocatable, dimension(:,:), public :: numOppose
-    logical, allocatable, dimension(:,:), public :: enoughInCommon
-    integer(kind = 1), allocatable, dimension(:,:), public :: partition
-    integer(kind = 1), allocatable, dimension(:), public :: method
-    integer, public :: threshold
-    integer, public :: incommonThreshold
+  type :: Surrogate
+    integer(kind = 2), allocatable, dimension(:,:) :: numOppose
+    logical, allocatable, dimension(:,:) :: enoughInCommon
+    integer(kind = 1), allocatable, dimension(:,:) :: partition
+    integer(kind = 1), allocatable, dimension(:) :: method
+    integer :: threshold
+    integer :: incommonThreshold
   contains
-    private
-    final :: destroy
+    final :: destroySurrogate
   end type Surrogate
   
   interface Surrogate
@@ -52,9 +49,9 @@ contains
     integer, allocatable, dimension (:) :: ClusterMember
 
     definition%threshold = threshold
-    nAnisG = cs%getNAnisG()
-    nSnp = cs%getNCoreTailSnp()
-    genos => cs%getCoreAndTailGenos()
+    nAnisG = cs%getNAnisGCoreSubset()
+    nSnp = cs%getNCoreTailSnpCoreSubset()
+    genos => cs%getCoreAndTailGenosCoreSubset()
 
     allocate(SurrogateList(nAnisG))
     allocate(ProgCount(nAnisG))
@@ -124,11 +121,11 @@ contains
     
     ProgCount = 0
     do i = 1, nAnisG
-      if (cs%getSire(i) /= 0) then
-	ProgCount(cs%getSire(i)) = ProgCount(cs%getSire(i)) + 1
+      if (cs%getSireCoreSubset(i) /= 0) then
+	ProgCount(cs%getSireCoreSubset(i)) = ProgCount(cs%getSireCoreSubset(i)) + 1
       end if
-      if (cs%getDam(i) /= 0) then
-	ProgCount(cs%getDam(i)) = ProgCount(cs%getDam(i)) + 1
+      if (cs%getDamCoreSubset(i) /= 0) then
+	ProgCount(cs%getDamCoreSubset(i)) = ProgCount(cs%getDamCoreSubset(i)) + 1
       end if
     end do
 
@@ -141,48 +138,48 @@ contains
       DumSire = 0
       DumDam = 0
 
-      if ((cs%getSire(i) /= 0).and.(cs%getDam(i) /= 0)) then
+      if ((cs%getSireCoreSubset(i) /= 0).and.(cs%getDamCoreSubset(i) /= 0)) then
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
-	  if ((definition%numoppose((cs%getSire(i)), j) <=  threshold) &
-	    .and.(definition%numoppose((cs%getDam(i)), j) > threshold)) then
-	    if (definition%enoughIncommon(cs%getSire(i), j) &
-	      .and. definition%enoughIncommon(cs%getDam(i), j)) then
+	  if ((definition%numoppose((cs%getSireCoreSubset(i)), j) <=  threshold) &
+	    .and.(definition%numoppose((cs%getDamCoreSubset(i)), j) > threshold)) then
+	    if (definition%enoughIncommon(cs%getSireCoreSubset(i), j) &
+	      .and. definition%enoughIncommon(cs%getDamCoreSubset(i), j)) then
 	      definition%partition(i, j) = 1
 	    end if
 	  endif
-	  if ((definition%numoppose((cs%getDam(i)), j) <= threshold)&
-	    .and.(definition%numoppose((cs%getSire(i)), j) > threshold)) then
-	    if (definition%enoughIncommon(cs%getSire(i), j) &
-	      .and. definition%enoughIncommon(cs%getDam(i), j)) then
+	  if ((definition%numoppose((cs%getDamCoreSubset(i)), j) <= threshold)&
+	    .and.(definition%numoppose((cs%getSireCoreSubset(i)), j) > threshold)) then
+	    if (definition%enoughIncommon(cs%getSireCoreSubset(i), j) &
+	      .and. definition%enoughIncommon(cs%getDamCoreSubset(i), j)) then
 	      definition%partition(i, j) = 2
 	    end if
 	  endif
 	end do
-	if (definition%numoppose(i, cs%getSire(i)) <= threshold) then
-	  if (definition%enoughIncommon(cs%getSire(i), j)) then
-	    definition%partition(i, cs%getSire(i)) = 1
+	if (definition%numoppose(i, cs%getSireCoreSubset(i)) <= threshold) then
+	  if (definition%enoughIncommon(cs%getSireCoreSubset(i), j)) then
+	    definition%partition(i, cs%getSireCoreSubset(i)) = 1
 	  end if
 	end if
-	if (definition%numoppose(i, cs%getDam(i)) <= threshold) then
-	  if (definition%enoughIncommon(cs%getDam(i), j)) then
-	    definition%partition(i, cs%getDam(i)) = 2
+	if (definition%numoppose(i, cs%getDamCoreSubset(i)) <= threshold) then
+	  if (definition%enoughIncommon(cs%getDamCoreSubset(i), j)) then
+	    definition%partition(i, cs%getDamCoreSubset(i)) = 2
 	  end if
 	end if
 	definition%method(i) = 1
       end if
 
-      if ((definition%method(i) == 0).and.(cs%getSire(i) /= 0)) then
-	definition%partition(i, cs%getSire(i)) = 1
+      if ((definition%method(i) == 0).and.(cs%getSireCoreSubset(i) /= 0)) then
+	definition%partition(i, cs%getSireCoreSubset(i)) = 1
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
-	  if (definition%numoppose(cs%getSire(i), j) <= threshold) then
-	    if (definition%enoughIncommon(cs%getSire(i), j)) then
+	  if (definition%numoppose(cs%getSireCoreSubset(i), j) <= threshold) then
+	    if (definition%enoughIncommon(cs%getSireCoreSubset(i), j)) then
 	      definition%partition(i, j) = 1
 	    end if
 	  endif
-	  if (definition%numoppose(cs%getSire(i), j) > threshold) then
-	    if (definition%enoughIncommon(cs%getSire(i), j)) then
+	  if (definition%numoppose(cs%getSireCoreSubset(i), j) > threshold) then
+	    if (definition%enoughIncommon(cs%getSireCoreSubset(i), j)) then
 	      definition%partition(i, j) = 2
 	    end if
 	  end if
@@ -190,17 +187,17 @@ contains
 	definition%method(i) = 2
       endif
 
-      if ((definition%method(i) == 0).and.(cs%getDam(i) /= 0)) then
-	definition%partition(i, cs%getDam(i)) = 2
+      if ((definition%method(i) == 0).and.(cs%getDamCoreSubset(i) /= 0)) then
+	definition%partition(i, cs%getDamCoreSubset(i)) = 2
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
-	  if (definition%numoppose(cs%getDam(i), j) <= threshold) then
-	    if (definition%enoughIncommon(cs%getDam(i), j)) then
+	  if (definition%numoppose(cs%getDamCoreSubset(i), j) <= threshold) then
+	    if (definition%enoughIncommon(cs%getDamCoreSubset(i), j)) then
 	      definition%partition(i, j) = 2
 	    end if
 	  endif
-	  if (definition%numoppose(cs%getDam(i), j) > threshold) then
-	    if (definition%enoughIncommon(cs%getDam(i), j)) then
+	  if (definition%numoppose(cs%getDamCoreSubset(i), j) > threshold) then
+	    if (definition%enoughIncommon(cs%getDamCoreSubset(i), j)) then
 	      definition%partition(i, j) = 1
 	    end if
 	  end if
@@ -212,11 +209,11 @@ contains
 	DumSire = 0
 	do aj = 1, numPassThres(i)
 	  j = passThres(i, aj)
-	  if (i == cs%getDam(j)) then
+	  if (i == cs%getDamCoreSubset(j)) then
 	    DumSire = j
 	    exit
 	  endif
-	  if (i == cs%getSire(j)) then
+	  if (i == cs%getSireCoreSubset(j)) then
 	    DumSire = j
 	    exit
 	  endif
@@ -225,7 +222,7 @@ contains
 	  definition%partition(i, DumSire) = 1
 	  do aj = 1, numPassThres(i)
 	    j = passThres(i, aj)
-	    if ((i == cs%getSire(j)).or.(i == cs%getDam(j))) then
+	    if ((i == cs%getSireCoreSubset(j)).or.(i == cs%getDamCoreSubset(j))) then
 	      if (definition%numoppose(j, DumSire) > threshold) then
 		if (definition%enoughIncommon(j, DumSire)) then
 		  definition%partition(i, j) = 2
@@ -323,40 +320,14 @@ contains
       definition%partition(i, i) = 0
           
       if (definition%method(i) > 3) then
-	call cs%setSwappable(i, definition%method(i))
+	call cs%setSwappableCoreSubset(i, definition%method(i))
       end if
     end do
     
     deallocate(genos)
   end function newSurrogate
   
-  function mismatches(homo, additional, first, second, numsections) result(c)
-    integer(kind = 8), dimension(:,:), intent(in) :: homo, additional
-    integer, intent(in) :: first, second, numsections
-    integer :: c, i
-
-    c = 0
-    do i = 1, numsections
-	c = c + POPCNT(IAND(IAND(homo(first, i), homo(second, i)), &
-	IEOR(additional(first, i), additional(second, i))))
-    end do
-  end function mismatches
-  
-  function incommon(homo, additional, first, second, numsections, overhang) result(c)
-    integer(kind = 8), dimension(:,:), intent(in) :: homo, additional
-    integer, intent(in) :: first, second, numsections, overhang
-    integer :: c, i
-
-    c = 0
-    do i = 1, numsections
-	c = c + POPCNT(IAND(IOR(homo(first, i), NOT(additional(first, i))), &
-	IOR(homo(second, i), NOT(additional(second, i)))))
-    end do
-    
-    c = c - overhang
-  end function incommon
-  
-  subroutine destroy(definition)
+  subroutine destroySurrogate(definition)
     type(Surrogate) :: definition
     
     if (allocated(definition%partition)) then
@@ -365,6 +336,6 @@ contains
       deallocate(definition%method)
     end if
     
-  end subroutine destroy
+  end subroutine destroySurrogate
     
 end module SurrogateDefinition

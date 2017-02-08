@@ -635,9 +635,9 @@ contains
 
     do i = 1, nAnisG
       read (3, *) dummy, ReadingVector(:)
-      Phase(i,1) = Haplotype(ReadingVector)
+      Phase(i,1) = newHaplotypeInt(ReadingVector)
       read (3, *) dummy, ReadingVector(:)
-      Phase(i,2) = Haplotype(ReadingVector)
+      Phase(i,2) = newHaplotypeInt(ReadingVector)
     enddo
 
     close(3)
@@ -652,7 +652,7 @@ contains
     double precision :: PercSurrDisagree
     integer :: TempInt, status, cl
     integer :: unit
-    character (len = 300) :: dumC, OffsetVariable, hold, outputoption
+    character (len = 300) :: OffsetVariable, hold, outputoption
     character(len=300) :: first, line
     character(len=:), allocatable::tag
     character(len=300),dimension(:),allocatable :: second

@@ -1,19 +1,16 @@
 module PedigreeDefinition
   use ConstantModule
   implicit none
-  private
 
-  type, public :: Pedigree
-    private    
+  type :: Pedigree
     integer(kind = 4), dimension(:), allocatable :: sire, dam
     character(:), dimension(:), pointer :: id
     
   contains
-    private
-    procedure, public :: getSire
-    procedure, public :: getDam
-    procedure, public :: getID
-    procedure, public :: getNAnis
+    procedure :: getSire
+    procedure :: getDam
+    procedure :: getID
+    procedure :: getNAnis
   end type Pedigree
   
   interface Pedigree
