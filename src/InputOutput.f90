@@ -635,9 +635,9 @@ contains
 
     do i = 1, nAnisG
       read (3, *) dummy, ReadingVector(:)
-      Phase(i,1) = newHaplotypeInt(ReadingVector)
+      Phase(i,1) = Haplotype(ReadingVector)
       read (3, *) dummy, ReadingVector(:)
-      Phase(i,2) = newHaplotypeInt(ReadingVector)
+      Phase(i,2) = Haplotype(ReadingVector)
     enddo
 
     close(3)
