@@ -391,8 +391,23 @@ contains
     class(HaplotypeLibrary) :: library
 
     integer :: id
+    integer, dimension(:), pointer :: ids
+    type(Haplotype) :: hap
+    
+    integer :: minoverlap
+    
+    minoverlap = c%getNCoreSnp()
 
-    id = library % matchAddHap(c % phase(animal, phase))
+    hap = c % phase(animal, phase)
+    ids => library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
+    if (size(ids) == 0) then
+      id = library%addHap(hap)
+    end if
+    if (size(ids) == 1) then
+      id = ids(1)
+      library%hapfreq(id) = library%hapfreq(id) + 1
+    end if
+    
     call c % setHapAnis(animal, phase, id)
     call c % setFullyPhased(animal, phase)
   end subroutine newHaplotype

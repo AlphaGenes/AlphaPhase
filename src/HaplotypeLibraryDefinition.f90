@@ -15,6 +15,7 @@ module HaplotypeLibraryDefinition
     procedure :: getHap
     procedure :: getHaps
     procedure :: matchWithError
+    procedure :: matchWithErrorAndMinOverlap
     procedure :: limitedMatchWithError
     procedure :: limitedCompatPairsWithError
     procedure :: getSize
@@ -24,7 +25,6 @@ module HaplotypeLibraryDefinition
     procedure :: incrementHapFreq
     procedure :: getHapFreq
     procedure :: getCompatHaps    
-    procedure :: matchAddHap
     procedure :: getCompatHapsFreq
     procedure :: allZero
     procedure :: allOne
@@ -188,19 +188,6 @@ contains
     id = library%size
   end function addHap
   
-  function matchAddHap(library, hap) result (id)
-    class(HaplotypeLibrary) :: library
-    type(Haplotype), intent(in) :: hap
-    integer :: id
-    
-    id = library%hasHap(hap)
-    if (id == 0) then
-      id = library%addHap(hap)
-    else
-      library%hapfreq(id) = library%hapfreq(id) + 1
-    end if    
-  end function matchAddHap
-
   function matchWithError(library, hap, allowedError) result(matches)
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
