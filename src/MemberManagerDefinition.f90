@@ -203,7 +203,7 @@ contains
     
     unPhased = 0
     do i = 1, manager%c%getNAnisG()
-      if (.not. manager%c%getBothFullyPhased(i)) then
+      if (.not. (manager%c%phase(i,1)%fullyPhased() .and. manager%c%phase(i,2)%fullyPhased())) then
 	unPhased = unPhased + 1
       end if
     end do
@@ -216,7 +216,7 @@ contains
     allocate(members(maxNumber))
     c = 0
     do while (c < maxNumber)
-      if (.not. manager%c%getBothFullyPhased(manager%curPos)) then
+      if (.not. (manager%c%phase(manager%curPos,1)%fullyPhased() .and. manager%c%phase(manager%curPos,2)%fullyPhased())) then
 	c  = c + 1
 	members(c) = manager%order(manager%curPos)
       end if

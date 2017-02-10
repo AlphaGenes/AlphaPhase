@@ -92,8 +92,8 @@ contains
 	!! SOLUTION MAY JUST BE TO NOT CHANGE STUFF THAT ALREADY EXISTS?
 	!! NOT SURE THAT'S IN KEEPING WITH THE PHILOSPHY THOUGH
 	!! SIMILAR PROBLEMS FURTHER ON I THINK
-	oneNotTwo = c % getFullyPhased(i, 1) .and. (.not.c % getFullyPhased(i, 2))
-	twoNotOne = c % getFullyPhased(i, 2) .and. (.not.c % getFullyPhased(i, 1))
+	oneNotTwo = c%phase(i, 1)%fullyPhased() .and. (.not. c%phase(i, 2)%fullyPhased())
+	twoNotOne = c%phase(i, 2)%fullyPhased() .and. (.not. c%phase(i, 1)%fullyPhased())
 
 	! If only one of the gametes is completely phased (Section Step 2e.i Hickey et al. 2011): PATERNAL HAPLOTYPE
 	if (oneNotTwo) then
@@ -106,7 +106,7 @@ contains
 	end if
 
 	! If neither of the gametes is completely phased (Section Step 2e.ii Hickey et al. 2011)
-	if ((.not.c % getFullyPhased(i, 1)) .and. (.not.c % getFullyPhased(i, 2))) then
+	if ((.not. c%phase(i, 1)%fullyPhased()) .and. (.not.c%phase(i, 2)%fullyPhased())) then
           compatHaps => library % getCompatHapsFreq(geno,minHapFreq, PercGenoHaploDisagree)
 
 	  CandHapsPat => library % limitedMatchWithError(c % phase(i, 1), ErrorAllow, compatHaps)
@@ -239,7 +239,7 @@ contains
 	      ! If proband is not completely phased and have more than one candidate 
 	      ! for both paternal and maternal haplotype 
 	      ! (Step 2e.iv)
-	      if (((.not.c % getFullyPhased(i, 1)) .or. (.not.c % getFullyPhased(i, 2))) &
+	      if (((.not.c%phase(i, 1)%fullyPhased()) .or. (.not.c%phase(i, 2)%fullyPhased())) &
 		.and. (.not.SinglePat) .and. (.not.SingleMat)) then
 		call clusterAndPhase(c, library, CandPairs, i)
 		call c%setSwappable(i, 3)
@@ -260,7 +260,6 @@ contains
     call complementPhaseSnps(c)
 
     call library % resetHapFreq()
-    call c % resetFullyPhased()
     call c % resetHapAnis()
 
   end subroutine ImputeFromLib
@@ -299,7 +298,6 @@ contains
 
     if (size(CandHaps, 1) == 1) then
       call c % setHaplotype(animal, notfully, library % getHap(CandHaps(1)))
-      call c % setFullyPhased(animal, notfully)
       call library % incrementHapFreq(CandHaps(1))
       call c % setHapAnis(animal, notfully, CandHaps(1))
     end if
@@ -380,7 +378,6 @@ contains
     class(HaplotypeLibrary) :: library
 
     call c % setHaplotype(animal, phase, library % getHap(id))
-    call c % setFullyPhased(animal, phase)
     call library % incrementHapFreq(id)
     call c % setHapAnis(animal, phase, id)
   end subroutine matchedHaplotype
@@ -454,7 +451,6 @@ contains
     end if
     
     call c % setHapAnis(animal, phase, id)
-    call c % setFullyPhased(animal, phase)
   end subroutine newHaplotype
 
   subroutine clusterAndPhase(c, library, CandPairs, animal)

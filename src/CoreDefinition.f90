@@ -8,7 +8,6 @@ module CoreDefinition
     type(Genotype), dimension(:), pointer :: coreAndTailGenos
     type(Genotype), dimension(:), pointer :: coreGenos
     type(Haplotype), dimension(:,:), pointer :: phase
-    logical, allocatable, dimension(:,:) :: fullyPhased
     integer, dimension(:,:), allocatable :: hapAnis
     
     integer(kind=1), dimension(:), allocatable :: swappable
@@ -25,14 +24,10 @@ module CoreDefinition
     procedure :: getTotalYield
     procedure :: setHaplotype
     procedure :: setHaplotypeToUnphased
-    procedure :: resetFullyPhased
-    procedure :: setFullyPhased
-    procedure :: getFullyPhased
     procedure :: getPercentFullyPhased
     procedure :: resetHapAnis
     procedure :: setHapAnis
     procedure :: getHapAnis
-    procedure :: getBothFullyPhased
     procedure :: getCoreGenos
     
     procedure :: setSwappable
@@ -75,13 +70,10 @@ contains
       c%phase(i,2) = Haplotype(c%nCoreSnps)
     end do
     
-    allocate(c%fullyphased(nAnisG,2))
     allocate(c%hapAnis(nAnisG,2))
     
-    allocate(c%swappable(nAnisG))
-    
+    allocate(c%swappable(nAnisG)) 
 
-    c%fullyPhased = .false.
     c%hapAnis = MissingHaplotypeCode
     
     c%swappable = 0
@@ -99,12 +91,10 @@ contains
     nAnisG = size(phase,1)
     
     allocate(c%phase(nAnisG,2))
-    allocate(c%fullyphased(nAnisG,2))
     allocate(c%hapAnis(nAnisG,2))
     
     c%nCoreSnps = endSnp - startSnp + 1
     c%nCoreAndTailSnps = c%nCoreSnps
-    c%fullyPhased = .false.
     do i = 1, size(phase,1)
       tempFullHaplotype = Phase(i,1)
       c%phase(i,1) = tempFullHaplotype%subset(startSnp,endSnp)
@@ -118,7 +108,6 @@ contains
     type(Core) :: c
     
     if (allocated(c%coreGenos)) then
-      deallocate(c%fullyPhased)
       deallocate(c%hapAnis)
     end if
   end subroutine destroyCore
@@ -209,40 +198,22 @@ contains
     call c%phase(animal,phase)%setUnphased()
   end subroutine setHaplotypeToUnphased
   
-  subroutine resetFullyPhased(c)
-    class(Core) :: c
-    
-    c%fullyPhased = .false.
-  end subroutine resetFullyPhased
-  
-  subroutine setFullyPhased(c,animal,phase)
-    class(Core) :: c
-    integer, intent(in) :: animal, phase
-    
-    c%fullyPhased(animal,phase) = .true.
-  end subroutine setFullyPhased
-  
-  function getFullyPhased(c,animal,phase) result(fully)
-    class(Core) :: c
-    integer, intent(in) :: animal, phase
-    logical :: fully
-    
-    fully = c%fullyPhased(animal,phase)
-  end function getFullyPhased
-  
-  function getBothFullyPhased(c,animal) result(fully)
-    class(Core) :: c
-    integer, intent(in) :: animal
-    logical :: fully
-    
-    fully = c%fullyPhased(animal,1) .and. c%fullyPhased(animal,2)
-  end function getBothFullyPhased
-  
   function getPercentFullyPhased(c) result (percent)
     class(Core) :: c
     double precision :: percent
     
-    percent = 100.0 * float(count(c%fullyPhased)) / (size(c%fullyPhased))
+    integer :: count, i, j
+    
+    do i = 1, size(c%phase,1)
+      do j = 1, 2
+	if (c%phase(i,j)%fullyPhased()) then
+	  count = count + 1
+	end if
+      end do
+    end do
+    
+    percent = 100.0 * float(count) / (size(c%phase,1)*2)
+    
   end function getPercentFullyPhased
     
   
@@ -338,11 +309,6 @@ contains
 	HA2 = c%hapAnis(i,2)
 	c%hapAnis(i,1) = HA2
 	c%hapAnis(i,2) = HA1
-	
-	FP1 = c%fullyPhased(i,1)
-	FP2 = c%fullyPhased(i,2)
-	c%fullyPhased(i,1) = FP2
-	c%fullyPhased(i,2) = FP1
       end if
     end do
 
