@@ -4,6 +4,8 @@ module HaplotypeLibraryPhasing
 
   integer, parameter, private :: nMaxRounds = 100
   
+  integer, parameter :: missallow = 0
+  
 contains
   subroutine UpdateHapLib(c, library)
     use HaplotypeLibraryDefinition
@@ -21,16 +23,18 @@ contains
     do i = 1, c % getNAnisG()
       !Paternal Haps
       hap = c % phase(i, 1)
-      if (hap % fullyPhased() ) then
+      if (hap%numberMissingOrError() <= missallow) then
 	call newHaplotype(c, i, 1, library)
       endif
 
       !Maternal Haps
       hap = c % phase(i, 2)
-      if (hap%fullyPhased()) then
+      if (hap%numberMissingOrError() <= missallow) then
 	call newHaplotype(c, i, 2, library)
       endif
     enddo
+    
+    call library%rationalise()
     
   end subroutine UpdateHapLib
 
@@ -65,7 +69,7 @@ contains
     type(Haplotype), pointer :: hap1, hap2
 
     logical :: singlePat, singleMat, oneNotTwo, twoNotOne
-
+    
     ErrorAllow = int(PercGenoHaploDisagree * c % getNCoreSnp())
 
     if ((nGlobalHapsIter == 1) .and. (.not. quiet)) then
@@ -392,11 +396,13 @@ contains
 
     integer :: id
     integer, dimension(:), pointer :: ids
-    type(Haplotype) :: hap
+    type(Haplotype) :: hap, merged
+    
+    integer :: i, j, n
     
     integer :: minoverlap
     
-    minoverlap = c%getNCoreSnp()
+    minoverlap = c%getNCoreSnp() - missallow
 
     hap = c % phase(animal, phase)
     ids => library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
@@ -405,7 +411,46 @@ contains
     end if
     if (size(ids) == 1) then
       id = ids(1)
-      library%hapfreq(id) = library%hapfreq(id) + 1
+      if (hap%equalhap(library%newstore(id))) then
+	library%hapfreq(id) = library%hapfreq(id) + 1
+      else
+	merged = hap%mergeMod(library%newstore(id))
+	library%newstore(id) = merged
+	do i = 1, c%getNAnisG()
+	  do j = 1, 2
+	    if (c%hapanis(i,j) == id) then
+	      c%phase(i,j) = merged
+	    end if
+	  end do
+	end do
+	library%hapfreq(id) = library%hapfreq(id) + 1
+	c%phase(animal,phase) = merged
+      end if
+    end if
+    if (size(ids) > 1) then
+      merged = hap
+      do i = 1, size(ids)
+	merged = merged%mergeMod(library%newstore(ids(i)))
+      end do
+      library%newstore(id) = merged
+      
+      id = ids(1)      
+      do n = 1, size(ids)
+	do i = 1, c%getNAnisG()
+	  do j = 1, 2
+	    if (c%hapanis(i,j) == ids(n)) then
+	      c%phase(i,j) = merged
+	      c%hapanis(i,j) = id
+	    end if
+	  end do
+	end do
+      end do
+      c%phase(animal,phase) = merged
+
+      do i = 2, size(ids)
+	library%hapfreq(id) = library%hapfreq(id) + library%hapfreq(ids(i))
+	call library%removehap(ids(i))
+      end do	
     end if
     
     call c % setHapAnis(animal, phase, id)

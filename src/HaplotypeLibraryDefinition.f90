@@ -33,6 +33,8 @@ module HaplotypeLibraryDefinition
     procedure :: allMissing
     procedure :: oneZeroNoOnes
     procedure :: oneOneNoZeros
+    procedure :: rationalise
+    procedure :: removeHap
     final :: destroy
   end type HaplotypeLibrary
   
@@ -231,7 +233,7 @@ contains
     integer :: i, e, num, invalid
     
     allocate(tempMatches(library % size))
-
+    
     num = 0
     
     invalid = hap%numberError()
@@ -661,5 +663,29 @@ contains
     write(tmp,'(i0)') i
     res = trim(tmp)
   end function
+  
+  subroutine rationalise(library) 
+    class(HaplotypeLibrary), intent(in) :: library
+    
+    integer :: i, id
+    
+    i = 1
+    
+    do while (i <= library%size)
+      if (library%newstore(i)%fullyphased()) then
+	i = i + 1
+      else
+	call library%removeHap(i)
+      end if
+    end do
+  end subroutine rationalise
+  
+  subroutine removeHap(library, id)
+    class(HaplotypeLibrary) :: library
+    integer, intent(in) :: id
+    
+    library%newstore(id:library%size-1) = library%newstore(id+1:library%size)
+    library%size = library%size - 1
+  end subroutine removeHap
 
 end module HaplotypeLibraryDefinition
