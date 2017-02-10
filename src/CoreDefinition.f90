@@ -22,16 +22,8 @@ module CoreDefinition
     procedure :: getNCoreTailSnp
     procedure :: getYield
     procedure :: getTotalYield
-    procedure :: setHaplotype
-    procedure :: setHaplotypeToUnphased
     procedure :: getPercentFullyPhased
-    procedure :: resetHapAnis
-    procedure :: setHapAnis
-    procedure :: getHapAnis
     procedure :: getCoreGenos
-    
-    procedure :: setSwappable
-    procedure :: getSwappable
     procedure :: flipHaplotypes
     
     final :: destroyCore
@@ -183,21 +175,6 @@ contains
     haplotype => c%phase(animal,phase)
   end function getHaplotype
   
-  subroutine setHaplotype(c, animal, phase, hap)
-    class(Core) :: c 
-    integer, intent(in) :: animal, phase
-    type(Haplotype) :: hap
-    
-    c%phase(animal,phase) = hap
-  end subroutine setHaplotype
-  
-  subroutine setHaplotypeToUnphased(c, animal, phase)
-    class(Core) :: c
-    integer, intent(in) :: animal, phase
-    
-    call c%phase(animal,phase)%setUnphased()
-  end subroutine setHaplotypeToUnphased
-  
   function getPercentFullyPhased(c) result (percent)
     class(Core) :: c
     double precision :: percent
@@ -215,44 +192,6 @@ contains
     percent = 100.0 * float(count) / (size(c%phase,1)*2)
     
   end function getPercentFullyPhased
-    
-  
-  subroutine resetHapAnis(c)
-    class(Core) :: c
-    
-    c%hapAnis = MissingHaplotypeCode
-  end subroutine resetHapAnis
-  
-  subroutine setHapAnis(c,animal,phase,id)
-    class(Core) :: c
-    integer, intent(in) :: animal, phase, id
-    
-    c%hapAnis(animal,phase) = id
-  end subroutine setHapAnis
-  
-  function getHapAnis(c,animal,phase) result(id)
-    class(Core) :: c
-    integer, intent(in) :: animal, phase
-    integer :: id
-    
-    id = c%hapAnis(animal,phase)
-  end function getHapAnis
-  
-  subroutine setSwappable(c, animal, val)
-    class(Core) :: c
-    integer, intent(in) :: animal
-    integer(kind=1), intent(in) :: val
-  
-    c%swappable(animal) = val
-  end subroutine setSwappable
-  
-  function getSwappable(c, animal) result(val)
-    class(Core) :: c
-    integer, intent(in) :: animal
-    integer(kind=1) :: val
-    
-    val = c%swappable(animal)
-  end function getSwappable
   
   function getCoreGenos(c,animal) result(g)
     class(Core), intent(in) :: c
@@ -302,8 +241,8 @@ contains
       if (truth == 1) then
 	W1 => c%phase(i,1)
 	W2 => c%phase(i,2)
-	call c%setHaplotype(i,1,W2)
-	call c%setHaplotype(i,2,W1)
+	c%phase(i,1) = W2
+	c%phase(i,2) = W1
 	
 	HA1 = c%hapAnis(i,1)
 	HA2 = c%hapAnis(i,2)

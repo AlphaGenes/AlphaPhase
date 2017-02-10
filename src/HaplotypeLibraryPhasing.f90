@@ -34,6 +34,7 @@ contains
       endif
     enddo
     
+    ! NEED TO UPDATE HAPANIS NUMBERS AFTER A CALL TO THIS BUT AS THIS WILL NOT BE STAYING HERE...
     call library%rationalise()
     
   end subroutine UpdateHapLib
@@ -218,7 +219,7 @@ contains
 		! (Step 2e.ii.B)
 		call hap2%setOneBits(library%allOne(CandPairs(:,2)))
 		call hap2%setZeroBits(library%allZero(CandPairs(:,2)))
-		call c%setSwappable(i, 1)
+		c%swappable(i) = 1
 	      end if
 
 	      ! Check how many maternal candidates haplotypes
@@ -233,7 +234,7 @@ contains
 		! (Step 2e.ii.C)
 		call hap1%setOneBits(library%allOne(CandPairs(:,1)))
 		call hap1%setZeroBits(library%allZero(CandPairs(:,1)))
-		call c%setSwappable(i, 2)
+		c%swappable(i) = 2
 	      endif
 	      
 	      ! If proband is not completely phased and have more than one candidate 
@@ -242,7 +243,7 @@ contains
 	      if (((.not.c%phase(i, 1)%fullyPhased()) .or. (.not.c%phase(i, 2)%fullyPhased())) &
 		.and. (.not.SinglePat) .and. (.not.SingleMat)) then
 		call clusterAndPhase(c, library, CandPairs, i)
-		call c%setSwappable(i, 3)
+		c%swappable(i) = 3
 	      endif
 	    endif
 	    deallocate(CandHaps)
@@ -259,8 +260,9 @@ contains
 
     call complementPhaseSnps(c)
 
-    call library % resetHapFreq()
-    call c % resetHapAnis()
+    !  NEED TO THINK ABOUT THESE.  NOT SURE THEY SHOULD STAY (and then get rid of the frequent update calls)
+!    call library % resetHapFreq()
+!    c%hapAnis = MissingHaplotypeCode
 
   end subroutine ImputeFromLib
 
@@ -270,7 +272,7 @@ contains
     use GenotypeModule
     use HaplotypeModule
 
-    type(Core), intent(in) :: c
+    type(Core) :: c
     integer, intent(in) :: animal, fully
     double precision, intent(in) :: percgenohaplodisagree
     type(HaplotypeLibrary) :: library
@@ -297,9 +299,9 @@ contains
     endif
 
     if (size(CandHaps, 1) == 1) then
-      call c % setHaplotype(animal, notfully, library % getHap(CandHaps(1)))
+      c % phase(animal, notfully) = library % getHap(CandHaps(1))
       call library % incrementHapFreq(CandHaps(1))
-      call c % setHapAnis(animal, notfully, CandHaps(1))
+      c %hapAnis(animal, notfully) = CandHaps(1)
     end if
 
     if (size(CandHaps, 1) == 0) then
@@ -377,9 +379,9 @@ contains
     integer, intent(in) :: animal, phase, id
     class(HaplotypeLibrary) :: library
 
-    call c % setHaplotype(animal, phase, library % getHap(id))
+    c % phase(animal, phase) = library % getHap(id)
     call library % incrementHapFreq(id)
-    call c % setHapAnis(animal, phase, id)
+    c%hapAnis(animal, phase) = id
   end subroutine matchedHaplotype
 
   subroutine newHaplotype(c, animal, phase, library)
@@ -450,7 +452,7 @@ contains
       end do	
     end if
     
-    call c % setHapAnis(animal, phase, id)
+     c%hapAnis(animal, phase) = id
   end subroutine newHaplotype
 
   subroutine clusterAndPhase(c, library, CandPairs, animal)

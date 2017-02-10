@@ -152,7 +152,7 @@ contains
 	end if
 	do j = 1, 20
 	  call ImputeFromLib(library, c, nGlobalHapsIter, params%PercGenoHaploDisagree, params%minHapFreq, quietInternal)
-	  call UpdateHapLib(c,library)
+!	  call UpdateHapLib(c,library)
 	  if (nGlobalHapsOld == library%getSize()) exit
 	  nGlobalHapsOld = library%getSize()
 	end do

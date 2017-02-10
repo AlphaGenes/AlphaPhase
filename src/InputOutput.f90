@@ -116,8 +116,8 @@ contains
         k = 0
         do j = 1, nCores
           k = k + 2
-          WorkOut(k - 1) = AllCores(j)%getHapAnis(i,1)
-          WorkOut(k) = AllCores(j)%getHapAnis(i,2)
+          WorkOut(k - 1) = AllCores(j)%hapAnis(i,1)
+          WorkOut(k) = AllCores(j)%hapAnis(i,2)
         end do
         write (33, fmt) p%getID(i), WorkOut(:)
       end do
@@ -131,7 +131,7 @@ contains
       write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
       do i = 1, nAnisG
         do j = 1, nCores
-          TempSwap(j) = AllCores(j)%getSwappable(i)
+          TempSwap(j) = AllCores(j)%swappable(i)
         end do
         write (44, fmt) p%getID(i), TempSwap
       end do
@@ -224,8 +224,8 @@ contains
     if (params%outputHapIndex) then
       open (unit = 33, file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
-        WorkOut(1) = c%getHapAnis(i, 1)
-        WorkOut(2) = c%getHapAnis(i, 2)
+        WorkOut(1) = c%hapAnis(i, 1)
+        WorkOut(2) = c%hapAnis(i, 2)
         write (33, '(a20,2i8)') p%getID(i), WorkOut(:)
       end do
       close(33)
@@ -234,7 +234,7 @@ contains
     if ((params%outputSwappable) .and. (writeSwappable)) then
       open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
-        write (44, '(a20,i2)') p%getID(i), c%getSwappable(i)
+        write (44, '(a20,i2)') p%getID(i), c%swappable(i)
       end do
       close(44)
     end if

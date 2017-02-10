@@ -191,7 +191,7 @@ contains
     integer, intent(in) :: animal
     integer(kind=1), intent(in) :: val
     
-    call set%parentCore%setSwappable(set%sub2full(animal),val)
+    set%parentCore%swappable(set%sub2full(animal)) = val
   end subroutine setSwappableCoreSubset
   
   function getHaplotypeCoreSubset(set, animal, phase) result(hap)
