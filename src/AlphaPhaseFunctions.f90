@@ -56,7 +56,7 @@ contains
     end if
 
     nAnisG = p%nGenotyped
-    nSnp = p%pedigree(1)%individualGenotype%getLength()
+    nSnp = p%pedigree(p%genotypeMap(1))%individualGenotype%getLength()
 
     if (.not. present(existingLibraries)) then
       CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    
