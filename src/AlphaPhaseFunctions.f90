@@ -2,7 +2,7 @@ module AlphaPhaseFunctions
   use HaplotypeLibraryDefinition 
   use SurrogateDefinition
   use CoreSubsetDefinition
-  use PedigreeDefinition
+  use PedigreeModule
   use CoreDefinition
   use MemberManagerDefinition
   use ParametersDefinition
@@ -20,9 +20,8 @@ module AlphaPhaseFunctions
   implicit none
   
 contains
-  function phaseAndCreateLibraries(genos, p, params, existingLibraries, truePhase, quiet) result(results)
-    type(Genotype), pointer, dimension(:), intent(in) :: genos
-    type(Pedigree), intent(in) :: p
+  function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, quiet) result(results)
+    type(PedigreeHolder), intent(in) :: p
     type(Parameters) :: params
     type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
     type(Haplotype), pointer, dimension(:,:), intent(in), optional :: truePhase
@@ -56,8 +55,8 @@ contains
       quietInternal = quiet
     end if
 
-    nAnisG = p%getNAnis()
-    nSnp = genos(1)%getLength()
+    nAnisG = p%nGenotyped
+    nSnp = p%pedigree(1)%individualGenotype%getLength()
 
     if (.not. present(existingLibraries)) then
       CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    
@@ -108,7 +107,7 @@ contains
 	print*, " Starting Core", h, "/", nCores
       end if
 
-      c = Core(Genos, startSurrSnp, startCoreSnp, endCoreSnp, endSurrSnp)
+      c = Core(p, startSurrSnp, startCoreSnp, endCoreSnp, endSurrSnp)
       if (.not. present(existingLibraries)) then
 	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
       else

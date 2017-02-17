@@ -3,14 +3,14 @@ program AlphaPhase
   use InputOutput
   use AlphaPhaseResultsDefinition
   use AlphaPhaseFunctions  
-  use InputOutput  
+  use InputOutput
+  use PedigreeModule  
   use HaplotypeModule
   
   implicit none
 
-  type(Genotype), pointer, dimension(:) :: genos
   type(ProgramParameters) :: params
-  type(Pedigree) :: p 
+  type(PedigreeHolder) :: p 
   type(Haplotype), pointer, dimension(:,:) :: Phase, TruePhase
   type(HaplotypeLibrary), dimension(:), pointer :: existingLibraries
   integer :: id
@@ -41,27 +41,26 @@ program AlphaPhase
   params = ReadInParameterFile(specfile)
 
   call MakeDirectories(params)
-  p = ParsePedigreeData(params)
-  nAnisG = p%getNAnis()
+  p = ParsePedigreeAndGenotypeData(params)
+  nAnisG = p%nGenotyped
   
   notPrephased = (params%GenotypeFileFormat /= 2)
 
   if (notPrephased) then
-    Genos => ParseGenotypeData(nAnisG,params)
     if (params%Simulation) then
       TruePhase => ParsePhaseData(params%TruePhaseFile,nAnisG,params%nSnp)
       if (params%Library .ne. "None") then
 	existingLibraries => getHaplotypeLibraries(params%library)
-	results = phaseAndCreateLibraries(Genos, p, params%params, existingLibraries, TruePhase, quiet = .false.)
+	results = phaseAndCreateLibraries(p, params%params, existingLibraries, TruePhase, quiet = .false.)
       else
-	results = phaseAndCreateLibraries(Genos, p, params%params, truePhase = TruePhase, quiet = .false.)
+	results = phaseAndCreateLibraries(p, params%params, truePhase = TruePhase, quiet = .false.)
       end if
     else
       if (params%Library .ne. "None") then
 	existingLibraries => getHaplotypeLibraries(params%library)
-	results = phaseAndCreateLibraries(Genos, p, params%params, existingLibraries, quiet = .false.) 
+	results = phaseAndCreateLibraries(p, params%params, existingLibraries, quiet = .false.) 
       else
-	results = phaseAndCreateLibraries(Genos, p, params%params, quiet = .false.) 
+	results = phaseAndCreateLibraries( p, params%params, quiet = .false.) 
       end if
     end if    
   else

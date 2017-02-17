@@ -2,13 +2,15 @@ module SurrogateDefinition
   use GenotypeMOdule
   implicit none
 
+
+!< surrogates are animal pairs that should share haplotypes
   type :: Surrogate
-    integer(kind = 2), allocatable, dimension(:,:) :: numOppose
+    integer(kind = 2), allocatable, dimension(:,:) :: numOppose !< opposing homozygotes between two aniam;s 
     logical, allocatable, dimension(:,:) :: enoughInCommon
-    integer(kind = 1), allocatable, dimension(:,:) :: partition
-    integer(kind = 1), allocatable, dimension(:) :: method
-    integer :: threshold
-    integer :: incommonThreshold
+    integer(kind = 1), allocatable, dimension(:,:) :: partition !< partion every animal into paternal or maternal surrogate
+    integer(kind = 1), allocatable, dimension(:) :: method !< whether its sire or dam surrogate, 1 sire, 2 dam 
+    integer :: threshold !< less than this number of homozygotes, then they are surragates
+    integer :: incommonThreshold !< whether two animals have enough snps in common that you can define surragates
   contains
     final :: destroySurrogate
   end type Surrogate
@@ -36,7 +38,7 @@ contains
     integer :: nAnisG, nSnp
     
     integer :: i, j, k, Counter, nSnpCommon
-    integer, allocatable, dimension(:) :: SurrogateList, ProgCount
+    integer, allocatable, dimension(:) :: ProgCount
     integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam
 
     integer :: aj, ak
@@ -53,11 +55,10 @@ contains
     nSnp = cs%getNCoreTailSnpCoreSubset()
     genos => cs%getCoreAndTailGenosCoreSubset()
 
-    allocate(SurrogateList(nAnisG))
-    allocate(ProgCount(nAnisG))
+    allocate(ProgCount(nAnisG)) !< how many prog each animal has 
 
-    allocate(passThres(nAnisG, nAnisG))
-    allocate(numPassThres(nAnisG))
+    allocate(passThres(nAnisG, nAnisG)) !< list of surragates for a given animal
+    allocate(numPassThres(nAnisG)) !< count of how many surragates animal has
     numPassThres = 0
     passThres = 0
 
@@ -110,7 +111,7 @@ contains
 	  numPassThres(i) = numPassThres(i) + 1
 	  passThres(i, numPassThres(i)) = j
 	  numPassThres(j) = numPassThres(j) + 1
-	  passThres(j, numPassThres(j)) = i
+	  passThres(j, numPassThres(j)) = i 
 	end if
       end do
       definition%numoppose(i, i) = 0

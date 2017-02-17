@@ -11,14 +11,14 @@ module InputOutput
 contains
 
   subroutine WriteOutResults(allCores, startIndex, endIndex, p, writeSwappable, params)
-    use PedigreeDefinition
+    use PedigreeModule
     use CoreDefinition
     use ProgramParametersDefinition
     use HaplotypeModule
 
     type(Core), dimension(:), intent(in) :: allCores
     integer, dimension(:), intent(in) :: startIndex, endIndex
-    type(Pedigree), intent(in) :: p
+    type(PedigreeHolder), intent(in) :: p
     logical :: writeSwappable
     type(ProgramParameters), intent(in) :: params
 
@@ -48,13 +48,13 @@ contains
           hap1 => allCores(j)%phase(i,1)
           TempPhase(startIndex(j):endIndex(j)) = hap1%toIntegerArray()
         end do
-        write(15, fmt) p%getId(i), &
+        write(15, fmt) p%pedigree(p%genotypeMap(i))%originalId, &
           TempPhase
         do j = 1, nCores
           hap2 => allCores(j)%phase(i,2)
           TempPhase(startIndex(j):endIndex(j)) = hap2%toIntegerArray()
         end do
-        write(15, fmt) p%getId(i), &
+        write(15, fmt) p%pedigree(p%genotypeMap(i))%originalId, &
           TempPhase
       end do
       deallocate(tempPhase)
@@ -102,7 +102,7 @@ contains
           l = l + 1
           CoreCount(l) = (float(counterM)/allCores(j)%getNCoreSnp()) * 100
         end do
-        write (30, fmt) p%getID(i), CoreCount(:)
+        write (30, fmt) p%pedigree(p%genotypeMap(i))%originalId, CoreCount(:)
       end do
       deallocate(CoreCount)
       close(30)
@@ -119,7 +119,7 @@ contains
           WorkOut(k - 1) = AllCores(j)%getHapAnis(i,1)
           WorkOut(k) = AllCores(j)%getHapAnis(i,2)
         end do
-        write (33, fmt) p%getID(i), WorkOut(:)
+        write (33, fmt) p%pedigree(p%genotypeMap(i))%originalId, WorkOut(:)
       end do
       deallocate(WorkOut)
       close(33)
@@ -133,7 +133,7 @@ contains
         do j = 1, nCores
           TempSwap(j) = AllCores(j)%getSwappable(i)
         end do
-        write (44, fmt) p%getID(i), TempSwap
+        write (44, fmt) p%pedigree(p%genotypeMap(i))%originalId, TempSwap
       end do
       deallocate(TempSwap)
       close(44)
@@ -149,7 +149,7 @@ contains
   end subroutine WriteOutResults
 
   subroutine writeOutCore(c, coreID, coreStart, p, writeSwappable, params)
-    use PedigreeDefinition
+    use PedigreeModule
     use CoreDefinition
     use ProgramParametersDefinition
     use HaplotypeModule
@@ -157,7 +157,7 @@ contains
     type(Core), intent(in) :: c
     integer, intent(in) :: coreID
     integer, intent(in) :: coreStart
-    type(Pedigree), intent(in) :: p
+    type(PedigreeHolder), intent(in) :: p
     logical :: writeSwappable
     class(ProgramParameters) :: params
 
@@ -184,9 +184,9 @@ contains
       do i = 1, nAnisG
 	hap1 => c%phase(j, 1)
 	hap2 => c%phase(j, 2)
-	write(15, fmt) p%getID(i), &
+	write(15, fmt) p%pedigree(p%genotypeMap(i))%originalId, &
 	hap1%toIntegerArray()
-	write(15, fmt) p%getID(i), &
+	write(15, fmt) p%pedigree(p%genotypeMap(i))%originalId, &
 	hap2%toIntegerArray()
       end do
       close(15)
@@ -216,7 +216,7 @@ contains
         CounterM = c%getNCoreSnp() - hap2%numberMissing()
         CoreCount(1) = (float(counterP)/(nSnp) * 100)
         CoreCount(2) = (float(counterM)/(nSnp) * 100)
-        write(30, '(a20,2f7.2)') p%getID(i), CoreCount(:)
+        write(30, '(a20,2f7.2)') p%pedigree(p%genotypeMap(i))%originalId, CoreCount(:)
       end do
       close(30)
     end if
@@ -226,7 +226,7 @@ contains
       do i = 1, nAnisG
         WorkOut(1) = c%getHapAnis(i, 1)
         WorkOut(2) = c%getHapAnis(i, 2)
-        write (33, '(a20,2i8)') p%getID(i), WorkOut(:)
+        write (33, '(a20,2i8)') p%pedigree(p%genotypeMap(i))%originalId, WorkOut(:)
       end do
       close(33)
     end if
@@ -234,7 +234,7 @@ contains
     if ((params%outputSwappable) .and. (writeSwappable)) then
       open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
-        write (44, '(a20,i2)') p%getID(i), c%getSwappable(i)
+        write (44, '(a20,i2)') p%pedigree(p%genotypeMap(i))%originalId, c%getSwappable(i)
       end do
       close(44)
     end if
@@ -249,7 +249,7 @@ contains
   end function
 
   subroutine CombineResults(nAnisG, writeSwappable, params)
-    use PedigreeDefinition
+    use PedigreeModule
     use ProgramParametersDefinition
     use CoreUtils
 
@@ -430,13 +430,14 @@ contains
 
   end subroutine CombineResults
 
-  function ParsePedigreeData(params) result(p)
+  function ParsePedigreeAndGenotypeData(params) result(p)
     use ProgramParametersDefinition
-    use PedigreeDefinition
+    use PedigreeModule
     use SortingModule
+    use PedigreeModule
 
     type(ProgramParameters), intent(in) :: params
-    type(Pedigree) :: p
+    type(PedigreeHolder) :: p
 
     integer :: i, truth, counter, nAnisG
     integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
@@ -454,168 +455,15 @@ contains
 
     call CountInData(nAnisRawPedigree, nAnisG, params)
 
-    allocate(GenotypeId(nAnisG))
-    allocate(GenoInPed(nAnisG))
-    allocate(Ped(nAnisRawPedigree, 3))
-    allocate(WorkVec(params%nSnp * 2))
-    allocate(ReadingVector(params%nSnp))
-
     if (trim(params%PedigreeFile) /= "NoPedigree") then
-      open (unit = 2, file = trim(params%PedigreeFile), status = "old")
-      do i = 1, nAnisRawPedigree
-        read(2, *) ped(i,:)
-      enddo
-      close(2)
+       p = PedigreeHolder(params%GenotypeFile,nAnisRawPedigree,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile )
+
     else
-      open (unit = 3, file = trim(params%GenotypeFile), status = "old")
-      do i = 1, nAnisRawPedigree
-        ped(i, 2:3) = "0"
-        read (3, *) ped(i, 1)
-      enddo
-      close (3)
+      p = PedigreeHolder(params%GenotypeFile,nAnisRawPedigree,params%nSnp, params%GenotypeFileFormat )
     endif
 
-    GenoInPed = 0
-
-    open (unit = 3, file = trim(params%GenotypeFile), status = "old")
-
-    allocate(DanArray(size(ped, 1)))
-    allocate(DanPos(size(ped,1)))
-    DanArray = adjustr(ped(:,1))
-    call SortWithIndex(DanArray,DanPos)
-
-    do i = 1, nAnisG
-      truth = 0
-      if (params%GenotypeFileFormat == 1) then
-        read (3, *) GenotypeId(i), ReadingVector(:)
-      end if
-      if (params%GenotypeFileFormat == 2) then
-	read (3, *) GenotypeId(i), ReadingVector(:)
-	read (3, *) GenotypeId(i), ReadingVector(:)
-      end if
-      if (params%GenotypeFileFormat == 3) then
-        read (3, *) GenotypeId(i), WorkVec(:)
-      endif
-      truth = BinarySearch(DanArray,adjustr(GenotypeID(i)))
-      if (truth == 0) GenoInPed(i) = 1
-    enddo
-    deallocate(Ped)
-    deallocate(DanArray)
-    deallocate(DanPos)
-
-    close(3)
-
-    if (trim(params%PedigreeFile) /= "NoPedigree") then
-      nAnisRawPedigree = nAnisRawPedigree + count(GenoInPed(:) == 1)
-    else
-      nAnisRawPedigree = nAnisG
-    endif
-    allocate(Ped(nAnisRawPedigree, 3))
-    if (trim(params%PedigreeFile) /= "NoPedigree") then
-      open (unit = 2, file = trim(params%PedigreeFile), status = "old")
-      do i = 1, nAnisRawPedigree - count(GenoInPed(:) == 1)
-        read(2, *) ped(i,:)
-      end do
-      counter = nAnisRawPedigree - count(GenoInPed(:) == 1)
-      do i = 1, nAnisG
-        if (GenoInPed(i) == 1) then
-          counter = counter + 1
-          ped(counter, 1) = GenotypeId(i)
-          ped(counter, 2) = "0"
-          ped(counter, 3) = "0"
-        endif
-      enddo
-      close(2)
-    else
-      do i = 1, nAnisG
-        ped(i, 1) = GenotypeId(i)
-        ped(i, 2) = "0"
-        ped(i, 3) = "0"
-      enddo
-
-    endif
-
-    allocate(SireGenotyped(nAnisG))
-    allocate(DamGenotyped(nAnisG))    
-    
-    allocate(DanArray(size(GenotypeID)))
-    allocate(DanPos(size(GenotypeID)))
-    DanArray = adjustr(GenotypeID)
-    call SortWithIndex(DanArray,DanPos)
-
-    allocate(DanRecode(size(ped,1)))
-    do i = 1, size(ped,1)
-      dpos = BinarySearch(DanArray, adjustr(ped(i,1)))
-      if (dpos > 0) then
-        DanRecode(i) = DanPos(dpos)
-      else
-        DanRecode(i) = 0
-      endif
-    end do
-
-    SireGenotyped = 0
-    DamGenotyped = 0
-    do i = 1, size(ped,1)
-      if (DanRecode(i) /= 0) then
-        spos = BinarySearch(DanArray, adjustr(ped(i,2)))
-        if (spos > 0) then
-          SireGenotyped(DanRecode(i)) = DanPos(spos)
-        endif
-        dpos = BinarySearch(DanArray, adjustr(ped(i,3)))
-        if (dpos > 0) then
-          DamGenotyped(DanRecode(i)) = DanPos(dpos)
-        endif
-      end if
-    end do
-
-    deallocate(DanArray)
-    deallocate(DanRecode)
-    deallocate(DanPos)
-
-    p = Pedigree(sireGenotyped, damGenotyped, genotypeId)
-  end function ParsePedigreeData
-
-  function ParseGenotypeData(nAnisG, params) result(Genos)
-    use ProgramParametersDefinition
-    use GenotypeModule
-
-    integer, intent(in) :: nAnisG
-    type(ProgramParameters), intent(in) :: params
-    type(Genotype), pointer, dimension(:) :: Genos
-
-    integer :: i, j, k
-    integer(kind=1), dimension(params%nSnp * 2) :: WorkVec
-    integer(kind=1), dimension(params%nSnp) :: ReadingVector
-    character(lengan) :: dummy
-
-    allocate(Genos(nAnisG))
-    
-    open (unit = 3, file = trim(params%GenotypeFile), status = "old")
-
-    do i = 1, nAnisG
-      if (params%GenotypeFileFormat == 1) then
-	read (3, *) dummy, ReadingVector(:)
-	do j = 1, params%nSnp
-	  if ((ReadingVector(j) /= 0).and.(ReadingVector(j) /= 1).and.(ReadingVector(j) /= 2)) ReadingVector(j) = MissingGenotypeCode
-	end do
-	Genos(i) = Genotype(ReadingVector)
-      end if
-      if (params%GenotypeFileFormat == 3) then
-	read (3, *) dummy, WorkVec(:)
-	k = 0
-	do j = 1, params%nSnp
-	  ReadingVector(j) = MissingGenotypeCode
-	  if ((WorkVec(j*2 - 1) == 1).and.(WorkVec(j*2) == 1)) ReadingVector(j) = 0
-	  if ((WorkVec(j*2 - 1) == 1).and.(WorkVec(j*2) == 2)) ReadingVector(j) = 1
-	  if ((WorkVec(j*2 - 1) == 2).and.(WorkVec(j*2) == 1)) ReadingVector(j) = 1
-	  if ((WorkVec(j*2 - 1) == 2).and.(WorkVec(j*2) == 2)) ReadingVector(j) = 2
-	end do
-	Genos(i) = Genotype(ReadingVector)
-      endif
-    enddo
-
-    close(3)
-  end function ParseGenotypeData
+   
+  end function ParsePedigreeAndGenotypeData
 
   function ParsePhaseData(PhaseFile, nAnisG, nSnp) result(Phase)
     use HaplotypeModule
@@ -946,7 +794,7 @@ end function ReadInParameterFile
 
   subroutine WriteSurrogates(definition, OutputPoint, p, params)
     use SurrogateDefinition
-    use PedigreeDefinition
+    use PedigreeModule
     use ProgramParametersDefinition
 
     character(len = 300) :: filout
@@ -954,7 +802,7 @@ end function ReadInParameterFile
 
     type(Surrogate), intent(in) :: definition
     integer, intent(in) :: OutputPoint
-    type(Pedigree), intent(in) :: p
+    type(PedigreeHolder), intent(in) :: p
     type(ProgramParameters), intent(in) :: params
 
     integer :: nAnisG
@@ -967,7 +815,7 @@ end function ReadInParameterFile
       open (unit = 13, FILE = filout, status = 'unknown')
       write(fmt, '(a,i10,a)') '(a20,', size(definition%partition,2), 'i6)'
       do i = 1, nAnisG
-	write (13, fmt) p%getID(i), definition%partition(i,:)
+	write (13, fmt) p%pedigree(p%genotypeMap(i))%originalId, definition%partition(i,:)
       end do
       close(13)
     end if
@@ -985,7 +833,7 @@ end function ReadInParameterFile
 	  end if
 	enddo
 	write (19, '(a20,5i8)') &
-	p%getID(i), count(definition%partition(i,:) == 1), count(definition%partition(i,:) == 2)&
+	p%pedigree(p%genotypeMap(i))%originalId, count(definition%partition(i,:) == 1), count(definition%partition(i,:) == 2)&
 	, count(definition%partition(i,:) == 3), nSurrogates, definition%method(i)
       enddo
       close(19)
@@ -1124,14 +972,14 @@ end function ReadInParameterFile
   
   subroutine WriteTestResults(results, c, p, OutputPoint, params)
     use SurrogateDefinition
-    use PedigreeDefinition
+    use PedigreeModule
     use CoreDefinition
     use TestResultDefinition
     use ProgramParametersDefinition
 
     type(TestResults), intent(in) :: results
     type(Core), intent(in) :: c
-    type(Pedigree), intent(in) :: p
+    type(PedigreeHolder), intent(in) :: p
     type(ProgramParameters), intent(in) :: params
     integer, intent(in) :: OutputPoint
 
@@ -1146,7 +994,7 @@ end function ReadInParameterFile
       write (filout, '(".",a1,"Simulation",a1,"IndivMistakes",i0,".txt")') SEP, SEP, OutputPoint
       open (unit = 17, FILE = filout, status = 'unknown')
       do i = 1, nAnisG
-	write(17, '(a20,6i6,a6,6i6,a6,6i6,a6,6i6)') p % getID(i), &
+	write(17, '(a20,6i6,a6,6i6,a6,6i6,a6,6i6)') p%pedigree(p%genotypeMap(i))%originalId, &
 	results%counts(i,1,ALL_,CORRECT_), results%counts(i,2,ALL_,CORRECT_), &
 	results%counts(i,1,ALL_,NOTPHASED_), results%counts(i,2,ALL_,NOTPHASED_), &
 	results%counts(i,1,ALL_,INCORRECT_), results%counts(i,2,ALL_,INCORRECT_), "|", &
@@ -1168,7 +1016,7 @@ end function ReadInParameterFile
       open (unit = 20, FILE = filout, status = 'unknown')
 
       do i = 1, nAnisG
-	write (20, '(a20,6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') p % getID(i), &
+	write (20, '(a20,6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') p%pedigree(p%genotypeMap(i))%originalId, &
 	results%percent(i,1,ALL_,CORRECT_), results%percent(i,2,ALL_,CORRECT_), &
 	results%percent(i,1,ALL_,NOTPHASED_), results%percent(i,2,ALL_,NOTPHASED_), &
 	results%percent(i,1,ALL_,INCORRECT_), results%percent(i,2,ALL_,INCORRECT_), "|", &

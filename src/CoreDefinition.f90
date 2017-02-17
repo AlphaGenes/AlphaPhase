@@ -49,9 +49,10 @@ module CoreDefinition
 
 contains
 
-  function newCore(genos, startTailSnp, startCoreSnp, endCoreSnp, endTailSnp) result(c)
-    
-    type(Genotype), pointer, dimension(:), intent(in) :: genos
+  function newCore(p, startTailSnp, startCoreSnp, endCoreSnp, endTailSnp) result(c)
+    use PedigreeModule
+
+    type(PedigreeHolder), intent(in) :: p
     integer, intent(in) :: startCoreSnp, endCoreSnp, startTailSnp, endTailSnp
     type(Core) :: c
     type(Genotype) :: tempFullGeno
@@ -59,7 +60,7 @@ contains
     integer :: nAnisG, i
     
     
-    nAnisG = size(genos,1)
+    nAnisG = p%nGenotyped
     c%nCoreAndTailSnps = endTailSnp - startTailSnp + 1
     c%nCoreSnps = endCoreSnp - startCoreSnp + 1
     
@@ -68,7 +69,7 @@ contains
     allocate(c%phase(nAnisG,2))
     
     do i = 1, nAnisG
-      tempFullGeno = Genos(i)
+      tempFullGeno = p%pedigree(p%GenotypeMap(i))%individualGenotype
       c%coreGenos(i) = tempFullGeno%subset(startCoreSnp, endCoreSnp)
       c%coreAndTailGenos(i) = tempFullGeno%subset(startTailSnp, endTailSnp)
       c%phase(i,1) = Haplotype(c%nCoreSnps)
@@ -117,7 +118,7 @@ contains
   subroutine destroyCore(c)
     type(Core) :: c
     
-    if (allocated(c%coreGenos)) then
+    if (allocated(c%fullyPhased)) then
       deallocate(c%fullyPhased)
       deallocate(c%hapAnis)
     end if

@@ -1,15 +1,15 @@
 module CoreSubsetDefinition
   use CoreDefinition
   use GenotypeModule
-  use PedigreeDefinition
+  use PedigreeModule
   
   implicit none
 
   type :: CoreSubset
-    type(Core), pointer :: parentCore
-    type(Pedigree), pointer :: parentPedigree
-    integer(kind = 4), allocatable, dimension(:) :: full2sub
-    integer(kind = 4), allocatable, dimension(:) :: sub2full
+    type(Core), pointer :: parentCore !< cor is genotype and phase for every animal, for subset of all the sSnPs.
+    type(PedigreeHolder), pointer :: parentPedigree 
+    integer(kind = 4), allocatable, dimension(:) :: full2sub !< mapping from fillIndex to subset fillIndex 
+    integer(kind = 4), allocatable, dimension(:) :: sub2full !< mapping from subsetIndex to fullIndex
     integer :: nAnisG
   contains
     procedure :: getCoreAndTailGenosCoreSubset
@@ -38,7 +38,7 @@ contains
   function newCoreSubSet(parentCore, parentPedigree, members) result(set)
        
     type(Core), target :: parentCore
-    type(Pedigree), target :: parentPedigree
+    type(PedigreeHolder), target :: parentPedigree
     integer, dimension(:), intent(in) :: members
     type(CoreSubset) :: set
     
@@ -156,7 +156,7 @@ contains
     integer :: sire, s, p
 
     s = set%sub2full(animal)
-    p = set%parentPedigree%getSire(s)
+    p = set%parentPedigree%pedigree(s)%getSireDamNewIDByIndex(2)
     sire = set%full2sub(p)
   end function getSireCoreSubset
   
@@ -165,7 +165,7 @@ contains
     integer, intent(in) :: animal
     integer :: dam
     
-    dam = set%full2sub(set%parentPedigree%getDam(set%sub2full(animal)))
+    dam = set%full2sub(set%parentPedigree%pedigree(set%sub2full(animal))%getSireDamNewIDByIndex(2))
   end function getDamCoreSubset
   
   function getYieldCoreSubset(set,phase) result (yield)
