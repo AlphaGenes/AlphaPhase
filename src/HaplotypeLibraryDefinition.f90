@@ -17,6 +17,7 @@ module HaplotypeLibraryDefinition
     procedure :: matchWithError
     procedure :: matchWithErrorAndMinOverlap
     procedure :: limitedMatchWithError
+    procedure :: limitedMatchWithErrorAndMinOverlap
     procedure :: limitedCompatPairsWithError
     procedure :: getSize
     procedure :: getHapRel
@@ -24,7 +25,7 @@ module HaplotypeLibraryDefinition
     procedure :: resetHapFreq
     procedure :: incrementHapFreq
     procedure :: getHapFreq
-    procedure :: getCompatHaps    
+    procedure :: getCompatHaps   
     procedure :: getCompatHapsFreq
     procedure :: allZero
     procedure :: allOne
@@ -446,28 +447,26 @@ contains
     freq = library%hapFreq(id)
   end function getHapFreq
   
-  function getCompatHaps(library, g, percgenohaplodisagree) result (compatHaps)
+  function getCompatHaps(library, g, errorallow) result (compatHaps)
     use GenotypeModule
     class(HaplotypeLibrary) :: library
     type(Genotype), intent(in), pointer :: g
-    double precision, intent(in) :: percgenohaplodisagree
+    integer, intent(in) :: errorAllow
     integer, dimension(:), pointer :: compatHaps
     
-    compatHaps = getCompatHapsFreq(library, g, 1, percgenohaplodisagree)    
+    compatHaps = getCompatHapsFreq(library, g, 1, errorallow)    
   end function getCompatHaps
   
-  function getCompatHapsFreq(library, g, freq, percgenohaplodisagree) result (compatHaps)
+  function getCompatHapsFreq(library, g, freq, errorallow) result (compatHaps)
     use GenotypeModule
     class(HaplotypeLibrary) :: library
     type(Genotype), intent(in), pointer :: g
-    integer, intent(in) :: freq
-    double precision, intent(in) :: percgenohaplodisagree
+    integer, intent(in) :: freq, errorallow
     integer, dimension(:), pointer :: compatHaps
     
     integer, dimension(:), allocatable :: tempCompatHaps
-    integer :: i, numCompatHaps, ErrorAllow    
-   
-    ErrorAllow = int(PercGenoHaploDisagree * library%nSnps)
+    integer :: i, numCompatHaps 
+    
     allocate(tempCompatHaps(library%size))
     numCompatHaps = 0
     do i = 1, library%size
@@ -667,9 +666,11 @@ contains
   subroutine rationalise(library) 
     class(HaplotypeLibrary), intent(in) :: library
     
-    integer :: i, id
+    integer :: i
     
     i = 1
+    
+    !! NEED TO UPDATE HAP CARRY AFTER THIS
     
     do while (i <= library%size)
       if (library%newstore(i)%fullyphased()) then

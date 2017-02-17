@@ -33,356 +33,7 @@ contains
 	call newHaplotype(c, i, 2, library)
       endif
     enddo
-    
-    ! NEED TO UPDATE HAPANIS NUMBERS AFTER A CALL TO THIS BUT AS THIS WILL NOT BE STAYING HERE...
-    call library%rationalise()
-    
   end subroutine UpdateHapLib
-
-  subroutine ImputeFromLib(library, c, nGlobalHapsIter, PercGenoHaploDisagree, minHapFreq, quiet)
-    ! Impute the phase for gametes that are not completely phased by LRP 
-    ! by matching their phased loci to haplotypes in the Haplotype Library,
-    ! following strategies listed in the section Step 2e of Hickey et al 2011.
-
-    use HaplotypeLibraryDefinition
-    use CoreDefinition
-    use ClusteringModule
-    use Random
-    use GenotypeModule
-    use HaplotypeModule
-    
-    type(HaplotypeLibrary), intent(in) :: library
-    class(Core) :: c
-    integer, intent(inout) :: nGlobalHapsIter
-    double precision, intent(in) :: PercGenoHaploDisagree
-    integer, intent(in) :: minHapFreq
-    logical, intent(in) :: quiet
-
-    integer :: i, nHapsOld, ErrorAllow, HapM, HapP
-    integer, pointer, dimension(:,:) :: CandPairs
-
-    integer, dimension(:), pointer :: compatHaps
-
-    type(Haplotype) :: comp
-    integer, pointer, dimension(:) :: CandHapsPat, CandHapsMat, AllCandHapsMat, CandHaps, matches
-    
-    type(Genotype), pointer :: geno
-    type(Haplotype), pointer :: hap1, hap2
-
-    logical :: singlePat, singleMat, oneNotTwo, twoNotOne
-    
-    ErrorAllow = int(PercGenoHaploDisagree * c % getNCoreSnp())
-
-    if ((nGlobalHapsIter == 1) .and. (.not. quiet)) then
-      print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
-    end if
-    nHapsOld = 0
-
-    do while (nHapsOld /= library % getSize())
-      nGlobalHapsIter = nGlobalHapsIter + 1
-      nHapsOld = library % getSize()
-
-      do i = 1, c % getNAnisG()
-	geno => c%coreGenos(i)
-	hap1 => c%phase(i,1)
-	hap2 => c%phase(i,2)
-	ErrorAllow = int(PercGenoHaploDisagree * geno % numNotMissing())
-	
-	!! USE MIN PRESENT  BUT THEN BOTH COULD BE TRUE AND...
-	!! IF THERE'S OVERLAP IN PRESENT SNPS...
-	!! SOLUTION MAY JUST BE TO NOT CHANGE STUFF THAT ALREADY EXISTS?
-	!! NOT SURE THAT'S IN KEEPING WITH THE PHILOSPHY THOUGH
-	!! SIMILAR PROBLEMS FURTHER ON I THINK
-	oneNotTwo = c%phase(i, 1)%fullyPhased() .and. (.not. c%phase(i, 2)%fullyPhased())
-	twoNotOne = c%phase(i, 2)%fullyPhased() .and. (.not. c%phase(i, 1)%fullyPhased())
-
-	! If only one of the gametes is completely phased (Section Step 2e.i Hickey et al. 2011): PATERNAL HAPLOTYPE
-	if (oneNotTwo) then
-	  call processComplement(c, i, library, 1, PercGenoHaploDisagree)
-	end if
-
-	! If only one of the gametes is completely phased (Section Step 2e.i Hickey et al. 2011): MATERNAL HAPLOTYPE
-	if (twoNotOne) then
-	  call processComplement(c, i, library, 2, PercGenoHaploDisagree)
-	end if
-
-	! If neither of the gametes is completely phased (Section Step 2e.ii Hickey et al. 2011)
-	if ((.not. c%phase(i, 1)%fullyPhased()) .and. (.not.c%phase(i, 2)%fullyPhased())) then
-          compatHaps => library % getCompatHapsFreq(geno,minHapFreq, PercGenoHaploDisagree)
-
-	  CandHapsPat => library % limitedMatchWithError(c % phase(i, 1), ErrorAllow, compatHaps)
-	  !Find all candiate maternal haps and then remove those that are already candidate paternal haps
-	  AllCandHapsMat => library % limitedMatchWithError(c % phase(i, 2), ErrorAllow, compatHaps)
-	  CandHapsMat => uniqueHaps(AllCandHapsMat, CandHapsPat)
-	  deallocate(AllCandHapsMat)
-
-	  deallocate(compatHaps)
-
-	  HapP = 0
-	  HapM = 0
-
-	  ! If only have one paternal candidate haplotype, then the paternal haplotype is that one
-	  if (size(CandHapsPat, 1) == 1) HapP = CandHapsPat(1)
-	  ! If only have one maternal candidate haplotype, then the maternal haplotype is that one
-	  if (size(CandHapsMat, 1) == 1) HapM = CandHapsMat(1)
-
-	  ! If only one maternal candidate haplotype and many paternal candidate haplotypes
-	  if ((size(CandHapsMat, 1) == 1).AND.(size(CandHapsPat, 1) > 1)) then
-	    comp = geno%complement(library%getHap(HapM))
-	    matches => library % limitedMatchWithError(comp, ErrorAllow, CandHapsPat)
-	    if (size(matches) == 1) then
-	      HapP = matches(1)
-	    end if
-	    deallocate(matches)
-	  end if
-
-	  ! If only one paternal candidate haplotype and many maternal candidate haplotypes
-	  if ((size(CandHapsPat, 1) == 1).and.(size(CandHapsMat, 1) > 1)) then
-	    comp = geno%complement(library%getHap(HapP))
-	    matches => library % limitedMatchWithError(comp, ErrorAllow, CandHapsMat)
-	    if (size(matches) == 1) then
-	      HapM = matches(1)
-	    end if
-	    deallocate(matches)
-	  end if
-	  
-	  ! If one paternal candidate and one maternal candidate and they are incompatible use neither
-	  if ((size(CandHapsPat, 1) == 1).and.(size(CandHapsMat, 1) == 1)) then
-	    if (.not. geno%compatibleHaplotypes(library%getHap(HapP), library%getHap(HapM), ErrorAllow)) then
-	      HapP = 0
-	      HapM = 0
-	    end if
-	  end if
-
-	  ! If only have one paternal candidate haplotype
-	  if (HapP /= 0) then
-	    call matchedHaplotype(c, i, 1, library, HapP)
-
-	    ! If no haplotype has been found for the maternal gamete, or 
-	    ! there are more than one maternal candidate haplotype
-	    if (HapM == 0) then
-	      comp = geno%complement(c%phase(i,1))
-	      call hap2%setFromOther(comp)
-
-	      if (comp%fullyPhased()) then
-		call newHaplotype(c, i, 2, library)
-	      end if
-	    end if
-	  end if
-
-	  ! If only have one maternal candidate haplotype 
-	  if (HapM /= 0) then
-	    ! Phase the maternal haplotype with the only paternal candidate haplotype
-	    ! NOTE: This is always necessary because
-	    !   - If there is only one paternal candidate haplotype, 
-	    !     we have already check they are compatible (line 3307-3316) (Step 2e.ii.A)
-	    !   - If there is more than one paternal candidate haplotype, 
-	    !     the paternal gamete is phased as the complementary of the maternal gamete
-	    call matchedHaplotype(c, i, 2, library, HapM)
-
-	    ! If no haplotype has been found for the paternal gamete, or 
-	    ! there are more than one paternal candidate haplotype
-	    if (HapP == 0) then
-	      comp = geno%complement(c%phase(i,2))
-	      call hap1%setFromOther(comp)
-
-	      if (comp%fullyPhased()) then
-		call newHaplotype(c, i, 1, library)
-	      end if
-	    end if
-	  end if
-
-	  ! If the paternal and maternal gamete cannot be identify without ambiguity
-	  ! (more than one or none at all)           
-	  if ((HapP == 0).and.(HapM == 0)) then
-	    ! Make array of all haps
-	    allocate(CandHaps(size(CandHapsPat) + size(CandHapsMat)))
-	    CandHaps(1:size(CandHapsPat)) = CandHapsPat
-	    CandHaps(size(CandHapsPat) + 1:size(CandHaps)) = CandHapsMat
-
-	    ! Get pairs of haplotypes that agree with the genotype
-	    CandPairs => library % limitedCompatPairsWithError(c % coreGenos(i), ErrorAllow, CandHaps, c % getNAnisG())
-
-	    ! If we've found matching pairs                
-	    if ((size(CandPairs, 1) > 0).and.((size(CandPairs, 1) * size(CandPairs, 1)) < c % getNAnisG())) then
-
-	      ! Check how many paternal candidates haplotypes
-	      SinglePat = all(CandPairs(:, 1) == CandPairs(1, 1))
-
-	      ! If there is only one paternal haplotype in all the candidate pairs
-	      if (SinglePat) then
-		! Phase the paternal gamete with this haplotype - if they're all the same it doesn't matter what pair we use
-		call matchedHaplotype(c, i, 1, library, CandPairs(1, 1))
-
-		! If only one haplotype is found for the paternal gamete 
-		! and many for the maternal gamete, phase each loci only all pairs agree
-		! (Step 2e.ii.B)
-		call hap2%setOneBits(library%allOne(CandPairs(:,2)))
-		call hap2%setZeroBits(library%allZero(CandPairs(:,2)))
-		c%swappable(i) = 1
-	      end if
-
-	      ! Check how many maternal candidates haplotypes
-	      SingleMat = all(CandPairs(:, 2) == CandPairs(1, 2))
-
-	      ! If there is only one maternal haplotype in all the candidate pairs
-	      if (SingleMat) then
-		call matchedHaplotype(c, i, 2, library, CandPairs(1, 2))
-		
-		! If only one haplotype is found for the paternal gamete 
-		! and many for the maternal gamete, phase each loci only all pairs agree
-		! (Step 2e.ii.C)
-		call hap1%setOneBits(library%allOne(CandPairs(:,1)))
-		call hap1%setZeroBits(library%allZero(CandPairs(:,1)))
-		c%swappable(i) = 2
-	      endif
-	      
-	      ! If proband is not completely phased and have more than one candidate 
-	      ! for both paternal and maternal haplotype 
-	      ! (Step 2e.iv)
-	      if (((.not.c%phase(i, 1)%fullyPhased()) .or. (.not.c%phase(i, 2)%fullyPhased())) &
-		.and. (.not.SinglePat) .and. (.not.SingleMat)) then
-		call clusterAndPhase(c, library, CandPairs, i)
-		c%swappable(i) = 3
-	      endif
-	    endif
-	    deallocate(CandHaps)
-	    deallocate(CandPairs)
-	  endif
-	  deallocate(CandHapsMat)
-	  deallocate(CandHapsPat)
-	endif
-      end do
-      if (.not. quiet) then
-	print*, "   ", "Iteration ", nGlobalHapsIter, "found ", library % getSize(), "haplotypes"
-      end if
-    enddo
-
-    call complementPhaseSnps(c)
-
-    !  NEED TO THINK ABOUT THESE.  NOT SURE THEY SHOULD STAY (and then get rid of the frequent update calls)
-!    call library % resetHapFreq()
-!    c%hapAnis = MissingHaplotypeCode
-
-  end subroutine ImputeFromLib
-
-  subroutine processComplement(c, animal, library, fully, percgenohaplodisagree)
-    use CoreDefinition
-    use HaplotypeLibraryDefinition
-    use GenotypeModule
-    use HaplotypeModule
-
-    type(Core) :: c
-    integer, intent(in) :: animal, fully
-    double precision, intent(in) :: percgenohaplodisagree
-    type(HaplotypeLibrary) :: library
-
-    type(Haplotype) :: comp
-    type(Haplotype), pointer :: hap
-    type(Genotype), pointer :: geno
-    integer, dimension(:), pointer :: CandHaps
-    integer :: ErrorAllow, notfully
-
-    ! Maps 1 -> 2 and 2 -> 1
-    notfully = 3 - fully
-
-    geno => c %coreGenos(animal)
-    ErrorAllow = int(PercGenoHaploDisagree * geno % numNotMissing())
-    comp = geno%complement(c % phase(animal, fully))
-    CandHaps => library % matchWithError(comp, ErrorAllow)
-    
-    hap => c%phase(animal, notfully)
-
-    if (size(CandHaps, 1) > 1) then
-      call hap%setOneBits(library%allOne(CandHaps))
-      call hap%setZeroBits(library%allZero(CandHaps))
-    endif
-
-    if (size(CandHaps, 1) == 1) then
-      c % phase(animal, notfully) = library % getHap(CandHaps(1))
-      call library % incrementHapFreq(CandHaps(1))
-      c %hapAnis(animal, notfully) = CandHaps(1)
-    end if
-
-    if (size(CandHaps, 1) == 0) then
-      call hap%setFromOther(comp)
-
-      if (comp%fullyPhased()) then
-	call newHaplotype(c, animal, notfully, library)
-
-      end if
-    endif
-    
-    deallocate(CandHaps)
-  end subroutine processComplement
-
-  function HapsToCluster(CandPairs) result (ToCluster)
-    integer, dimension(:,:), intent(in) :: CandPairs
-    integer, dimension(:), pointer :: ToCluster
-
-    integer, dimension(:), allocatable :: tempToCluster
-    integer :: numToCluster, i, j
-
-    integer(8) :: length, s
-
-    allocate(tempToCluster(2 * size(CandPairs)))
-    tempToCluster = 0
-    numToCluster = 0
-
-    do i = 1, size(CandPairs, 1)
-      do j = 1, 2
-	if (all(tempToCluster /= CandPairs(i, j))) then
-	  numToCluster = numToCluster + 1
-	  tempToCluster(numToCluster) = CandPairs(i, j)
-	end if
-      end do
-    end do
-
-    allocate(toCluster(numToCluster))
-    toCluster = tempToCluster(1:numToCluster)
-
-
-
-    length = size(toCluster, 1)
-    s = 4
-    call qsort(toCluster, length, s, cmp_function)
-  end function HapsToCluster
-
-  function cmp_function(a1, a2) result (cmp)
-    integer(2), intent(in) :: a1, a2
-    integer(2) :: cmp
-
-    cmp = a1 - a2
-  end function
-
-  function findloc(array, val) result(loc)
-    integer, dimension(:), intent(in) :: array
-    integer, intent(in) :: val
-    integer :: loc
-
-    integer :: i
-
-    loc = 0
-    do i = 1, size(array)
-      if (array(i) == val) then
-	loc = i
-	exit
-      end if
-    end do
-  end function findloc
-
-  subroutine matchedHaplotype(c, animal, phase, library, id)
-    use CoreDefinition
-    use HaplotypeLibraryDefinition
-
-    class(Core) :: c
-    integer, intent(in) :: animal, phase, id
-    class(HaplotypeLibrary) :: library
-
-    c % phase(animal, phase) = library % getHap(id)
-    call library % incrementHapFreq(id)
-    c%hapAnis(animal, phase) = id
-  end subroutine matchedHaplotype
 
   subroutine newHaplotype(c, animal, phase, library)
     use HaplotypeModule
@@ -402,7 +53,7 @@ contains
     integer :: minoverlap
     
     minoverlap = c%getNCoreSnp() - missallow
-
+    
     hap = c % phase(animal, phase)
     ids => library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
     if (size(ids) == 0) then
@@ -455,131 +106,275 @@ contains
      c%hapAnis(animal, phase) = id
   end subroutine newHaplotype
 
-  subroutine clusterAndPhase(c, library, CandPairs, animal)
+  subroutine imputeFromLib(library, c, PercGenoHaploDisagree, percMinHapPresent, minHapFreq, quiet)
+    use HaplotypeLibraryDefinition
     use CoreDefinition
+    
+    type(HaplotypeLibrary), intent(in) :: library
+    class(Core) :: c
+    double precision, intent(in) :: PercGenoHaploDisagree, percMinHapPresent
+    integer, intent(in) :: minHapFreq
+    logical, intent(in) :: quiet
+    
+    integer :: nOldHaps, iterations, errorallow, minpresent
+    
+    errorallow = int(percGenoHaploDisagree * c%getNCoreSnp())
+    minpresent = int(percMinHapPresent * c%getNCoreSnp())
+    
+    if (.not. quiet) then
+      print *, "Found ", library%getSize(), " haplotypes after long range phasing"
+      print *
+    end if
+    
+    call complementStart(library, c, errorallow, minpresent, minhapfreq)
+    if (.not. quiet) then
+      print *, "Found ", library%getSize(), " haplotypes after complementing"
+      print *
+    end if
+    
+    nOldHaps = 0
+    iterations = 0
+    do while (nOldHaps /= library%getSize())
+      nOldHaps = library%getSize()
+      call singleImputationRound(library, c, errorallow, minpresent, minhapfreq)
+      iterations = iterations + 1
+      if (.not. quiet) then
+	print *, "Found ", library%getSize(), " haplotypes after ", iterations, " iterations"
+      end if
+    end do
+  end subroutine imputeFromLib
+  
+  subroutine singleImputationRound(library, c, errorAllow, minPresent, minHapFreq)
+    use HaplotypeLibraryDefinition
+    use CoreDefinition
+    use GenotypeModule
+    use HaplotypeModule
+    
+    type(HaplotypeLibrary), intent(in) :: library
+    class(Core) :: c
+    integer, intent(in) :: errorAllow, minPresent, minHapFreq
+    
+    integer :: i
+    type(Genotype), pointer :: geno
+    type(Haplotype) :: hap1, hap2, comp
+    type(Haplotype) :: newHap, libHap
+    logical :: hap1changed, hap2changed
+    integer, pointer, dimension(:) :: candHapsPat, candHapsMat, compatHaps
+    integer, pointer, dimension(:,:) :: candPairs
+    
+    do i = 1, c%getNAnisG()
+      geno => c%coreGenos(i)
+      hap1 = c%phase(i,1)
+      hap2 = c%phase(i,2)
+      
+      hap1changed = .false.
+      hap2changed = .false.
+      
+      if ((.not. hap1%fullyPhased()) .or. (.not. hap2%fullyPhased())) then
+	!!  NEED TO ADD MIN OVERLAP HERE
+	compatHaps => library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
+
+	!! CAN TEST HERE FOR FULLY PHASED AND JUST USE THAT HAP IF IT IS
+        candHapsPat => library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 1), ErrorAllow, 0, compatHaps)
+	candHapsMat => library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 2), ErrorAllow, 0, compatHaps)
+	
+	if ((size(candHapsPat) > 0) .and. (size(candHapsMat) == 0)) then
+	  libHap = getLibraryHap(library, candHapsPat)
+	  newHap = Haplotype(hap1)
+	  call newHap%setFromOther(libHap)
+	  hap1changed = .not. newHap%equalHap(hap1)
+	  c%phase(i,1) = newHap
+	  if (hap1changed .and. (newHap%numberNotMissing() >= minPresent)) then
+	    call newHaplotype(c, i, 1, library)
+	  end if
+	end if
+	
+	if ((size(candHapsPat) == 0) .and. (size(candHapsMat) > 0)) then
+	  libHap = getLibraryHap(library, candHapsMat)
+	  newHap = Haplotype(hap2)
+	  call newHap%setFromOther(libHap)
+	  hap2changed = .not. newHap%equalHap(hap2)
+	  c%phase(i,2) = newHap
+	  if (hap2changed .and. (newHap%numberNotMissing() >= minPresent)) then
+	    call newHaplotype(c, i, 2, library)
+	  end if
+	end if
+	
+	if ((size(candHapsPat) > 0) .and. (size(candHapsMat) > 0)) then
+	  candPairs => getCompatPairsWithError(library, geno, ErrorAllow, CandHapsPat, CandHapsMat, c%getNAnisG())
+	  
+	  if (size(CandPairs,1) > 0) then
+	    libHap = getLibraryHap(library, candPairs(:,1))
+	    newHap = Haplotype(hap1)
+	    call newHap%setFromOther(libHap)
+	    hap1changed = .not. newHap%equalHap(hap1)
+	    c%phase(i,1) = newHap
+	    ! NOT SURE WE CAN EVER GET INTO THE IF - SIMILAR ELSEWHERE
+	    if (hap1changed .and. (newHap%numberNotMissing() >= minPresent)) then
+	      call newHaplotype(c, i, 1, library)
+	    end if
+
+	    libHap = getLibraryHap(library, candPairs(:,2))
+	    newHap = Haplotype(hap2)
+	    call newHap%setFromOther(libHap)
+	    hap2changed = .not. newHap%equalHap(hap2)
+	    c%phase(i,2) = newHap
+	    if (hap2changed .and. (newHap%numberNotMissing() >= minPresent)) then
+	      call newHaplotype(c, i, 2, library)
+	    end if
+	  end if
+	end if
+
+	if (hap1changed) then
+	  hap2 = c%phase(i,2)
+	  comp = geno%complement(c%phase(i,1))
+	  candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+	  newHap = Haplotype(hap2)
+	  if (size(candHapsPat) > 0) then
+	    libHap = getLibraryHap(library, candHapsPat)
+	    call newHap%setFromOther(libHap)
+	  else
+	    call newHap%setFromOther(comp)
+	  end if
+	  c%phase(i,2) = newHap
+	  if (.not. newHap%equalHap(hap2) .and. (newHap%numberNotMissing() >= minPresent)) then
+	    call newHaplotype(c, i, 2, library)
+	  end if
+	end if
+	
+	if (hap2changed) then
+	  hap1 = c%phase(i,1)
+	  comp = geno%complement(c%phase(i,2))
+	  candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+	  newHap = Haplotype(hap1)
+	  if (size(candHapsMat) > 0) then
+	    libHap = getLibraryHap(library, candHapsMat)
+	    call newHap%setFromOther(libHap)
+	  else
+	    call newHap%setFromOther(comp)
+	  end if
+	  c%phase(i,1) = newHap
+	  if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minPresent)) then
+	    call newHaplotype(c, i, 1, library)
+	  end if
+	end if
+      end if
+    end do
+    
+  end subroutine singleImputationRound
+  
+  subroutine complementStart(library, c, errorAllow, minPresent, minHapFreq)
+    use HaplotypeLibraryDefinition
+    use CoreDefinition
+    use GenotypeModule
+    use HaplotypeModule
+    
+    type(HaplotypeLibrary), intent(in) :: library
+    class(Core) :: c
+    integer, intent(in) :: errorAllow, minPresent, minHapFreq
+    
+    type(Haplotype) :: hap1, hap2, comp, libHap, newHap
+    type(Genotype), pointer :: geno
+    integer :: i
+    integer, pointer, dimension(:) :: candHapsPat, candHapsMat, compatHaps
+    
+    do i = 1, c%getNAnisG()
+      geno => c%coreGenos(i)
+      !! NEED TO ADD OVERLAP HERE
+      compatHaps => library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
+      hap2 = c%phase(i,2)
+      comp = geno%complement(c%phase(i,1))
+      candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+      newHap = Haplotype(hap2)
+      if (size(candHapsPat) > 0) then
+	libHap = getLibraryHap(library, candHapsPat)
+	call newHap%setFromOther(libHap)
+      else
+	call newHap%setFromOther(comp)
+      end if
+      c%phase(i,2) = newHap
+      if (.not. newHap%equalHap(hap2) .and. (newHap%numberNotMissing() >= minPresent)) then
+	call newHaplotype(c, i, 2, library)
+      end if
+
+      hap1 = c%phase(i,1)
+      comp = geno%complement(c%phase(i,2))
+      candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+      newHap = Haplotype(hap1)
+      if (size(candHapsMat) > 0) then
+	libHap = getLibraryHap(library, candHapsMat)
+	call newHap%setFromOther(libHap)
+      else
+	call newHap%setFromOther(comp)
+      end if
+      c%phase(i,1) = newHap
+      if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minPresent)) then
+	call newHaplotype(c, i, 1, library)
+      end if
+    end do
+    
+  end subroutine complementStart
+    
+  function getLibraryHap(library, candHaps) result (libhap)
     use HaplotypeLibraryDefinition
     use HaplotypeModule
-    use GenotypeModule
-    use ClusteringModule
-
-    class(Core) :: c
-    class(HaplotypeLibrary) :: library
-    integer, dimension(:,:), intent(in) :: CandPairs
-    integer, intent(in) :: animal
-
-    integer :: nSnp
-
-    integer(kind = 1), dimension (:,:), allocatable :: TempHapArray
-    integer, dimension(:), pointer :: ClusterMember
-    integer, dimension(:), pointer :: TempHapVector
-    integer :: rounds
-
-
-    integer :: i, i1, i2
-    type(Haplotype) :: h
-    type(Haplotype), pointer :: hap1, hap2
-    type(Genotype), pointer :: geno
-    integer, dimension(:), allocatable :: ids1, ids2
-
-    nSNp = c % getNCoreSnp()
     
-    geno => c%coreGenos(animal)
-    hap1 => c%phase(animal,1)
-    hap2 => c%phase(animal,2)
-
-    ! Initialize procedure of k-medoids
-    TempHapVector => HapsToCluster(CandPairs)
-    allocate(TempHapArray(size(TempHapVector),nSnp))
-    do i = 1, size(TempHapVector)
-      h = library%getHap(TempHapVector(i))
-      TempHapArray(i,:) = h%toIntegerArray()
-    end do
-    ClusterMember => initialAssignmentAlternate(size(TempHapVector, 1))
-    rounds = cluster(TempHapArray, ClusterMember, 2, nMaxRounds, .false.)
-
-    if (rounds <= nMaxRounds) then
-      if (count(ClusterMember(:) == 2) == 1) then
-	call matchedHaplotype(c, animal, 2, library, TempHapVector(findloc(ClusterMember, 2)))
-      end if
-      if (count(ClusterMember(:) == 1) == 1) then
-	call matchedHaplotype(c, animal, 1, library, TempHapVector(findloc(ClusterMember, 1)))
-      end if
-      if ((count(ClusterMember(:) == 2) > 1).and.(count(ClusterMember(:) == 2) > 1)) then
-	call geno%setHaplotypeFromGenotype(hap1)
-	call geno%setHaplotypeFromGenotype(hap2)
-	
-	i1 = 0
-	i2 = 0
-	allocate(ids1(count(ClusterMember(:) == 1)))
-	allocate(ids2(count(ClusterMember(:) == 2)))
-	do i = 1, size(ClusterMember,1)
-	  if (ClusterMember(i) == 1) then
-	    i1 = i1 + 1
-	    ids1(i1) = TempHapVector(i)
-	  else
-	    i2 = i2 + 1
-	    ids2(i2) = TempHapVector(i)
-	  end if
-	end do
-		
-	call hap1%setZeroBits(library%oneZeroNoOnes(ids1))
-	call hap1%setOneBits(library%oneOneNoZeros(ids1))
-	
-	call hap2%setZeroBits(library%oneZeroNoOnes(ids2))
-	call hap2%setOneBits(library%oneOneNoZeros(ids2))
-      endif
+    type(HaplotypeLibrary), intent(in) :: library
+    integer, dimension(:), intent(in) :: candHaps
+    
+    type(Haplotype) :: libhap
+    
+    libhap = Haplotype(library%nSnps)
+    
+    ! Here for speed!
+    if (size(CandHaps) == 1) then
+      libhap = library%newstore(CandHaps(1))
     end if
-    deallocate(ClusterMember)
-    deallocate(TempHapArray)
-    deallocate(TempHapVector)
-  end subroutine clusterAndPhase
-
-  subroutine complementPhaseSnps(c)
-    use CoreDefinition
-    use GenotypeModule
-    use HaplotypeModule
-
-    class(Core) :: c
-
-    integer :: i
     
-    type(Genotype), pointer :: geno
-    type(Haplotype), pointer :: hap1, hap2
-    type(Haplotype) :: hap1complement, hap2complement
+    if (size(CandHaps) > 1) then
+      call libhap%setZeroBits(library%oneZeroNoOnes(candHaps))
+      call libhap%setOneBits(library%oneOneNoZeros(candHaps))
+    end if
     
-    do i = 1, c % getNAnisG()
-      geno => c%getCoreGenos(i)
-      hap1 => c%phase(i,1)
-      hap2 => c%phase(i,2)
-      
-      hap1complement = geno%complement(hap1)
-      hap2complement = geno%complement(hap2)      
-      
-      call Hap1%setFromOtherIfMissing(hap2complement)
-      call Hap2%setFromOtherIfMissing(hap1complement)
-    enddo
-  end subroutine complementPhaseSnps
+  end function getLibraryHap    
   
-  function uniquehaps(haps1, haps2) result (uniq)
-    integer, dimension(:), intent(in) :: haps1, haps2
-    integer, dimension(:), pointer :: uniq
+  function getCompatPairsWithError(library, geno, ErrorAllow, patLimit, matLimit, nAnisG) result(pairs)
+    use GenotypeModule
+    use HaplotypeLibraryDefinition
+    
+    class(HaplotypeLibrary) :: library
+    type(Genotype), intent(in) :: geno
+    integer, intent(in) :: ErrorAllow
+    integer, dimension(:), intent(in) :: patLimit, matLimit
+    integer, intent(in) :: nAnisG
+    integer, dimension(:,:), pointer :: pairs
+    
+    integer, dimension(:,:), pointer :: tempPairs
+    integer :: i, j, p, ii, jj
 
-    integer, dimension(:), allocatable :: tempU
-
-    integer :: i, p
-
-    allocate(tempU(size(haps1)))
+    allocate(tempPairs(nAnisG*2,2))
+    
     p = 0
-    do i = 1, size(haps1)
-      if (.not. any (haps1(i) == haps2)) then
-	p = p + 1
-	tempU(p) = haps1(i)
-      end if
+    i = 1
+    do while ((i <= size(patLimit)) .and. ((p*p) <= (nAnisG - 1)))
+      j = 1
+      do while ((j <= size(matLimit)) .and. ((p*p) <= (nAnisG - 1)))
+	ii = patLimit(i)
+	jj = matLimit(j)
+	if (geno%compatibleHaplotypes(library%newstore(ii), library%newstore(jj), ErrorAllow)) then
+	  p = p + 1
+	  tempPairs(p,1) = ii
+	  tempPairs(p,2) = jj
+	end if
+	j = j + 1
+      end do
+      i = i + 1
     end do
-
-    allocate (uniq(p))
-    uniq = tempU(1:p)
-    deallocate(tempU)
-  end function uniquehaps
+    
+    allocate(pairs(p,2))
+    pairs = tempPairs(1:p,:)
+    deallocate(tempPairs)
+  end function getCompatPairsWithError
+    
 
 end module HaplotypeLibraryPhasing

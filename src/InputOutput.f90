@@ -182,8 +182,8 @@ contains
       open (unit = 15, file = "."//SEP//"PhasingResults"//SEP//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
       write(fmt, '(a,i10,a)') '(a20,', c%getNSnp(), 'i2)'
       do i = 1, nAnisG
-	hap1 => c%phase(j, 1)
-	hap2 => c%phase(j, 2)
+	hap1 => c%phase(i, 1)
+	hap2 => c%phase(i, 2)
 	write(15, fmt) p%getID(i), &
 	hap1%toIntegerArray()
 	write(15, fmt) p%getID(i), &
@@ -210,8 +210,8 @@ contains
     if (params%outputIndivPhaseRate) then
       open (unit = 30, file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
-        hap1 => c%phase(j, 1)
-        hap2 => c%phase(j, 2)
+        hap1 => c%phase(i, 1)
+        hap2 => c%phase(i, 2)
         CounterP = c%getNCoreSnp() - hap1%numberMissing()
         CounterM = c%getNCoreSnp() - hap2%numberMissing()
         CoreCount(1) = (float(counterP)/(nSnp) * 100)

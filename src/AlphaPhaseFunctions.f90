@@ -28,7 +28,7 @@ contains
     type(Haplotype), pointer, dimension(:,:), intent(in), optional :: truePhase
     logical, optional :: quiet
 
-    integer :: h, i, j, nGlobalHapsOld, threshold
+    integer :: h, i, threshold
 
     type(HaplotypeLibrary) :: library
     type(Surrogate) :: surrogates
@@ -38,10 +38,8 @@ contains
     integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
     integer, dimension (:,:), pointer :: CoreIndex, TailIndex
     integer :: nCores
-    integer :: nGlobalHapsIter
     integer :: nAnisG, nSnp
     integer :: subsetCount
-    type(HaplotypeLibrary) :: globalLibrary
     type(Haplotype), pointer :: hap
     type(AlphaPhaseResults) :: results
     
@@ -49,6 +47,8 @@ contains
     logical :: combine, singleRun, printOldProgress, singleSurrogates, quietInternal
 
     type(MemberManager) :: manager
+    
+    double precision :: percMinHapPresent
     
     if (.not. present(quiet)) then
       quietInternal = .true.
@@ -142,20 +142,13 @@ contains
 	  end if
 	end do
 
-	globalLibrary = HaplotypeLibrary(c%getNCoreSnp(),500,500)
-	nGlobalHapsIter = 1
 	call UpdateHapLib(c, library)
-	nGlobalHapsOld = library%getSize()
 	if ((params%ItterateType .eq. "Off") .and. (.not. quietInternal)) then
 	  print*, " "
 	  print*, "  ", "Haplotype library imputation step"
 	end if
-	do j = 1, 20
-	  call ImputeFromLib(library, c, nGlobalHapsIter, params%PercGenoHaploDisagree, params%minHapFreq, quietInternal)
-!	  call UpdateHapLib(c,library)
-	  if (nGlobalHapsOld == library%getSize()) exit
-	  nGlobalHapsOld = library%getSize()
-	end do
+	percMinHapPresent = 1.0
+	call imputeFromLib(library, c, params%PercGenoHaploDisagree, percMinHapPresent, params%minHapFreq, quietInternal)
 
 	if ((.not. printOldProgress) .and. (.not. quietInternal)) then
 	  print '(4x, a9, 20x, i6, a19, f6.2, a25)', "After HLI", library%getSize(), " Haplotypes found, ", &
