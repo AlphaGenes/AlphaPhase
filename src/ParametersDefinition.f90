@@ -1,7 +1,7 @@
-module ParametersDefinition
+module AlphaPhaseParametersDefinition
   implicit none
   
-  type:: Parameters
+  type:: AlphaPhaseParameters
     integer :: CoreAndTailLength
     integer :: Jump
     logical :: Offset
@@ -15,15 +15,15 @@ module ParametersDefinition
     integer :: numIter
     character (len = 10) :: startCoreChar, endCoreChar
     integer :: minHapFreq
-  end type Parameters
+  end type AlphaPhaseParameters
 
-  interface Parameters
+  interface AlphaPhaseParameters
     module procedure newParameters
-  end interface Parameters
+  end interface AlphaPhaseParameters
   
 contains
   function newParameters result(params)
-    type(Parameters) :: params
+    type(AlphaPhaseParameters) :: params
     !!! DEFAULT VALUES !!!
     params%itterateType = "Off"
     params%itterateNumber = 200
@@ -33,4 +33,4 @@ contains
     params%minHapFreq = 1
   end function newParameters
     
-end module ParametersDefinition
+end module AlphaPhaseParametersDefinition

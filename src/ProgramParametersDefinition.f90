@@ -1,5 +1,5 @@
 module ProgramParametersDefinition
-  use ParametersDefinition
+  use AlphaPhaseParametersDefinition
   implicit none
   
   type:: ProgramParameters
@@ -27,7 +27,7 @@ module ProgramParametersDefinition
     logical :: outputCoreMistakesPercent
     logical :: outputMistakes
     
-    type(Parameters) :: params
+    type(AlphaPhaseParameters) :: params
     
   end type ProgramParameters
 
@@ -39,7 +39,7 @@ contains
   function newProgramParameters result(programParams)
     type(ProgramParameters) :: programParams
     
-    programParams%params = Parameters()
+    programParams%params = AlphaPhaseParameters()
     programParams%library = "None"
   end function newProgramParameters
     

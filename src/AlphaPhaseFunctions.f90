@@ -5,7 +5,7 @@ module AlphaPhaseFunctions
   use PedigreeModule
   use CoreDefinition
   use MemberManagerDefinition
-  use ParametersDefinition
+  use AlphaPhaseParametersDefinition
   use TestResultDefinition
   use CoreUtils
   use InputOutput
@@ -22,7 +22,7 @@ module AlphaPhaseFunctions
 contains
   function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, quiet) result(results)
     type(PedigreeHolder), intent(in) :: p
-    type(Parameters) :: params
+    type(AlphaPhaseParameters) :: params
     type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
     type(Haplotype), pointer, dimension(:,:), intent(in), optional :: truePhase
     logical, optional :: quiet
@@ -193,7 +193,7 @@ contains
   
   function createLibraries(phase, params, existingLibraries) result (results)
     type(Haplotype), pointer, dimension(:,:), intent(in) :: phase
-    type(Parameters) :: params
+    type(AlphaPhaseParameters) :: params
     type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
     
     type(AlphaPhaseResults) :: results
