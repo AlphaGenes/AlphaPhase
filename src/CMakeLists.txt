@@ -11,7 +11,6 @@ SET(ALPHAPHASE_src
             MemberManagerDefinition.f90
             ParametersDefinition.f90
 	    ProgramParametersDefinition.f90
-            Random.f90
             SurrogateDefinition.f90
             TestResultDefinition.f90        
 	    AlphaPhaseFunctions.f90

@@ -3,7 +3,7 @@ module AlphaPhaseResultsDefinition
   use HaplotypeLibraryDefinition
   use SurrogateDefinition
   use TestResultDefinition
-  use PedigreeDefinition
+  use PedigreeModule
   implicit none
   
   
