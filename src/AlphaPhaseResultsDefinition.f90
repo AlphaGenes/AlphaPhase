@@ -76,6 +76,14 @@ contains
       end do
     end do
   end function getFullPhase
+
+
+! TODO need to add disk input/output subroutines for this datatype
+
+  ! subroutine writeToFiles(this)
+  !   type(AlphaPhaseResults) :: this
   
+
+  ! end subroutine writeToFiles
 end module AlphaPhaseResultsDefinition
     
