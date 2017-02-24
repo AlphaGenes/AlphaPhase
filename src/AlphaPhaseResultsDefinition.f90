@@ -7,12 +7,6 @@ module AlphaPhaseResultsDefinition
   implicit none
   
 
-  type :: AlphaPhaseResultsContainer
-    type(AlphaPhaseResults), dimension(:), allocatable :: results
-    integer, dimension(:), allocatable :: coreLengths !< core lengths correspond to results
-    integer :: nCoreLength
-  end type AlphaPhaseResultsContainer
-  
   type :: AlphaPhaseResults
     type(Core), dimension(:), allocatable :: cores
     type(HaplotypeLibrary), dimension(:), allocatable :: libraries
@@ -26,6 +20,15 @@ module AlphaPhaseResultsDefinition
     contains 
       procedure :: getFullPhase
   end type AlphaPhaseResults
+
+  type :: AlphaPhaseResultsContainer
+    type(AlphaPhaseResults), dimension(:), allocatable :: results
+    integer, dimension(:), allocatable :: coreLengths !< core lengths correspond to results
+    integer :: nResults !< number of CORELENGTHS AND RESULTS
+    !< needs to be 2x the number of core lengths for offset and not offset (shifted, not) runs6
+  end type AlphaPhaseResultsContainer
+  
+
   
   interface AlphaPhaseResults
     module procedure newAlphaPhaseResults
