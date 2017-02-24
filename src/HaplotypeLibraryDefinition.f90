@@ -1,3 +1,36 @@
+#ifdef OS_UNIX
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "/"
+#DEFINE COPY "cp"
+#DEFINE MD "mkdir"
+#DEFINE RMDIR "rm -r"
+#DEFINE RM "rm"
+#DEFINE RENAME "mv"
+#DEFINE SH "sh"
+#DEFINE EXE ""
+#DEFINE NULL ""
+
+#else
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "\"
+#DEFINE COPY "copy"
+#DEFINE MD "md"
+#DEFINE RMDIR "RMDIR /S /Q"
+#DEFINE RM "del"
+#DEFINE RENAME "MOVE /Y"
+#DEFINE SH "BAT"
+#DEFINE EXE ".exe"
+#DEFINE NULL " >NUL"
+#endif
+
+
+
 module HaplotypeLibraryDefinition
   use ConstantModule
   use HaplotypeModule
@@ -33,6 +66,7 @@ module HaplotypeLibraryDefinition
     procedure :: allMissing
     procedure :: oneZeroNoOnes
     procedure :: oneOneNoZeros
+    procedure :: WriteHapLib
     final :: destroy
   end type HaplotypeLibrary
   
@@ -674,5 +708,53 @@ contains
     write(tmp,'(i0)') i
     res = trim(tmp)
   end function
+
+
+    subroutine WriteHapLib(library, currentcore, params)
+    use ProgramParametersDefinition
+    use CoreDefinition
+    use HaplotypeModule
+    
+    class(HaplotypeLibrary), intent(in) :: library
+    integer, intent(in) :: currentcore
+    type(ProgramParameters), intent(in) :: params
+
+    integer :: i, SizeCore, nHaps
+    character(len = 300) :: filout
+    type(Haplotype) :: hap
+
+    SizeCore = library%getNumSnps()
+
+    nHaps = library%getSize()
+
+    if (params%outputHaplotypeLibraryText) then
+      write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
+      open (unit = 24, FILE = filout, status = 'unknown')
+    endif
+    if (params%outputHaplotypeLibraryBinary) then
+      write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
+      open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
+      
+      write (34) nHaps, SizeCore
+    end if
+    
+    do i = 1, nHaps
+      hap = library%getHap(i)
+      if (params%outputHaplotypeLibraryText) then	
+	write (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
+	i, library%getHapFreq(i), " ", hap%toIntegerArray()
+      end if
+      if (params%outputHaplotypeLibraryBinary) then
+	write (34) hap%toIntegerArray()
+      end if
+    end do
+
+    if (params%outputHaplotypeLibraryText) then
+      close(24)
+    end if
+    if (params%outputHaplotypeLibraryBinary) then
+      close(34)
+    end if
+  end subroutine WriteHapLib
 
 end module HaplotypeLibraryDefinition
