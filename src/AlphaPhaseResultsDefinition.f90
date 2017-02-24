@@ -6,6 +6,12 @@ module AlphaPhaseResultsDefinition
   use PedigreeModule
   implicit none
   
+
+  type :: AlphaPhaseResultsContainer
+    type(AlphaPhaseResults), dimension(:), allocatable :: results
+    integer, dimension(:), allocatable :: coreLengths !< core lengths correspond to results
+    integer :: nCoreLength
+  end type AlphaPhaseResultsContainer
   
   type :: AlphaPhaseResults
     type(Core), dimension(:), allocatable :: cores
