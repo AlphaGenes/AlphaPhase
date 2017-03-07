@@ -31,6 +31,7 @@ contains
     params%startCoreChar = "1"
     params%endCoreChar = "Combine"
     params%minHapFreq = 1
+    params%coreAndTailLength = 1
   end function newParameters
     
 end module AlphaPhaseParametersDefinition
