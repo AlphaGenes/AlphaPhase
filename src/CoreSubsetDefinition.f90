@@ -156,7 +156,7 @@ contains
     integer :: sire, s, p
 
     s = set%sub2full(animal)
-    p = set%parentPedigree%getSireDamGenotypeIDByIndex(set%parentPedigree%pedigree(set%parentPedigree%genotypeMap(s)),2)
+    p = set%parentPedigree%getSireDamGenotypeIDByIndex(set%parentPedigree%pedigree(set%parentPedigree%hdMap(s)),2)
     sire = set%full2sub(p)
   end function getSireCoreSubset
   
@@ -165,7 +165,7 @@ contains
     integer, intent(in) :: animal
     integer :: dam
     
-    dam = set%full2sub(set%parentPedigree%getSireDamGenotypeIDByIndex(set%parentPedigree%pedigree(set%parentPedigree%genotypeMap(set%sub2full(animal))),2))
+    dam = set%full2sub(set%parentPedigree%getSireDamGenotypeIDByIndex(set%parentPedigree%pedigree(set%parentPedigree%hdMap(set%sub2full(animal))),2))
   end function getDamCoreSubset
   
   function getYieldCoreSubset(set,phase) result (yield)

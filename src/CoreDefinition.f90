@@ -60,7 +60,7 @@ contains
     integer :: nAnisG, i
     
     
-    nAnisG = p%nGenotyped
+    nAnisG = p%nHd
     c%nCoreAndTailSnps = endTailSnp - startTailSnp + 1
     c%nCoreSnps = endCoreSnp - startCoreSnp + 1
     
@@ -69,7 +69,7 @@ contains
     allocate(c%phase(nAnisG,2))
     
     do i = 1, nAnisG
-      tempFullGeno = p%pedigree(p%GenotypeMap(i))%individualGenotype
+      tempFullGeno = p%pedigree(p%hdMap(i))%individualGenotype
       c%coreGenos(i) = tempFullGeno%subset(startCoreSnp, endCoreSnp)
       c%coreAndTailGenos(i) = tempFullGeno%subset(startTailSnp, endTailSnp)
       c%phase(i,1) = Haplotype(c%nCoreSnps)

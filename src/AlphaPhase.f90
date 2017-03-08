@@ -42,7 +42,7 @@ program AlphaPhase
 
   call MakeDirectories(params)
   p = ParsePedigreeAndGenotypeData(params)
-  nAnisG = p%nGenotyped
+  nAnisG = p%nHd
   
   notPrephased = (params%GenotypeFileFormat /= 2)
 
