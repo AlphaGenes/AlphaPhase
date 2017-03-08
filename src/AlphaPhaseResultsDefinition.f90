@@ -19,6 +19,7 @@ module AlphaPhaseResultsDefinition
     
     contains 
       procedure :: getFullPhase
+      procedure :: getFullPhaseIntArray
   end type AlphaPhaseResults
 
   type :: AlphaPhaseResultsContainer
@@ -86,6 +87,31 @@ contains
     end do
   end function getFullPhase
 
+  function getFullPhaseIntArray(results) result(res)
+    class(AlphaPhaseResults) :: results
+    type(integer), dimension(:,:,:), allocatable :: res
+    type(Haplotype) :: tmpHap
+    integer :: nAnisG, nSnp
+    integer :: i, j, k
+    
+    nAnisG = results%cores(1)%getNAnisG()
+    nSnp = 0
+    do i = 1, size(results%cores)
+      nSnp = nSnp + results%cores(i)%getNCoreSnp()
+    end do
+    
+    allocate(res(nAnisG,2,nSnp))
+    
+    do i = 1, nAnisG
+      do j = 1, 2
+	tmpHap = Haplotype(nSnp)
+	do k = 1, size(results%cores)
+	  call tmpHap%setSubset(results%cores(k)%phase(i,j), results%startIndexes(k))
+	end do
+  res(i,j,:) = tmpHap%toIntegerArray()
+      end do
+    end do
+  end function getFullPhaseIntArray
 
 ! TODO need to add disk input/output subroutines for this datatype
 

@@ -21,7 +21,7 @@ module AlphaPhaseFunctions
   
 contains
   function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, quiet) result(results)
-    type(PedigreeHolder), intent(in) :: p
+    type(PedigreeHolder), intent(inout) :: p
     type(AlphaPhaseParameters) :: params
     type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
     type(Haplotype), pointer, dimension(:,:), intent(in), optional :: truePhase
@@ -55,8 +55,14 @@ contains
       quietInternal = quiet
     end if
 
-    nAnisG = p%nGenotyped
-    nSnp = p%pedigree(p%genotypeMap(1))%individualGenotype%getLength()
+    if (p%nHd == 0) then
+    ! TODO check if this is wanted behaviour
+      p%nHd = p%nGenotyped
+      p%hdMap = p%genotypeMap
+      p%hdDictionary = p%genotypeDictionary
+    endif
+    nAnisG = p%nHd
+    nSnp = p%pedigree(p%hdMap(1))%individualGenotype%getLength()
 
     if (.not. present(existingLibraries)) then
       CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    

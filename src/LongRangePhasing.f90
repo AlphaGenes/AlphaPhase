@@ -1,3 +1,27 @@
+!-----------------------------------------------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-----------------------------------------------------------------------------------------------------------------------
+!
+! MODULE: PhaseRounds
+!
+!> @file        LongRangePhasing.f90
+!
+! DESCRIPTION: 
+!> @brief       Module handling 
+!>
+!> @details     This MODULE includes routines to work with haplotypes in a bit-wise way
+!
+!> @author      Roberto Antolin, daniel.money@roslin.ed.ac.uk
+!
+!> @date        Aug 01, 2016
+!
+!> @version     0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016.08.01  RAntolin - Initial Version
+!
+!-----------------------------------------------------------------------------------------------------------------------
+
 Module LongRangePhasing
     use ConstantModule
     implicit none

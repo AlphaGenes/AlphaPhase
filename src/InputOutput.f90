@@ -75,13 +75,13 @@ contains
           hap1 => allCores(j)%phase(i,1)
           TempPhase(startIndex(j):endIndex(j)) = hap1%toIntegerArray()
         end do
-        write(15, fmt) p%pedigree(p%genotypeMap(i))%originalId, &
+        write(15, fmt) p%pedigree(p%hdMap(i))%originalId, &
           TempPhase
         do j = 1, nCores
           hap2 => allCores(j)%phase(i,2)
           TempPhase(startIndex(j):endIndex(j)) = hap2%toIntegerArray()
         end do
-        write(15, fmt) p%pedigree(p%genotypeMap(i))%originalId, &
+        write(15, fmt) p%pedigree(p%hdMap(i))%originalId, &
           TempPhase
       end do
       deallocate(tempPhase)
@@ -129,7 +129,7 @@ contains
           l = l + 1
           CoreCount(l) = (float(counterM)/allCores(j)%getNCoreSnp()) * 100
         end do
-        write (30, fmt) p%pedigree(p%genotypeMap(i))%originalId, CoreCount(:)
+        write (30, fmt) p%pedigree(p%hdMap(i))%originalId, CoreCount(:)
       end do
       deallocate(CoreCount)
       close(30)
@@ -146,7 +146,7 @@ contains
           WorkOut(k - 1) = AllCores(j)%getHapAnis(i,1)
           WorkOut(k) = AllCores(j)%getHapAnis(i,2)
         end do
-        write (33, fmt) p%pedigree(p%genotypeMap(i))%originalId, WorkOut(:)
+        write (33, fmt) p%pedigree(p%hdMap(i))%originalId, WorkOut(:)
       end do
       deallocate(WorkOut)
       close(33)
@@ -160,7 +160,7 @@ contains
         do j = 1, nCores
           TempSwap(j) = AllCores(j)%getSwappable(i)
         end do
-        write (44, fmt) p%pedigree(p%genotypeMap(i))%originalId, TempSwap
+        write (44, fmt) p%pedigree(p%hdMap(i))%originalId, TempSwap
       end do
       deallocate(TempSwap)
       close(44)
@@ -211,9 +211,9 @@ contains
       do i = 1, nAnisG
 	hap1 => c%phase(j, 1)
 	hap2 => c%phase(j, 2)
-	write(15, fmt) p%pedigree(p%genotypeMap(i))%originalId, &
+	write(15, fmt) p%pedigree(p%hdMap(i))%originalId, &
 	hap1%toIntegerArray()
-	write(15, fmt) p%pedigree(p%genotypeMap(i))%originalId, &
+	write(15, fmt) p%pedigree(p%hdMap(i))%originalId, &
 	hap2%toIntegerArray()
       end do
       close(15)
@@ -243,7 +243,7 @@ contains
         CounterM = c%getNCoreSnp() - hap2%numberMissing()
         CoreCount(1) = (float(counterP)/(nSnp) * 100)
         CoreCount(2) = (float(counterM)/(nSnp) * 100)
-        write(30, '(a20,2f7.2)') p%pedigree(p%genotypeMap(i))%originalId, CoreCount(:)
+        write(30, '(a20,2f7.2)') p%pedigree(p%hdMap(i))%originalId, CoreCount(:)
       end do
       close(30)
     end if
@@ -253,7 +253,7 @@ contains
       do i = 1, nAnisG
         WorkOut(1) = c%getHapAnis(i, 1)
         WorkOut(2) = c%getHapAnis(i, 2)
-        write (33, '(a20,2i8)') p%pedigree(p%genotypeMap(i))%originalId, WorkOut(:)
+        write (33, '(a20,2i8)') p%pedigree(p%hdMap(i))%originalId, WorkOut(:)
       end do
       close(33)
     end if
@@ -261,7 +261,7 @@ contains
     if ((params%outputSwappable) .and. (writeSwappable)) then
       open (unit = 44, file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
-        write (44, '(a20,i2)') p%pedigree(p%genotypeMap(i))%originalId, c%getSwappable(i)
+        write (44, '(a20,i2)') p%pedigree(p%hdMap(i))%originalId, c%getSwappable(i)
       end do
       close(44)
     end if
@@ -489,7 +489,13 @@ contains
       p = PedigreeHolder(params%GenotypeFile,nAnisRawPedigree,params%nSnp, params%GenotypeFileFormat )
     endif
 
-   
+     if (p%nHd == 0) then
+    ! TODO check if this is wanted behaviour
+      p%nHd = p%nGenotyped
+      p%hdMap = p%genotypeMap
+      p%hdDictionary = p%genotypeDictionary
+    endif
+    
   end function ParsePedigreeAndGenotypeData
 
   function ParsePhaseData(PhaseFile, nAnisG, nSnp) result(Phase)
@@ -842,7 +848,7 @@ end function ReadInParameterFile
       open (unit = 13, FILE = filout, status = 'unknown')
       write(fmt, '(a,i10,a)') '(a20,', size(definition%partition,2), 'i6)'
       do i = 1, nAnisG
-	write (13, fmt) p%pedigree(p%genotypeMap(i))%originalId, definition%partition(i,:)
+	write (13, fmt) p%pedigree(p%hdMap(i))%originalId, definition%partition(i,:)
       end do
       close(13)
     end if
@@ -860,7 +866,7 @@ end function ReadInParameterFile
 	  end if
 	enddo
 	write (19, '(a20,5i8)') &
-	p%pedigree(p%genotypeMap(i))%originalId, count(definition%partition(i,:) == 1), count(definition%partition(i,:) == 2)&
+	p%pedigree(p%hdMap(i))%originalId, count(definition%partition(i,:) == 1), count(definition%partition(i,:) == 2)&
 	, count(definition%partition(i,:) == 3), nSurrogates, definition%method(i)
       enddo
       close(19)
@@ -975,7 +981,7 @@ end function ReadInParameterFile
       write (filout, '(".",a1,"Simulation",a1,"IndivMistakes",i0,".txt")') DASH, DASH, OutputPoint
       open (unit = 17, FILE = filout, status = 'unknown')
       do i = 1, nAnisG
-	write(17, '(a20,6i6,a6,6i6,a6,6i6,a6,6i6)') p%pedigree(p%genotypeMap(i))%originalId, &
+	write(17, '(a20,6i6,a6,6i6,a6,6i6,a6,6i6)') p%pedigree(p%hdMap(i))%originalId, &
 	results%counts(i,1,ALL_,CORRECT_), results%counts(i,2,ALL_,CORRECT_), &
 	results%counts(i,1,ALL_,NOTPHASED_), results%counts(i,2,ALL_,NOTPHASED_), &
 	results%counts(i,1,ALL_,INCORRECT_), results%counts(i,2,ALL_,INCORRECT_), "|", &
@@ -997,7 +1003,7 @@ end function ReadInParameterFile
       open (unit = 20, FILE = filout, status = 'unknown')
 
       do i = 1, nAnisG
-	write (20, '(a20,6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') p%pedigree(p%genotypeMap(i))%originalId, &
+	write (20, '(a20,6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') p%pedigree(p%hdMap(i))%originalId, &
 	results%percent(i,1,ALL_,CORRECT_), results%percent(i,2,ALL_,CORRECT_), &
 	results%percent(i,1,ALL_,NOTPHASED_), results%percent(i,2,ALL_,NOTPHASED_), &
 	results%percent(i,1,ALL_,INCORRECT_), results%percent(i,2,ALL_,INCORRECT_), "|", &

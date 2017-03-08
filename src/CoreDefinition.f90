@@ -348,6 +348,29 @@ contains
     end do
 
   end subroutine flipHaplotypes
+
+
+
+
+  ! subroutine writeCore(core,file)
+  !   integer :: i
+
+
+  !   open(newUnit=fileUnit, file=fileIn, status="unknown")
+  !   write(fileUnit,*) size(core%coreAndTailGenos) !< write number firss
+  !   do i=1, size(core%coreAndTailGenos)
+  !     write(fileUnit,*) core%coreAndTailGenos(i)
+  !   enddo
+  !   write(fileUnit,*) size(core%coreGenos) !< write number first
+  !   do i=1, size(core%coreGenos)
+  !     write(fileUnit,*) core%coreGenos(i)
+  !   enddo
+
+    
+  
+
+
+  ! end subroutine writeCore
     
 end module CoreDefinition
 
