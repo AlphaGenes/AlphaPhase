@@ -1,3 +1,25 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     AlphaPhaseResultsDefinition.f90
+!
+! DESCRIPTION:
+!> @brief    Module containing return type for alphaphase program
+!> @details  Module contains information returned by alphaphase
+!
+!
+!> @date     January 4, 2017
+!
+!> @version  1.0.0
+!
+!
+!-------------------------------------------------------------------------------
+
+
 module AlphaPhaseResultsDefinition
   use CoreDefinition
   use HaplotypeLibraryDefinition
@@ -62,6 +84,12 @@ contains
     results%nCores = nCores
   end function newAlphaPhaseResults
   
+
+  !---------------------------------------------------------------------------
+  !< @brief Returns a  2D array of full phase of haplotype objects
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    Febuary 26, 2017
+  !---------------------------------------------------------------------------
   function getFullPhase(results) result(haps)
     class(AlphaPhaseResults) :: results
     type(Haplotype), dimension(:,:), pointer :: haps
@@ -87,9 +115,16 @@ contains
     end do
   end function getFullPhase
 
+
+
+  !---------------------------------------------------------------------------
+  !< @brief Returns a 3D Integer array of full phase
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    Febuary 26, 2017
+  !---------------------------------------------------------------------------
   function getFullPhaseIntArray(results) result(res)
     class(AlphaPhaseResults) :: results
-    type(integer), dimension(:,:,:), allocatable :: res
+    type(integer), dimension(:,:,:), allocatable :: res !< returns array in format (nAnisG,nSnp,2)
     type(Haplotype) :: tmpHap
     integer :: nAnisG, nSnp
     integer :: i, j, k
@@ -100,7 +135,7 @@ contains
       nSnp = nSnp + results%cores(i)%getNCoreSnp()
     end do
     
-    allocate(res(nAnisG,2,nSnp))
+    allocate(res(nAnisG,nSnp,2))
     
     do i = 1, nAnisG
       do j = 1, 2
@@ -108,7 +143,7 @@ contains
 	do k = 1, size(results%cores)
 	  call tmpHap%setSubset(results%cores(k)%phase(i,j), results%startIndexes(k))
 	end do
-  res(i,j,:) = tmpHap%toIntegerArray()
+  res(i,:,j) = tmpHap%toIntegerArray()
       end do
     end do
   end function getFullPhaseIntArray

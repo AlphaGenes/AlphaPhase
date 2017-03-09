@@ -1,3 +1,23 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     AlphaPhaseFunctions.f90
+!
+! DESCRIPTION:
+!> @brief    Module allowing for functionality of alphaphase to be run independently
+!
+!
+!> @date     January 4, 2017
+!
+!> @version  1.0.0
+!
+!
+!-------------------------------------------------------------------------------
+
 module AlphaPhaseFunctions
   use HaplotypeLibraryDefinition 
   use SurrogateDefinition
