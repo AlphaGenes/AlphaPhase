@@ -124,7 +124,7 @@ contains
   !---------------------------------------------------------------------------
   function getFullPhaseIntArray(results) result(res)
     class(AlphaPhaseResults) :: results
-    type(integer), dimension(:,:,:), allocatable :: res !< returns array in format (nAnisG,nSnp,2)
+    integer, dimension(:,:,:), allocatable :: res !< returns array in format (nAnisG,nSnp,2)
     type(Haplotype) :: tmpHap
     integer :: nAnisG, nSnp
     integer :: i, j, k
