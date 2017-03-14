@@ -466,20 +466,9 @@ contains
     type(ProgramParameters), intent(in) :: params
     type(PedigreeHolder) :: p
 
-    integer :: i, truth, counter, nAnisG
-    integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
-
-    integer, allocatable, dimension (:) :: DanRecode, DanPos !, DanDamGenotyped, DanSireGenotyped
-    character(lengan), allocatable, dimension(:) :: DanArray
-    integer spos, dpos
-
+    integer :: nAnisG
     integer :: nAnisRawPedigree
-
-    character(lengan), allocatable :: ped(:,:)
     
-    integer(kind = 4), allocatable, dimension (:), target :: SireGenotyped, DamGenotyped
-    character(lengan), dimension(:), allocatable :: GenotypeId
-
     call CountInData(nAnisRawPedigree, nAnisG, params)
 
     if (trim(params%PedigreeFile) /= "NoPedigree") then
