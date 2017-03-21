@@ -34,7 +34,7 @@ module InputOutput
   implicit none
 
   integer, parameter, private :: lengan = 20
-
+  
 contains
 
   subroutine WriteOutResults(allCores, startIndex, endIndex, p, writeSwappable, params)
@@ -66,7 +66,7 @@ contains
       nSnp = nSnp + allCores(i)%getNCoreSnp()
     end do
 
-    if (params%outputFinalPhase) then
+    if (params%outputParams%outputFinalPhase) then
       open (unit = 15, file = "."//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
       allocate(tempPhase(nSnp))
       write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
@@ -88,7 +88,7 @@ contains
       close(15)
     end if
 
-    if (params%outputCoreIndex) then
+    if (params%outputParams%outputCoreIndex) then
       open (unit = 25, file = "."//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
       do i = 1, nCores
         write (25, *) i, startIndex(i), endIndex(i)
@@ -96,7 +96,7 @@ contains
       close(25)
     end if
 
-    if (params%outputSnpPhaseRate) then
+    if (params%outputParams%outputSnpPhaseRate) then
       open (unit = 28, file = "."//DASH//"PhasingResults"//DASH//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
         do j = 1, allCores(i)%getNCoreSnp()
@@ -113,7 +113,7 @@ contains
       close(28)
     end if
 
-    if (params%outputIndivPhaseRate) then
+    if (params%outputParams%outputIndivPhaseRate) then
       open (unit = 30, file = "."//DASH//"PhasingResults"//DASH//"IndivPhaseRate.txt", status = "unknown")
       allocate(CoreCount(nCores * 2))
       write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'f7.2)'
@@ -135,7 +135,7 @@ contains
       close(30)
     end if
 
-    if (params%outputHapIndex) then
+    if (params%outputParams%outputHapIndex) then
       open (unit = 33, file = "."//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
       allocate(WorkOut(nCores * 2))
       write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'i8)'
@@ -152,7 +152,7 @@ contains
       close(33)
     end if
 
-    if ((params%outputSwappable) .and. (writeSwappable)) then
+    if ((params%outputParams%outputSwappable) .and. (writeSwappable)) then
       open (unit = 44, file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
       allocate(TempSwap(nCores))
       write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
@@ -166,7 +166,7 @@ contains
       close(44)
     end if
     
-    if (params%outputPhasingYield) then
+    if (params%outputParams%outputPhasingYield) then
       open (unit = 29, file = "."//DASH//"PhasingResults"//DASH//"PhasingYield.txt", status = "unknown")
       do j = 1,nCores
 	write (29, '(i10,f7.2)') j, AllCores(j)%getTotalYield()
@@ -205,7 +205,7 @@ contains
 
     coreIDtxt = itoa(coreID)
 
-    if (params%outputFinalPhase) then
+    if (params%outputParams%outputFinalPhase) then
       open (unit = 15, file = "."//DASH//"PhasingResults"//DASH//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
       write(fmt, '(a,i10,a)') '(a20,', c%getNSnp(), 'i2)'
       do i = 1, nAnisG
@@ -219,7 +219,7 @@ contains
       close(15)
     end if
 
-    if (params%outputSnpPhaseRate) then
+    if (params%outputParams%outputSnpPhaseRate) then
       open (unit = 28, file = "."//DASH//"PhasingResults"//DASH//"SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nSnp
         counter = 0
@@ -234,7 +234,7 @@ contains
       close(28)
     end if
 
-    if (params%outputIndivPhaseRate) then
+    if (params%outputParams%outputIndivPhaseRate) then
       open (unit = 30, file = "."//DASH//"PhasingResults"//DASH//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
         hap1 => c%phase(j, 1)
@@ -248,7 +248,7 @@ contains
       close(30)
     end if
 
-    if (params%outputHapIndex) then
+    if (params%outputParams%outputHapIndex) then
       open (unit = 33, file = "."//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
         WorkOut(1) = c%getHapAnis(i, 1)
@@ -258,7 +258,7 @@ contains
       close(33)
     end if
 
-    if ((params%outputSwappable) .and. (writeSwappable)) then
+    if ((params%outputParams%outputSwappable) .and. (writeSwappable)) then
       open (unit = 44, file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
         write (44, '(a20,i2)') p%pedigree(p%hdMap(i))%originalId, c%getSwappable(i)
@@ -304,7 +304,7 @@ contains
 
     nCores = size(CoreIndex,1)
 
-    if (params%outputCoreIndex) then
+    if (params%outputParams%outputCoreIndex) then
       open (unit = 25, file = "."//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
       do i = 1, nCores
         write (25, *) i, CoreIndex(i,:)
@@ -312,7 +312,7 @@ contains
       close(25)
     end if
 
-    if (params%outputFinalPhase) then
+    if (params%outputParams%outputFinalPhase) then
       !!! FINAL PHASE !!!
       open (unit = 15, file = "."//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
       allocate(inUnits(nCores))
@@ -346,7 +346,7 @@ contains
       close(15)
     end if
 
-    if (params%outputHapIndex) then
+    if (params%outputParams%outputHapIndex) then
       !!! HAPINDCARRY !!!
       open (unit = 33, file = "."//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
       allocate(inUnits(nCores))
@@ -377,7 +377,7 @@ contains
       close(33)
     end if
 
-    if (params%outputIndivPhaseRate) then
+    if (params%outputParams%outputIndivPhaseRate) then
       !!! INDIVPHASE !!!
       open (unit = 30, file = "."//DASH//"PhasingResults"//DASH//"IndivPhaseRate.txt", status = "unknown")
       allocate(inUnits(nCores))
@@ -408,7 +408,7 @@ contains
       close(30)
     end if
 
-    if (params%outputSnpPhaseRate) then
+    if (params%outputParams%outputSnpPhaseRate) then
       !!! SNPPHASE !!!
       open (unit = 28, file = "."//DASH//"PhasingResults"//DASH//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
@@ -425,7 +425,7 @@ contains
     end if
 
     !!! SWAPHAPMAT !!!
-    if (params%outputSwappable .and. writeSwappable) then
+    if (params%outputParams%outputSwappable .and. writeSwappable) then
       open (unit = 44, file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
       allocate(inUnits(nCores))
       do i = 1, nCores
@@ -718,61 +718,61 @@ contains
   endif
 
   if (outputoption .eq. "Impute") then
-    params%outputFinalPhase = .false.
-    params%outputCoreIndex = .true.
-    params%outputSnpPhaseRate = .false.
-    params%outputIndivPhaseRate = .false.
-    params%outputHapIndex = .false.
-    params%outputSwappable = .false.
-    params%outputHapCommonality = .false.
-    params%outputSurrogates = .false.
-    params%outputSurrogatesSummary = .false.
-    params%outputHaplotypeLibraryText = .false.
-    params%outputHaplotypeLibraryBinary = .true.
-    params%outputPhasingYield = .false.
-    params%outputTimer = .false.
-    params%outputIndivMistakes = .false.
-    params%outputIndivMistakesPercent = .false.
-    params%outputCoreMistakesPercent = .false.
-    params%outputMistakes = .false.
+    params%outputParams%outputFinalPhase = .false.
+    params%outputParams%outputCoreIndex = .true.
+    params%outputParams%outputSnpPhaseRate = .false.
+    params%outputParams%outputIndivPhaseRate = .false.
+    params%outputParams%outputHapIndex = .false.
+    params%outputParams%outputSwappable = .false.
+    params%outputParams%outputHapCommonality = .false.
+    params%outputParams%outputSurrogates = .false.
+    params%outputParams%outputSurrogatesSummary = .false.
+    params%outputParams%outputHaplotypeLibraryText = .false.
+    params%outputParams%outputHaplotypeLibraryBinary = .true.
+    params%outputParams%outputPhasingYield = .false.
+    params%outputParams%outputTimer = .false.
+    params%outputParams%outputIndivMistakes = .false.
+    params%outputParams%outputIndivMistakesPercent = .false.
+    params%outputParams%outputCoreMistakesPercent = .false.
+    params%outputParams%outputMistakes = .false.
   end if
   if ((outputoption .eq. "Full") .or. (outputoption .eq. "1")) then
-    params%outputFinalPhase = .true.
-    params%outputCoreIndex = .true.
-    params%outputSnpPhaseRate = .true.
-    params%outputIndivPhaseRate = .true.
-    params%outputHapIndex = .true.
-    params%outputSwappable = .true.
-    params%outputHapCommonality = .true.
-    params%outputSurrogates = .true.
-    params%outputSurrogatesSummary = .true.
-    params%outputHaplotypeLibraryText = .true.
-    params%outputHaplotypeLibraryBinary = .true.
-    params%outputPhasingYield = .true.
-    params%outputTimer = .true.
-    params%outputIndivMistakes = .true.
-    params%outputIndivMistakesPercent = .true.
-    params%outputCoreMistakesPercent = .true.
-    params%outputMistakes = .true.
+    params%outputParams%outputFinalPhase = .true.
+    params%outputParams%outputCoreIndex = .true.
+    params%outputParams%outputSnpPhaseRate = .true.
+    params%outputParams%outputIndivPhaseRate = .true.
+    params%outputParams%outputHapIndex = .true.
+    params%outputParams%outputSwappable = .true.
+    params%outputParams%outputHapCommonality = .true.
+    params%outputParams%outputSurrogates = .true.
+    params%outputParams%outputSurrogatesSummary = .true.
+    params%outputParams%outputHaplotypeLibraryText = .true.
+    params%outputParams%outputHaplotypeLibraryBinary = .true.
+    params%outputParams%outputPhasingYield = .true.
+    params%outputParams%outputTimer = .true.
+    params%outputParams%outputIndivMistakes = .true.
+    params%outputParams%outputIndivMistakesPercent = .true.
+    params%outputParams%outputCoreMistakesPercent = .true.
+    params%outputParams%outputMistakes = .true.
   end if
   if ((outputoption .eq. "Standard") .or. (outputoption .eq. "0")) then
-    params%outputFinalPhase = .true.
-    params%outputCoreIndex = .true.
-    params%outputSnpPhaseRate = .true.
-    params%outputIndivPhaseRate = .true.
-    params%outputHapIndex = .true.
-    params%outputSwappable = .true.
-    params%outputHapCommonality = .false.
-    params%outputSurrogates = .false.
-    params%outputSurrogatesSummary = .false.
-    params%outputHaplotypeLibraryText = .false.
-    params%outputHaplotypeLibraryBinary = .true.
-    params%outputPhasingYield = .true.
-    params%outputTimer = .true.
-    params%outputIndivMistakes = .false.
-    params%outputIndivMistakesPercent = .false.
-    params%outputCoreMistakesPercent = .false.
-    params%outputMistakes = .false.
+    params%outputParams%outputFinalPhase = .true.
+    params%outputParams%outputCoreIndex = .true.
+    params%outputParams%outputSnpPhaseRate = .true.
+    params%outputParams%outputIndivPhaseRate = .true.
+    params%outputParams%outputHapIndex = .true.
+    params%outputParams%outputSwappable = .true.
+    params%outputParams%outputHapCommonality = .false.
+    params%outputParams%outputSurrogates = .false.
+    params%outputParams%outputSurrogatesSummary = .false.
+    params%outputParams%outputHaplotypeLibraryText = .false.
+    params%outputParams%outputHaplotypeLibraryBinary = .true.
+    params%outputParams%outputPhasingYield = .true.
+    params%outputParams%outputTimer = .true.
+    params%outputParams%outputIndivMistakes = .false.
+    params%outputParams%outputIndivMistakesPercent = .false.
+    params%outputParams%outputCoreMistakesPercent = .false.
+    params%outputParams%outputMistakes = .false.
   end if
 
   PercSurrDisagree = PercSurrDisagree/100
@@ -799,7 +799,7 @@ end function ReadInParameterFile
     SizeCore = library%getNumSnps()
     nHaps = library%getSize()
 
-    if (params%outputHapCommonality) then
+    if (params%outputParams%outputHapCommonality) then
       write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"Extras",a1,"HapCommonality",i0,".txt")') DASH, DASH, DASH, DASH, OutputPoint
       open (unit = 27, FILE = filout, status = 'unknown')
       
@@ -832,7 +832,7 @@ end function ReadInParameterFile
 
     nAnisG = size(definition%numOppose,1)
 
-    if (params%outputSurrogates) then
+    if (params%outputParams%outputSurrogates) then
       write (filout, '(".",a1,"Miscellaneous",a1,"Surrogates",i0,".txt")') DASH, DASH, OutputPoint
       open (unit = 13, FILE = filout, status = 'unknown')
       write(fmt, '(a,i10,a)') '(a20,', size(definition%partition,2), 'i6)'
@@ -843,7 +843,7 @@ end function ReadInParameterFile
     end if
     
     
-    if (params%outputSurrogatesSummary) then
+    if (params%outputParams%outputSurrogatesSummary) then
       write (filout, '(".",a1,"Miscellaneous",a1,"SurrogatesSummary",i0,".txt")') DASH, DASH, OutputPoint
       open (unit = 19, FILE = filout, status = 'unknown')
       do i = 1, nAnisG
@@ -918,13 +918,13 @@ end function ReadInParameterFile
 
     call system(MD // "PhasingResults")
     call system(MD // "PhasingResults"//DASH//"HaplotypeLibrary")
-    if (params%outputHapCommonality) call system(MD // "PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
+    if (params%outputParams%outputHapCommonality) call system(MD // "PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
     call system(MD // "Miscellaneous")
     
     if (params%Simulation) then
       call system(RMDIR // "Simulation")
-      if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent .or. &
-	    params%outputMistakes) then
+      if (params%outputParams%outputIndivMistakes .or. params%outputParams%outputIndivMistakesPercent .or. params%outputParams%outputCoreMistakesPercent .or. &
+	    params%outputParams%outputMistakes) then
 	call system(MD // "Simulation")
       endif
     end if
@@ -939,7 +939,7 @@ end function ReadInParameterFile
     real, intent(in) :: seconds
     type(ProgramParameters), intent(in) :: params
          
-    if (params%outputTimer) then
+    if (params%outputParams%outputTimer) then
       open (unit = 32, file = "."//DASH//"PhasingResults"//DASH//"Timer.txt", status = "unknown")
       write(32, '(A27,A7,I3,A9,I3,A9,F6.2)') "Time Elapsed", "Hours", INT(Hours), "Minutes", INT(Minutes), "Seconds", Seconds
       close(32)
@@ -966,7 +966,7 @@ end function ReadInParameterFile
     nAnisG = c % getNAnisG()
     nSNp = c % getNCoreSnp()
 
-    if (params%outputIndivMistakes) then
+    if (params%outputParams%outputIndivMistakes) then
       write (filout, '(".",a1,"Simulation",a1,"IndivMistakes",i0,".txt")') DASH, DASH, OutputPoint
       open (unit = 17, FILE = filout, status = 'unknown')
       do i = 1, nAnisG
@@ -987,7 +987,7 @@ end function ReadInParameterFile
       close(17)
     end if
     
-    if (params%outputIndivMistakesPercent) then
+    if (params%outputParams%outputIndivMistakesPercent) then
       write (filout, '(".",a1,"Simulation",a1,"IndivMistakesPercent",i0,".txt")') DASH, DASH, OutputPoint
       open (unit = 20, FILE = filout, status = 'unknown')
 
@@ -1009,7 +1009,7 @@ end function ReadInParameterFile
       close(20)
     end if
     
-    if (params%outputCoreMistakesPercent) then
+    if (params%outputParams%outputCoreMistakesPercent) then
       write (filout, '(".",a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
       open (unit = 31, FILE = filout, status = 'unknown', position = 'append')
       write (31, '(6f9.4)') &
@@ -1034,7 +1034,7 @@ end function ReadInParameterFile
     
     integer :: i
 
-    if (params%outputCoreMistakesPercent) then
+    if (params%outputParams%outputCoreMistakesPercent) then
       allocate(AverageMatrix(nCores, 6))
       write (filout, '(".",a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
       open (unit = 31, FILE = filout, status = 'unknown')

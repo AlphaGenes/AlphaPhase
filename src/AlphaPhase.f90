@@ -75,7 +75,7 @@ program AlphaPhase
   do i = 1, results%nCores
     id = results%ids(i)
     call WriteHapLib(results%libraries(i), id, params)
-    if (params%outputHapCommonality) then
+    if (params%outputParams%outputHapCommonality) then
       call HapCommonality(results%libraries(i), id, params)
     end if
     if (.not. singleRun) then

@@ -9,6 +9,7 @@ SET(ALPHAPHASE_src
             InputOutput.f90
             LongRangePhasing.f90
             MemberManagerDefinition.f90
+	    OutputParametersDefinition.f90
             ParametersDefinition.f90
 	    ProgramParametersDefinition.f90
             SurrogateDefinition.f90

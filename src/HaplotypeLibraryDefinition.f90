@@ -710,7 +710,7 @@ contains
   end function
 
 
-    subroutine WriteHapLib(library, currentcore, params)
+  subroutine WriteHapLib(library, currentcore, params)
     use ProgramParametersDefinition
     use CoreDefinition
     use HaplotypeModule
@@ -727,11 +727,11 @@ contains
 
     nHaps = library%getSize()
 
-    if (params%outputHaplotypeLibraryText) then
+    if (params%outputParams%outputHaplotypeLibraryText) then
       write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
       open (unit = 24, FILE = filout, status = 'unknown')
     endif
-    if (params%outputHaplotypeLibraryBinary) then
+    if (params%outputParams%outputHaplotypeLibraryBinary) then
       write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
       open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
       
@@ -740,19 +740,19 @@ contains
     
     do i = 1, nHaps
       hap = library%getHap(i)
-      if (params%outputHaplotypeLibraryText) then	
+      if (params%outputParams%outputHaplotypeLibraryText) then	
 	write (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
 	i, library%getHapFreq(i), " ", hap%toIntegerArray()
       end if
-      if (params%outputHaplotypeLibraryBinary) then
+      if (params%outputParams%outputHaplotypeLibraryBinary) then
 	write (34) hap%toIntegerArray()
       end if
     end do
 
-    if (params%outputHaplotypeLibraryText) then
+    if (params%outputParams%outputHaplotypeLibraryText) then
       close(24)
     end if
-    if (params%outputHaplotypeLibraryBinary) then
+    if (params%outputParams%outputHaplotypeLibraryBinary) then
       close(34)
     end if
   end subroutine WriteHapLib
