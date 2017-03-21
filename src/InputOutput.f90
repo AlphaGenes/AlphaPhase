@@ -73,10 +73,10 @@ contains
       open (unit = 28, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
         do j = 1, allCores(i)%getNCoreSnp()
-          hap1 => allCores(i)%phase(j,1)
-          hap2 => allCores(i)%phase(j,2)
           counter = 0
           do k = 1, nAnisG
+	    hap1 => allCores(i)%phase(k,1)
+	    hap2 => allCores(i)%phase(k,2)
             if ((hap1%getPhaseMod(j) == 0).or.(hap1%getPhaseMod(j) == 1)) counter = counter + 1
             if ((hap2%getPhaseMod(j) == 0).or.(hap2%getPhaseMod(j) == 1)) counter = counter + 1
           end do
@@ -286,7 +286,7 @@ contains
     end if
 
     if (params%outputFinalPhase) then
-      !!! FINAL PHASE !!!
+      ! FINAL PHASE !
       open (unit = 15, file = "."//SEP//"PhasingResults"//SEP//"FinalPhase.txt", status = "unknown")
       allocate(inUnits(nCores))
       do i = 1, nCores
@@ -320,7 +320,7 @@ contains
     end if
 
     if (params%outputHapIndex) then
-      !!! HAPINDCARRY !!!
+      ! HAPINDCARRY !
       open (unit = 33, file = "."//SEP//"PhasingResults"//SEP//"FinalHapIndCarry.txt", status = "unknown")
       allocate(inUnits(nCores))
       do i = 1, nCores
@@ -351,7 +351,7 @@ contains
     end if
 
     if (params%outputIndivPhaseRate) then
-      !!! INDIVPHASE !!!
+      ! INDIVPHASE !
       open (unit = 30, file = "."//SEP//"PhasingResults"//SEP//"IndivPhaseRate.txt", status = "unknown")
       allocate(inUnits(nCores))
       do i = 1, nCores
@@ -382,7 +382,7 @@ contains
     end if
 
     if (params%outputSnpPhaseRate) then
-      !!! SNPPHASE !!!
+      ! SNPPHASE !
       open (unit = 28, file = "."//SEP//"PhasingResults"//SEP//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
         coreLength  = CoreIndex(i,2) - CoreIndex(i,1) + 1
@@ -397,7 +397,7 @@ contains
       close(28)
     end if
 
-    !!! SWAPHAPMAT !!!
+    ! SWAPHAPMAT !
     if (params%outputSwappable .and. writeSwappable) then
       open (unit = 44, file = "."//SEP//"PhasingResults"//SEP//"SwapPatMat.txt", status = "unknown")
       allocate(inUnits(nCores))
@@ -441,7 +441,7 @@ contains
     integer :: i, truth, counter, nAnisG
     integer, allocatable, dimension (:) :: GenoInPed, WorkVec, ReadingVector
 
-    integer, allocatable, dimension (:) :: DanRecode, DanPos !, DanDamGenotyped, DanSireGenotyped
+    integer, allocatable, dimension (:) :: DanRecode, DanPos
     character(lengan), allocatable, dimension(:) :: DanArray
     integer spos, dpos
 

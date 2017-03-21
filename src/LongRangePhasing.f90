@@ -62,7 +62,8 @@ contains
       total = 0
       counter = 0
       do j = 1, nAnisG
-	if (surrogates%numOppose(i, j) > surrogates%threshold) then
+	if ((surrogates%numOppose(i, j) > surrogates%threshold) .and. &
+	surrogates%enoughInCommon(i,j)) then
 	  total = total+surrogates%numOppose(i, j)
 	  counter = counter + 1
 	endif

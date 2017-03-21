@@ -148,10 +148,13 @@ contains
     integer :: counter, i
     double precision :: yield
     
+    counter = 0
+    
     do i = 1, size(c%phase,1)
       counter = counter + c%phase(i,phase)%numberNotMissing()
     end do
-    yield = (float(counter)/(size(c%phase,1) * size(c%phase,2))) * 100
+    
+    yield = (float(counter)/(size(c%phase,1) * c%getNCoreSnp())) * 100
   end function getYield
   
   function getTotalYield(c) result(yield)
@@ -181,6 +184,7 @@ contains
     
     integer :: count, i, j
     
+    count = 0
     do i = 1, size(c%phase,1)
       do j = 1, 2
 	if (c%phase(i,j)%fullyPhased()) then
@@ -212,8 +216,6 @@ contains
     type(Haplotype), pointer :: W1, W2
     type(Haplotype), pointer :: hap1, hap2, truehap1, truehap2
     integer :: HA1, HA2
-    logical :: FP1, FP2
-
     integer :: nAnisG, nSnp
 
     nAnisG = c%getNAnisG()
