@@ -7,7 +7,7 @@ module ParametersDefinition
     logical :: Offset
     integer :: UseSurrsN
     integer :: NumSurrDisagree
-    double precision :: PercGenoHaploDisagree
+    double precision :: PercGenoHaploDisagree, minOverlap, minPresent, minToKeep
     double precision :: GenotypeMissingErrorPercentage
 
     character (len = 300) :: itterateType
@@ -24,13 +24,16 @@ module ParametersDefinition
 contains
   function newParameters result(params)
     type(Parameters) :: params
-    !!! DEFAULT VALUES !!!
+    ! DEFAULT VALUES !
     params%itterateType = "Off"
     params%itterateNumber = 200
     params%numIter = 1
     params%startCoreChar = "1"
     params%endCoreChar = "Combine"
     params%minHapFreq = 1
+    params%minOverlap = 0
+    params%minPresent = 100
+    params%minToKeep = 100
   end function newParameters
     
 end module ParametersDefinition
