@@ -1188,6 +1188,55 @@ end function ReadInParameterFile
     PRINT '(A107,A7,I3,A9,I3,A9,F6.2)', "Time Elapsed", "Hours", INT(Hours), "Minutes", INT(Minutes), "Seconds", Seconds
     call writeTimer(INT(Hours),INT(Minutes),Seconds,params)
   end subroutine PrintTimerTitles
+  
+  subroutine WriteHapLib(library, currentcore, params)
+    use ProgramParametersDefinition
+    use CoreDefinition
+    use HaplotypeModule
+    use HaplotypeLibraryDefinition
+    
+    class(HaplotypeLibrary), intent(in) :: library
+    integer, intent(in) :: currentcore
+    type(ProgramParameters), intent(in) :: params
+
+    integer :: i, SizeCore, nHaps
+    character(len = 300) :: filout
+    type(Haplotype) :: hap
+
+    SizeCore = library%getNumSnps()
+
+    nHaps = library%getSize()
+
+    if (params%outputParams%outputHaplotypeLibraryText) then
+      write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
+      open (unit = 24, FILE = filout, status = 'unknown')
+    endif
+    if (params%outputParams%outputHaplotypeLibraryBinary) then
+      write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
+      open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
+      
+      write (34) nHaps, SizeCore
+    end if
+    
+    do i = 1, nHaps
+      hap = library%getHap(i)
+      if (params%outputParams%outputHaplotypeLibraryText) then	
+	write (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
+	i, library%getHapFreq(i), " ", hap%toIntegerArray()
+      end if
+      if (params%outputParams%outputHaplotypeLibraryBinary) then
+	write (34) hap%toIntegerArray()
+      end if
+    end do
+
+    if (params%outputParams%outputHaplotypeLibraryText) then
+      close(24)
+    end if
+    if (params%outputParams%outputHaplotypeLibraryBinary) then
+      close(34)
+    end if
+  end subroutine WriteHapLib
+  
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
