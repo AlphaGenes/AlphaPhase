@@ -38,7 +38,6 @@ module CoreDefinition
     procedure :: setSwappable
     procedure :: getSwappable
     procedure :: flipHaplotypes
-    procedure :: writeCore
     final :: destroyCore
   end type Core
   
@@ -349,45 +348,5 @@ contains
 
   end subroutine flipHaplotypes
 
-! 
-
-! TODO check with daniel for better way to do this
-  subroutine writeCore(coreIn,fileIn)
-
-    class(Core) :: coreIn
-    character(len=*), intent(in) :: fileIn
-    integer :: i,h, fileUnit
-
-
-    open(newUnit=fileUnit, file=fileIn, status="unknown")
-    write(fileUnit,*) size(coreIn%coreAndTailGenos) !< write number first
-    do i=1, size(coreIn%coreAndTailGenos)
-      write(fileUnit,*) coreIn%coreAndTailGenos(i)
-    enddo
-    write(fileUnit,*) size(coreIn%coreGenos) !< write number first
-    do i=1, size(coreIn%coreGenos)
-      write(fileUnit,*) coreIn%coreGenos(i)
-    enddo                 
-    write(fileUnit,*) size(coreIn%phase,1),size(coreIn%phase,1)  !< write number first
-    do i=1, size(coreIn%phase,1)
-      do h=1, size(coreIn%phase,2)
-        write(fileUnit,*) coreIn%phase(i,h)
-      enddo
-    enddo
-
-    do i=1, size(coreIn%fullyPhased,1)
-      do h=1, size(coreIn%fullyPhased,2)
-        write(fileUnit,*) coreIn%fullyPhased(i,h)
-      enddo
-    enddo
-
-    do i=1, size(coreIn%hapAnis,1)
-      do h=1, size(coreIn%hapAnis,2)
-        write(fileUnit,*) coreIn%hapAnis(i,h)
-      enddo
-    enddo
-
-  end subroutine writeCore
-    
 end module CoreDefinition
 
