@@ -6,7 +6,6 @@
 #DEFINE DASH "/"
 #DEFINE COPY "cp"
 #DEFINE MD "mkdir"
-#DEFINE RMDIR "rm -r"
 #DEFINE RM "rm"
 #DEFINE RENAME "mv"
 #DEFINE SH "sh"
@@ -21,7 +20,6 @@
 #DEFINE DASH "\"
 #DEFINE COPY "copy"
 #DEFINE MD "md"
-#DEFINE RMDIR "RMDIR /S /Q"
 #DEFINE RM "del"
 #DEFINE RENAME "MOVE /Y"
 #DEFINE SH "BAT"
@@ -752,8 +750,6 @@ end function ReadInParameterFile
     type(ProgramParameters), intent(in) :: params
     
     print*, ""
-    call system(RMDIR // "Miscellaneous")
-    call system(RMDIR // "PhasingResults")
 
     call system(MD // "PhasingResults")
     call system(MD // "PhasingResults"//DASH//"HaplotypeLibrary")
@@ -761,7 +757,6 @@ end function ReadInParameterFile
     call system(MD // "Miscellaneous")
     
     if (params%Simulation) then
-      call system(RMDIR // "Simulation")
       if (params%outputParams%outputIndivMistakes .or. params%outputParams%outputIndivMistakesPercent .or. params%outputParams%outputCoreMistakesPercent .or. &
 	    params%outputParams%outputMistakes) then
 	call system(MD // "Simulation")
