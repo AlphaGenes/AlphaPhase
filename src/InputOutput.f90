@@ -1049,33 +1049,6 @@ end function ReadInParameterFile
     end if
   end subroutine CombineTestResults
   
-  function BinarySearch(array, val) result(pos)
-    character(*), dimension(:), intent(in) :: array
-    character(*), intent(in) :: val
-    integer :: pos
-    
-    integer :: low, high, mid
-    
-    low = 1
-    high = size(array)
-    
-    do while (low <= high)
-      mid = (low + high) / 2
-      if (array(mid) > val) then
-	high = mid - 1
-      end if
-      if (array(mid) < val) then
-	low = mid + 1
-      end if
-      if (array(mid) == val) then
-	pos = mid
-	return 
-      end if
-    end do
-    
-    pos = 0
-  end function  
-
   function getHaplotypeLibraries(directory) result (libraries)
     use HaplotypeLibraryDefinition
     
