@@ -3,6 +3,7 @@ program AlphaPhase
 
   implicit none
 
+  ! Main is a seperate subroutine and called here due to compiler issues (Roberto / 16.0.3)
   call main
 
   contains

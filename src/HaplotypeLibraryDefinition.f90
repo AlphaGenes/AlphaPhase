@@ -530,6 +530,7 @@ contains
   end function getCompatHapsFreq
 
   function allOne(library, ids) result(all)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
@@ -556,6 +557,7 @@ contains
   end function allOne
 
   function allZero(library, ids) result(all)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
@@ -587,6 +589,7 @@ contains
   end function allZero
 
   function allOneOrMissing(library, ids) result(all)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
@@ -613,6 +616,7 @@ contains
   end function allOneOrMissing
 
   function allZeroOrMissing(library, ids) result(all)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
@@ -644,6 +648,7 @@ contains
   end function allZeroOrMissing
 
   function allMissing(library, ids) result(all)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids

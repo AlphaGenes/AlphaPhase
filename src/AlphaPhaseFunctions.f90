@@ -41,6 +41,7 @@ module AlphaPhaseFunctions
 
 contains
   function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, quiet) result(results)
+    ! Following use statements needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeLibraryDefinition
     use PedigreeModule
     use HaplotypeModule
@@ -222,6 +223,7 @@ contains
   end function phaseAndCreateLibraries
 
   function createLibraries(phase, params, existingLibraries) result (results)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeLibraryDefinition
     use HaplotypeModule
 

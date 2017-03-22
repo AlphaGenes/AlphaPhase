@@ -124,6 +124,7 @@ contains
   end subroutine destroyCore
 
   function getCoreAndTailGenos(c) result (ctGenos)
+    ! use GenotypeModule needed here due to compiler issues (Roberto / 16.0.3)
     use GenotypeModule
     class(Core), target :: c
     type(Genotype), dimension(:), pointer :: ctGenos
@@ -195,7 +196,8 @@ contains
   end function getHaplotype
 
   subroutine setHaplotype(c, animal, phase, hap)
-  use HaplotypeModule
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
+    use HaplotypeModule
     class(Core) :: c
     integer, intent(in) :: animal, phase
     type(Haplotype) :: hap

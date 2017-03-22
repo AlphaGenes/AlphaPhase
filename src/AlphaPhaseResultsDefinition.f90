@@ -91,6 +91,7 @@ contains
   !< @date    Febuary 26, 2017
   !---------------------------------------------------------------------------
   function getFullPhase(results) result(haps)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeModule
     class(AlphaPhaseResults) :: results
     type(Haplotype), dimension(:,:), pointer :: haps
@@ -124,6 +125,7 @@ contains
   !< @date    Febuary 26, 2017
   !---------------------------------------------------------------------------
   function getFullPhaseIntArray(results) result(res)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeModule
     class(AlphaPhaseResults) :: results
     integer, dimension(:,:,:), allocatable :: res !< returns array in format (nAnisG,nSnp,2)
