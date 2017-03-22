@@ -23,11 +23,9 @@ program AlphaPhase
     type(PedigreeHolder) :: p
     type(Haplotype), pointer, dimension(:,:) :: Phase, TruePhase
     type(HaplotypeLibrary), dimension(:), pointer :: existingLibraries
-    integer :: id
     integer :: nAnisG
     type(AlphaPhaseResults) :: results
-    logical :: singleSurrogates, singleRun, combine, notPrephased
-    integer :: i
+    logical :: notPrephased
 
     !Linux max path length is 4096 which is more than windows or mac (all according to google)
     character(len=4096) :: specfile
@@ -70,7 +68,7 @@ program AlphaPhase
     existingLibraries => getHaplotypeLibraries(params%library)
     results = phaseAndCreateLibraries(p, params%params, existingLibraries, quiet = .false.)
         else
-    results = phaseAndCreateLibraries( p, params%params, quiet = .false.)
+    results = phaseAndCreateLibraries(p, params%params, quiet = .false.)
         end if
       end if
     else
@@ -78,11 +76,7 @@ program AlphaPhase
       results = createLibraries(Phase, params%params)
     end if
 
-    call writeAlphaPhaseResults(results, params%outputParams)    
-    
-    singleSurrogates = (params%params%ItterateType .eq. "Off") .and. (params%params%numIter == 1)
-    singleRun = (params%params%StartCoreChar .eq. "1") .and. (params%params%EndCoreChar .eq. "Combine")
-    combine = (params%params%EndCoreChar .eq. "Combine")
+    call writeAlphaPhaseResults(results, p, params%outputParams)    
     
     call PrintTimerTitles(params)
   end subroutine main

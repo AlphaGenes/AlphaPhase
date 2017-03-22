@@ -70,7 +70,7 @@ contains
     type(AlphaPhaseResults) :: results
 
     integer :: startCore, endCore
-    logical :: combine, singleRun, printOldProgress, singleSurrogates, quietInternal
+    logical :: printOldProgress, singleSurrogates, quietInternal
 
     type(MemberManager) :: manager
 
@@ -99,26 +99,16 @@ contains
 
     threshold = int(params%GenotypeMissingErrorPercentage*params%CoreAndTailLength)
 
-    singleRun = .true.
-    if (params%startCoreChar .eq. "Combine") then
-      startCore = nCores + 1
-      combine = .true.
-      singleRun = .false.
+    if (params%startCoreChar .eq. "0") then
+      startCore = 1
     else
       read(params%startCoreChar, '(i10)') startCore
-      combine = .false.
-      if (startCore /= 1) then
-	singleRun = .false.
-      end if
     end if
 
-    if (params%endCoreChar .eq. "Combine") then
+    if (params%endCoreChar .eq. "0") then
       endCore = nCores
-      combine = .true.
     else
       read(params%endCoreChar, '(i10)') endCore
-      combine = .false.
-      singleRun = .false.
     end if
 
     printOldProgress = (params%ItterateType .eq. "Off") .and. (.not. quietInternal)

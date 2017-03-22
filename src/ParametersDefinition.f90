@@ -28,8 +28,8 @@ contains
     params%itterateType = "Off"
     params%itterateNumber = 200
     params%numIter = 1
-    params%startCoreChar = "1"
-    params%endCoreChar = "Combine"
+    params%startCoreChar = "0"
+    params%endCoreChar = "0"
     params%minHapFreq = 1
     params%coreAndTailLength = 1
   end function newParameters

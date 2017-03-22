@@ -273,187 +273,6 @@ contains
     res = trim(tmp)
   end function
 
-  subroutine CombineResults(nAnisG, params)
-    use PedigreeModule
-    use OutputParametersDefinition
-    use CoreUtils
-
-    integer, intent(in) :: nAnisG
-    type(OutputParameters) :: params
-
-    integer, dimension(:,:), pointer :: CoreIndex
-    integer :: nCores
-
-    integer, dimension(:), allocatable :: inUnits
-    integer :: i, j, coreLength, inUnit
-    character(:), allocatable :: coreIDtxt
-    integer(kind=1), dimension(:), allocatable :: tempPhase
-    integer, dimension(2) :: tempHapInd, tempIndivSwap
-    double precision, dimension(2) :: tempIndivPhase
-    double precision :: tempSnpPhase
-    character(len=20) :: id
-    
-    if (params%library .eq. "None") then
-      CoreIndex => CalculateCores(params%nSnp, params%params%Jump, params%params%offset)    
-    else
-      CoreIndex => getCoresFromHapLib(params%library)
-    end if
-
-    nCores = size(CoreIndex,1)
-
-    if (params%outputCoreIndex) then
-      open (unit = 25, file = "."//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
-      do i = 1, nCores
-        write (25, *) i, CoreIndex(i,:)
-      end do
-      close(25)
-    end if
-
-    if (params%outputFinalPhase) then
-      !!! FINAL PHASE !!!
-      open (unit = 15, file = "."//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
-      allocate(inUnits(nCores))
-      do i = 1, nCores
-        coreIDtxt = itoa(i)
-        open (newunit = inUnits(i), file = "."//DASH//"PhasingResults"//DASH//"FinalPhase" // coreIDtxt // ".txt", status = "old")
-      end do
-
-      do i = 1, nAnisG * 2
-        do j = 1, nCores
-          coreLength  = CoreIndex(j,2) - CoreIndex(j,1) + 1
-          allocate(tempPhase(coreLength))
-          read(inUnits(j),'(a20,' // itoA(coreLength) // 'i2)') id, tempPhase
-          if (j == 1) then
-            write(15, '(a20)', advance = 'no') id
-          end if
-          if (j == nCores) then
-            write(15, '(' // itoA(coreLength) // 'i2)', advance='yes') tempPhase
-          else
-            write(15, '(' // itoA(coreLength) // 'i2)', advance='no') tempPhase
-          end if
-          deallocate(tempPhase)
-        end do
-      end do
-
-      do i = 1, nCores
-        close(inUnits(i))
-      end do
-
-      deallocate(inUnits)
-      close(15)
-    end if
-
-    if (params%outputHapIndex) then
-      !!! HAPINDCARRY !!!
-      open (unit = 33, file = "."//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
-      allocate(inUnits(nCores))
-      do i = 1, nCores
-        coreIDtxt = itoa(i)
-        open (newunit = inUnits(i), file = "."//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "old")
-      end do
-
-      do i = 1, nAnisG
-        do j = 1, nCores
-          read(inUnits(j),'(a20,2i8)') id, tempHapInd
-          if (j == 1) then
-            write(33, '(a20)', advance = 'no') id
-          end if
-          if (j == nCores) then
-            write(33, '(2i8)', advance='yes') tempHapInd
-          else
-            write(33, '(2i8)', advance='no') tempHapInd
-          end if
-        end do
-      end do
-
-      do i = 1, nCores
-        close(inUnits(i))
-      end do
-
-      deallocate(inUnits)
-      close(33)
-    end if
-
-    if (params%outputIndivPhaseRate) then
-      !!! INDIVPHASE !!!
-      open (unit = 30, file = "."//DASH//"PhasingResults"//DASH//"IndivPhaseRate.txt", status = "unknown")
-      allocate(inUnits(nCores))
-      do i = 1, nCores
-        coreIDtxt = itoa(i)
-        open (newunit = inUnits(i), file = "."//DASH//"PhasingResults"//DASH//"IndivPhaseRate" // coreIDtxt // ".txt", status = "old")
-      end do
-
-      do i = 1, nAnisG
-        do j = 1, nCores
-          read(inUnits(j),'(a20,2f7.2)') id, tempIndivPhase
-          if (j == 1) then
-            write(30, '(a20)', advance = 'no') id
-          end if
-          if (j == nCores) then
-            write(30, '(2f7.2)', advance='yes') tempIndivPhase
-          else
-            write(30, '(2f7.2)', advance='no') tempIndivPhase
-          end if
-        end do
-      end do
-
-      do i = 1, nCores
-        close(inUnits(i))
-      end do
-
-      deallocate(inUnits)
-      close(30)
-    end if
-
-    if (params%outputSnpPhaseRate) then
-      !!! SNPPHASE !!!
-      open (unit = 28, file = "."//DASH//"PhasingResults"//DASH//"SnpPhaseRate.txt", status = "unknown")
-      do i = 1, nCores
-        coreLength  = CoreIndex(i,2) - CoreIndex(i,1) + 1
-        coreIDtxt = itoa(i)
-        open (newunit = inUnit, file = "."//DASH//"PhasingResults"//DASH//"SnpPhaseRate" // coreIDtxt // ".txt", status = "old")
-        do j = 1, coreLength
-          read(inUnit,'(a10,f7.2)') id, tempSnpPhase
-          write(28,'(a10,f7.2)') id, tempSnpPhase
-        end do
-        close(inUnit)
-      end do
-      close(28)
-    end if
-
-    !!! SWAPPATMAT !!!
-    if (params%outputSwappable) then
-      open (unit = 44, file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
-      allocate(inUnits(nCores))
-      do i = 1, nCores
-        coreIDtxt = itoa(i)
-        open (newunit = inUnits(i), file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat" // coreIDtxt // ".txt", status = "old")
-      end do
-
-      do i = 1, nAnisG
-        do j = 1, nCores
-          read(inUnits(j),'(a20,2i2)') id, tempIndivSwap
-          if (j == 1) then
-            write(44, '(a20)', advance = 'no') id
-          end if
-          if (j == nCores) then
-            write(44, '(2i2)', advance='yes') tempIndivSwap
-          else
-            write(44, '(2i2)', advance='no') tempIndivSwap
-          end if
-        end do
-      end do
-
-      do i = 1, nCores
-        close(inUnits(i))
-      end do
-
-      deallocate(inUnits)
-      close(44)
-    end if
-
-  end subroutine CombineResults
-
   function ParsePedigreeAndGenotypeData(params) result(p)
     use ProgramParametersDefinition
     use PedigreeModule
@@ -773,10 +592,11 @@ contains
     params%outputParams%outputMistakes = .false.
   end if
   
-  singleRun = (params%params%StartCoreChar .eq. "1") .and. (params%params%EndCoreChar .eq. "Combine")
+  singleRun = (params%params%StartCoreChar .eq. "0")
   ! Should probably have an input option to always output per core even when a single run - hence two lines here - but not
   ! currently implemented
-  params%outputParams%perCore = .not. singleRun
+  params%outputParams%outputPerCore = .not. singleRun
+  params%outputParams%outputCombined = singleRun
   
   ! No purpose is served in writing out swappable info if data is prephased
   params%outputParams%outputSwappable = params%outputParams%outputSwappable .and. (.not. (params%GenotypeFileFormat /= 2))
@@ -1036,32 +856,6 @@ end function ReadInParameterFile
       close(31)
     end if
   end subroutine WriteTestResults
-
-  subroutine CombineTestResults(nCores, params)
-    use OutputParametersDefinition
-
-    integer, intent(in) :: nCores
-    type(OutputParameters) :: params
-
-    character(len = 300) :: filout
-    double precision, allocatable, dimension(:,:) :: AverageMatrix
-    
-    integer :: i
-
-    if (params%outputCoreMistakesPercent) then
-      allocate(AverageMatrix(nCores, 6))
-      write (filout, '(".",a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
-      open (unit = 31, FILE = filout, status = 'unknown')
-      do i = 1, nCores
-	read (31, *) AverageMatrix(i,:)
-      end do
-      write (31, *) " "
-      write (31, '(6f9.4)') sum(AverageMatrix(:, 1))/nCores, sum(AverageMatrix(:, 2))/nCores, sum(AverageMatrix(:, 3))/nCores, &
-      sum(AverageMatrix(:, 4))/nCores, sum(AverageMatrix(:, 5))/nCores, sum(AverageMatrix(:, 6))/nCores
-      deallocate(AverageMatrix)
-      close(31)
-    end if
-  end subroutine CombineTestResults
   
   function getHaplotypeLibraries(directory) result (libraries)
     use HaplotypeLibraryDefinition
@@ -1241,17 +1035,14 @@ end function ReadInParameterFile
       if (params%outputHapCommonality) then
         call HapCommonality(results%libraries(i), id, params)
       end if
-      if (params%perCore) then
+      if (params%outputPerCore) then
         call WriteOutCore(results%cores(i), id, results%startIndexes(i), p, params)
       end if
       call writeSurrogates(results%surrogates(i), id, p, params)
       call WriteTestResults(results%testResults(i),results%cores(i),p,id,params)
     end do
 
-    if ((.not. SingleRun) .and. combine) then
-      call CombineResults(nAnisG,params)     
-      call CombineTestResults(results%nCores,params)
-    else
+    if (params%outputCombined) then
       call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
     end if
 
