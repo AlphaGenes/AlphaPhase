@@ -10,11 +10,11 @@ module CoreDefinition
     type(Haplotype), dimension(:,:), pointer :: phase
     logical, allocatable, dimension(:,:) :: fullyPhased
     integer, dimension(:,:), allocatable :: hapAnis
-    
+
     integer(kind=1), dimension(:), allocatable :: swappable
-    
+
     integer :: nCoreAndTailSnps, nCoreSnps
-    
+
   contains
     procedure :: getCoreAndTailGenos
     procedure :: getNAnisG
@@ -34,13 +34,13 @@ module CoreDefinition
     procedure :: getHapAnis
     procedure :: getBothFullyPhased
     procedure :: getCoreGenos
-    
+
     procedure :: setSwappable
     procedure :: getSwappable
     procedure :: flipHaplotypes
     final :: destroyCore
   end type Core
-  
+
   interface Core
     module procedure newCore
     module procedure newPhaseCore
@@ -55,18 +55,18 @@ contains
     integer, intent(in) :: startCoreSnp, endCoreSnp, startTailSnp, endTailSnp
     type(Core) :: c
     type(Genotype) :: tempFullGeno
-    
+
     integer :: nAnisG, i
-    
-    
+
+
     nAnisG = p%nHd
     c%nCoreAndTailSnps = endTailSnp - startTailSnp + 1
     c%nCoreSnps = endCoreSnp - startCoreSnp + 1
-    
+
     allocate(c%coreAndTailGenos(nAnisG))
     allocate(c%coreGenos(nAnisG))
     allocate(c%phase(nAnisG,2))
-    
+
     do i = 1, nAnisG
       tempFullGeno = p%pedigree(p%hdMap(i))%individualGenotype
       c%coreGenos(i) = tempFullGeno%subset(startCoreSnp, endCoreSnp)
@@ -74,34 +74,34 @@ contains
       c%phase(i,1) = Haplotype(c%nCoreSnps)
       c%phase(i,2) = Haplotype(c%nCoreSnps)
     end do
-    
+
     allocate(c%fullyphased(nAnisG,2))
     allocate(c%hapAnis(nAnisG,2))
-    
+
     allocate(c%swappable(nAnisG))
-    
+
 
     c%fullyPhased = .false.
     c%hapAnis = MissingHaplotypeCode
-    
+
     c%swappable = 0
   end function newCore
-  
+
   function newPhaseCore(phase, startSnp, endSnp) result(c)
-    
+
     type(Haplotype), dimension(:,:), intent(in) :: phase
     integer, intent(in) :: startSnp, endSnp
     type(Core) :: c
-    
+
     integer :: nAnisG, i
     type(Haplotype) :: tempFullHaplotype
-    
+
     nAnisG = size(phase,1)
-    
+
     allocate(c%phase(nAnisG,2))
     allocate(c%fullyphased(nAnisG,2))
     allocate(c%hapAnis(nAnisG,2))
-    
+
     c%nCoreSnps = endSnp - startSnp + 1
     c%nCoreAndTailSnps = c%nCoreSnps
     c%fullyPhased = .false.
@@ -113,71 +113,71 @@ contains
     end do
     c%hapAnis = MissingHaplotypeCode
   end function newPhaseCore
-  
+
   subroutine destroyCore(c)
     type(Core) :: c
-    
+
     if (allocated(c%fullyPhased)) then
       deallocate(c%fullyPhased)
       deallocate(c%hapAnis)
     end if
   end subroutine destroyCore
-  
+
   function getCoreAndTailGenos(c) result (ctGenos)
-        
+    use GenotypeModule
     class(Core), target :: c
     type(Genotype), dimension(:), pointer :: ctGenos
-    
+
     ctGenos => c%coreAndTailGenos
-    
+
     return
   end function getCoreAndTailGenos
-  
+
   function getNAnisG(c) result(num)
     class(Core) :: c
     integer :: num
-    
+
     num = size(c%phase,1)
   end function getNAnisG
-  
+
   function getNSnp(c) result(num)
     class(Core) :: c
     integer :: num
-    
+
     num = c%nCoreAndTailSnps
   end function getNSnp
-  
+
   function getNCoreSnp(c) result(num)
     class(Core) :: c
     integer :: num
-    
+
     num = c%nCoreSnps
   end function getNCoreSnp
-  
+
   function getNCoreTailSnp(c) result(num)
     class(Core) :: c
     integer :: num
-    
+
     num = c%nCoreAndTailSnps
   end function getNCoreTailSnp
-  
+
   function getYield(c,phase) result (yield)
     class(Core) :: c
     integer, intent(in) :: phase
     integer :: counter, i
     double precision :: yield
-    
+
     do i = 1, size(c%phase,1)
       counter = counter + c%phase(i,phase)%numberNotMissing()
     end do
     yield = (float(counter)/(size(c%phase,1) * size(c%phase,2))) * 100
   end function getYield
-  
+
   function getTotalYield(c) result(yield)
     class(Core) :: c
     integer :: counter, i
     double precision :: yield
-    
+
     counter = 0
     do i = 1, size(c%phase,1)
       counter = counter + c%phase(i,1)%numberNotMissing()
@@ -185,113 +185,115 @@ contains
     end do
     yield = (float(counter)/(size(c%phase,1) * c%nCoreSnps * 2)) * 100
   end function getTotalYield
-  
+
   function getHaplotype(c,animal, phase) result(haplotype)
     class(Core) :: c
     integer, intent(in) :: animal, phase
     type(Haplotype), pointer :: haplotype
-    
+
     haplotype => c%phase(animal,phase)
   end function getHaplotype
-  
+
   subroutine setHaplotype(c, animal, phase, hap)
-    class(Core) :: c 
+  use HaplotypeModule
+    class(Core) :: c
     integer, intent(in) :: animal, phase
     type(Haplotype) :: hap
-    
+
     c%phase(animal,phase) = hap
   end subroutine setHaplotype
-  
+
   subroutine setHaplotypeToUnphased(c, animal, phase)
     class(Core) :: c
     integer, intent(in) :: animal, phase
-    
+
     call c%phase(animal,phase)%setUnphased()
   end subroutine setHaplotypeToUnphased
-  
+
   subroutine resetFullyPhased(c)
     class(Core) :: c
-    
+
     c%fullyPhased = .false.
   end subroutine resetFullyPhased
-  
+
   subroutine setFullyPhased(c,animal,phase)
     class(Core) :: c
     integer, intent(in) :: animal, phase
-    
+
     c%fullyPhased(animal,phase) = .true.
   end subroutine setFullyPhased
-  
+
   function getFullyPhased(c,animal,phase) result(fully)
     class(Core) :: c
     integer, intent(in) :: animal, phase
     logical :: fully
-    
+
     fully = c%fullyPhased(animal,phase)
   end function getFullyPhased
-  
+
   function getBothFullyPhased(c,animal) result(fully)
     class(Core) :: c
     integer, intent(in) :: animal
     logical :: fully
-    
+
     fully = c%fullyPhased(animal,1) .and. c%fullyPhased(animal,2)
   end function getBothFullyPhased
-  
+
   function getPercentFullyPhased(c) result (percent)
     class(Core) :: c
     double precision :: percent
-    
+
     percent = 100.0 * float(count(c%fullyPhased)) / (size(c%fullyPhased))
   end function getPercentFullyPhased
-    
-  
+
+
   subroutine resetHapAnis(c)
     class(Core) :: c
-    
+
     c%hapAnis = MissingHaplotypeCode
   end subroutine resetHapAnis
-  
+
   subroutine setHapAnis(c,animal,phase,id)
     class(Core) :: c
     integer, intent(in) :: animal, phase, id
-    
+
     c%hapAnis(animal,phase) = id
   end subroutine setHapAnis
-  
+
   function getHapAnis(c,animal,phase) result(id)
     class(Core) :: c
     integer, intent(in) :: animal, phase
     integer :: id
-    
+
     id = c%hapAnis(animal,phase)
   end function getHapAnis
-  
+
   subroutine setSwappable(c, animal, val)
     class(Core) :: c
     integer, intent(in) :: animal
     integer(kind=1), intent(in) :: val
-  
+
     c%swappable(animal) = val
   end subroutine setSwappable
-  
+
   function getSwappable(c, animal) result(val)
     class(Core) :: c
     integer, intent(in) :: animal
     integer(kind=1) :: val
-    
+
     val = c%swappable(animal)
   end function getSwappable
-  
+
   function getCoreGenos(c,animal) result(g)
+    use GenotypeModule
     class(Core), intent(in) :: c
     integer, intent(in) :: animal
-    
+
     type(Genotype), pointer :: g
-    
+
     g => c%coreGenos(animal)
   end function getCoreGenos
-  
+
   subroutine flipHaplotypes(c, TruePhase)
     use HaplotypeModule
 
@@ -333,12 +335,12 @@ contains
 	W2 => c%phase(i,2)
 	call c%setHaplotype(i,1,W2)
 	call c%setHaplotype(i,2,W1)
-	
+
 	HA1 = c%hapAnis(i,1)
 	HA2 = c%hapAnis(i,2)
 	c%hapAnis(i,1) = HA2
 	c%hapAnis(i,2) = HA1
-	
+
 	FP1 = c%fullyPhased(i,1)
 	FP2 = c%fullyPhased(i,2)
 	c%fullyPhased(i,1) = FP2

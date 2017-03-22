@@ -19,7 +19,7 @@
 !-------------------------------------------------------------------------------
 
 module AlphaPhaseFunctions
-  use HaplotypeLibraryDefinition 
+  use HaplotypeLibraryDefinition
   use SurrogateDefinition
   use CoreSubsetDefinition
   use PedigreeModule
@@ -30,17 +30,21 @@ module AlphaPhaseFunctions
   use CoreUtils
   use InputOutput
   use AlphaPhaseResultsDefinition
-  
+
   use LongRangePhasing
   use HaplotypeLibraryPhasing
-  
+
   use InputOutput
-  
+
   use HaplotypeModule
   implicit none
-  
+
 contains
   function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, quiet) result(results)
+    use HaplotypeLibraryDefinition
+    use PedigreeModule
+    use HaplotypeModule
+
     type(PedigreeHolder), intent(inout) :: p
     type(AlphaPhaseParameters) :: params
     type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
@@ -63,12 +67,12 @@ contains
     type(HaplotypeLibrary) :: globalLibrary
     type(Haplotype), pointer :: hap
     type(AlphaPhaseResults) :: results
-    
+
     integer :: startCore, endCore
     logical :: combine, singleRun, printOldProgress, singleSurrogates, quietInternal
 
     type(MemberManager) :: manager
-    
+
     if (.not. present(quiet)) then
       quietInternal = .true.
     else
@@ -85,12 +89,12 @@ contains
     nSnp = p%pedigree(p%hdMap(1))%individualGenotype%getLength()
 
     if (.not. present(existingLibraries)) then
-      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    
+      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
     else
       CoreIndex => getCoresFromLibraries(existingLibraries)
     end if
     TailIndex => calculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
-    nCores = size(CoreIndex,1)  
+    nCores = size(CoreIndex,1)
 
     threshold = int(params%GenotypeMissingErrorPercentage*params%CoreAndTailLength)
 
@@ -140,7 +144,7 @@ contains
 	library = existingLibraries(h)
       end if
 
-      do i = 1, params%NumIter	
+      do i = 1, params%NumIter
 	manager = MemberManager(c, params%itterateType, params%itterateNumber)
 
 	subsetCount = 0
@@ -216,12 +220,15 @@ contains
       results%endIndexes(h-startCore+1) = CoreIndex(h,2)
     end do
   end function phaseAndCreateLibraries
-  
+
   function createLibraries(phase, params, existingLibraries) result (results)
+    use HaplotypeLibraryDefinition
+    use HaplotypeModule
+
     type(Haplotype), pointer, dimension(:,:), intent(in) :: phase
     type(AlphaPhaseParameters) :: params
     type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
-    
+
     type(AlphaPhaseResults) :: results
 
     integer :: h
@@ -229,18 +236,18 @@ contains
     type(HaplotypeLibrary) :: library
     type(Core) :: c
     integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
-    integer, dimension (:,:), pointer :: CoreIndex, TailIndex    
+    integer, dimension (:,:), pointer :: CoreIndex, TailIndex
     integer :: startCore, endCore, nCores, nSnp
 
     nSnp = phase(1,1)%getLength()
 
     if (.not. present(existingLibraries)) then
-      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    
+      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
     else
       CoreIndex => getCoresFromLibraries(existingLibraries)
     end if
     TailIndex => calculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
-    nCores = size(CoreIndex,1) 
+    nCores = size(CoreIndex,1)
 
     if (params%startCoreChar .eq. "Combine") then
       startCore = nCores + 1
@@ -268,7 +275,7 @@ contains
       else
 	library = existingLibraries(h)
       end if
-      call UpdateHapLib(c,library) 
+      call UpdateHapLib(c,library)
 
       results%libraries(h-startCore+1) = library
       results%cores(h-startCore+1) = c
@@ -277,6 +284,6 @@ contains
       results%endIndexes(h-startCore+1) = CoreIndex(h,2)
     end do
   end function createLibraries
-    
+
 end module AlphaPhaseFunctions
 

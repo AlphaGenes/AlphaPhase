@@ -27,7 +27,7 @@ module AlphaPhaseResultsDefinition
   use TestResultDefinition
   use PedigreeModule
   implicit none
-  
+
 
   type :: AlphaPhaseResults
     type(Core), dimension(:), allocatable :: cores
@@ -38,8 +38,8 @@ module AlphaPhaseResultsDefinition
     integer, dimension(:), allocatable :: startIndexes
     integer, dimension(:), allocatable :: endIndexes
     integer :: nCores
-    
-    contains 
+
+    contains
       procedure :: getFullPhase
       procedure :: getFullPhaseIntArray
   end type AlphaPhaseResults
@@ -50,20 +50,20 @@ module AlphaPhaseResultsDefinition
     integer :: nResults !< number of CORELENGTHS AND RESULTS
     !< needs to be 2x the number of core lengths for offset and not offset (shifted, not) runs6
   end type AlphaPhaseResultsContainer
-  
 
-  
+
+
   interface AlphaPhaseResults
     module procedure newAlphaPhaseResults
   end interface AlphaPhaseResults
-  
+
 contains
 
   function newAlphaPhaseResults(nCores, containSurrogates, containTestResults) result(results)
     integer, intent(in) :: nCores
     logical, optional, intent(in) :: containSurrogates, containTestResults
     type(AlphaPhaseResults) :: results
-    
+
     allocate(results%cores(nCores))
     allocate(results%libraries(nCores))
     if (present(containSurrogates)) then
@@ -76,14 +76,14 @@ contains
 	allocate(results%testResults(nCores))
       end if
     end if
-    
+
     allocate(results%ids(nCores))
     allocate(results%startIndexes(nCores))
     allocate(results%endIndexes(nCores))
-    
+
     results%nCores = nCores
   end function newAlphaPhaseResults
-  
+
 
   !---------------------------------------------------------------------------
   !< @brief Returns a  2D array of full phase of haplotype objects
@@ -91,20 +91,21 @@ contains
   !< @date    Febuary 26, 2017
   !---------------------------------------------------------------------------
   function getFullPhase(results) result(haps)
+    use HaplotypeModule
     class(AlphaPhaseResults) :: results
     type(Haplotype), dimension(:,:), pointer :: haps
-    
+
     integer :: nAnisG, nSnp
     integer :: i, j, k
-    
+
     nAnisG = results%cores(1)%getNAnisG()
     nSnp = 0
     do i = 1, size(results%cores)
       nSnp = nSnp + results%cores(i)%getNCoreSnp()
     end do
-    
+
     allocate(haps(nAnisG,2))
-    
+
     do i = 1, nAnisG
       do j = 1, 2
 	haps(i,j) = Haplotype(nSnp)
@@ -123,20 +124,21 @@ contains
   !< @date    Febuary 26, 2017
   !---------------------------------------------------------------------------
   function getFullPhaseIntArray(results) result(res)
+    use HaplotypeModule
     class(AlphaPhaseResults) :: results
     integer, dimension(:,:,:), allocatable :: res !< returns array in format (nAnisG,nSnp,2)
     type(Haplotype) :: tmpHap
     integer :: nAnisG, nSnp
     integer :: i, j, k
-    
+
     nAnisG = results%cores(1)%getNAnisG()
     nSnp = 0
     do i = 1, size(results%cores)
       nSnp = nSnp + results%cores(i)%getNCoreSnp()
     end do
-    
+
     allocate(res(nAnisG,nSnp,2))
-    
+
     do i = 1, nAnisG
       do j = 1, 2
 	tmpHap = Haplotype(nSnp)
@@ -152,8 +154,7 @@ contains
 
   ! subroutine writeToFiles(this)
   !   type(AlphaPhaseResults) :: this
-  
+
 
   ! end subroutine writeToFiles
 end module AlphaPhaseResultsDefinition
-    
