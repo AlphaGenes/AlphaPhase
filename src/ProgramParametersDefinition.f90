@@ -24,6 +24,7 @@ contains
     type(ProgramParameters) :: programParams
     
     programParams%params = AlphaPhaseParameters()
+    programParams%outputParams = OutputParameters()
     programParams%library = "None"
   end function newProgramParameters
     

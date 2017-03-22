@@ -78,7 +78,7 @@ program AlphaPhase
 
     call writeAlphaPhaseResults(results, p, params%outputParams)    
     
-    call PrintTimerTitles(params)
+    call PrintTimerTitles(params%outputParams)
   end subroutine main
 
 end program AlphaPhase

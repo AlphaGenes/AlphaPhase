@@ -23,5 +23,18 @@ module OutputParametersDefinition
     logical :: outputPerCore
     logical :: outputCombined
     
+    character(len=300) :: outputDirectory
+    
   end type OutputParameters
+  
+  interface OutputParameters
+    module procedure newOutputParameters
+  end interface OutputParameters
+  
+contains
+  function newOutputParameters result(outputParams)
+    type(OutputParameters) :: outputParams
+    
+    outputParams%outputDirectory = "."
+  end function newOutputParameters
 end module OutputParametersDefinition

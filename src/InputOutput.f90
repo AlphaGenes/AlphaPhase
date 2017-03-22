@@ -66,7 +66,7 @@ contains
     end do
 
     if (params%outputFinalPhase) then
-      open (unit = 15, file = "."//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
+      open (unit = 15, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
       allocate(tempPhase(nSnp))
       write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
       do i = 1, nAnisG
@@ -88,7 +88,7 @@ contains
     end if
 
     if (params%outputCoreIndex) then
-      open (unit = 25, file = "."//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
+      open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
       do i = 1, nCores
         write (25, *) i, startIndex(i), endIndex(i)
       end do
@@ -96,7 +96,7 @@ contains
     end if
 
     if (params%outputSnpPhaseRate) then
-      open (unit = 28, file = "."//DASH//"PhasingResults"//DASH//"SnpPhaseRate.txt", status = "unknown")
+      open (unit = 28, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
         do j = 1, allCores(i)%getNCoreSnp()
           hap1 => allCores(i)%phase(j,1)
@@ -113,7 +113,7 @@ contains
     end if
 
     if (params%outputIndivPhaseRate) then
-      open (unit = 30, file = "."//DASH//"PhasingResults"//DASH//"IndivPhaseRate.txt", status = "unknown")
+      open (unit = 30, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"IndivPhaseRate.txt", status = "unknown")
       allocate(CoreCount(nCores * 2))
       write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'f7.2)'
       do i = 1, nAnisG
@@ -135,7 +135,7 @@ contains
     end if
 
     if (params%outputHapIndex) then
-      open (unit = 33, file = "."//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
+      open (unit = 33, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
       allocate(WorkOut(nCores * 2))
       write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'i8)'
       do i = 1, nAnisG
@@ -152,7 +152,7 @@ contains
     end if
 
     if (params%outputSwappable) then
-      open (unit = 44, file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
+      open (unit = 44, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
       allocate(TempSwap(nCores))
       write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
       do i = 1, nAnisG
@@ -166,7 +166,7 @@ contains
     end if
     
     if (params%outputPhasingYield) then
-      open (unit = 29, file = "."//DASH//"PhasingResults"//DASH//"PhasingYield.txt", status = "unknown")
+      open (unit = 29, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"PhasingYield.txt", status = "unknown")
       do j = 1,nCores
 	write (29, '(i10,f7.2)') j, AllCores(j)%getTotalYield()
       end do
@@ -204,7 +204,7 @@ contains
     coreIDtxt = itoa(coreID)
 
     if (params%outputFinalPhase) then
-      open (unit = 15, file = "."//DASH//"PhasingResults"//DASH//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
+      open (unit = 15, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
       write(fmt, '(a,i10,a)') '(a20,', c%getNSnp(), 'i2)'
       do i = 1, nAnisG
 	hap1 => c%phase(j, 1)
@@ -218,7 +218,7 @@ contains
     end if
 
     if (params%outputSnpPhaseRate) then
-      open (unit = 28, file = "."//DASH//"PhasingResults"//DASH//"SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
+      open (unit = 28, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nSnp
         counter = 0
         do j = 1, nAnisG
@@ -233,7 +233,7 @@ contains
     end if
 
     if (params%outputIndivPhaseRate) then
-      open (unit = 30, file = "."//DASH//"PhasingResults"//DASH//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
+      open (unit = 30, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
         hap1 => c%phase(j, 1)
         hap2 => c%phase(j, 2)
@@ -247,7 +247,7 @@ contains
     end if
 
     if (params%outputHapIndex) then
-      open (unit = 33, file = "."//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
+      open (unit = 33, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
         WorkOut(1) = c%getHapAnis(i, 1)
         WorkOut(2) = c%getHapAnis(i, 2)
@@ -257,7 +257,7 @@ contains
     end if
 
     if (params%outputSwappable) then
-      open (unit = 44, file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
+      open (unit = 44, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
         write (44, '(a20,i2)') p%pedigree(p%hdMap(i))%originalId, c%getSwappable(i)
       end do
@@ -483,6 +483,11 @@ contains
           read(second(1), *) params%library
        endif
        
+      case("outputdirectory")
+	if (allocated(second)) then
+	  read(second(1), *) params%outputParams%outputDirectory
+	end if
+       
       case("graphics")
 	write(*,"(A)") "graphics is no longer a valid option for the AlphaPhase Spec File."
 	
@@ -635,8 +640,8 @@ end function ReadInParameterFile
     SizeCore = library%getNumSnps()
     nHaps = library%getSize()
 
-    write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"Extras",a1,"HapCommonality",i0,".txt")') DASH, DASH, DASH, DASH, OutputPoint
-    open (unit = 27, FILE = filout, status = 'unknown')
+    write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"Extras",a1,"HapCommonality",i0,".txt")') DASH, DASH, DASH, DASH, OutputPoint
+    open (unit = 27, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
 
     HapRel = library%getHapRel()
 
@@ -667,8 +672,8 @@ end function ReadInParameterFile
     nAnisG = size(definition%numOppose,1)
 
     if (params%outputSurrogates) then
-      write (filout, '(".",a1,"Miscellaneous",a1,"Surrogates",i0,".txt")') DASH, DASH, OutputPoint
-      open (unit = 13, FILE = filout, status = 'unknown')
+      write (filout, '(a1,"Miscellaneous",a1,"Surrogates",i0,".txt")') DASH, DASH, OutputPoint
+      open (unit = 13, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
       write(fmt, '(a,i10,a)') '(a20,', size(definition%partition,2), 'i6)'
       do i = 1, nAnisG
 	write (13, fmt) p%pedigree(p%hdMap(i))%originalId, definition%partition(i,:)
@@ -678,8 +683,8 @@ end function ReadInParameterFile
     
     
     if (params%outputSurrogatesSummary) then
-      write (filout, '(".",a1,"Miscellaneous",a1,"SurrogatesSummary",i0,".txt")') DASH, DASH, OutputPoint
-      open (unit = 19, FILE = filout, status = 'unknown')
+      write (filout, '(a1,"Miscellaneous",a1,"SurrogatesSummary",i0,".txt")') DASH, DASH, OutputPoint
+      open (unit = 19, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
       do i = 1, nAnisG
 	nSurrogates = 0
 	do j = 1, nAnisG
@@ -768,13 +773,13 @@ end function ReadInParameterFile
 
   
   subroutine writeTimer(hours, minutes, seconds, params)
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
     integer, intent(in) :: hours, minutes
     real, intent(in) :: seconds
-    type(ProgramParameters), intent(in) :: params
+    type(OutputParameters), intent(in) :: params
          
-    if (params%outputParams%outputTimer) then
-      open (unit = 32, file = "."//DASH//"PhasingResults"//DASH//"Timer.txt", status = "unknown")
+    if (params%outputTimer) then
+      open (unit = 32, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"Timer.txt", status = "unknown")
       write(32, '(A27,A7,I3,A9,I3,A9,F6.2)') "Time Elapsed", "Hours", INT(Hours), "Minutes", INT(Minutes), "Seconds", Seconds
       close(32)
     end if
@@ -801,8 +806,8 @@ end function ReadInParameterFile
     nSNp = c % getNCoreSnp()
 
     if (params%outputIndivMistakes) then
-      write (filout, '(".",a1,"Simulation",a1,"IndivMistakes",i0,".txt")') DASH, DASH, OutputPoint
-      open (unit = 17, FILE = filout, status = 'unknown')
+      write (filout, '(a1,"Simulation",a1,"IndivMistakes",i0,".txt")') DASH, DASH, OutputPoint
+      open (unit = 17, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
       do i = 1, nAnisG
 	write(17, '(a20,6i6,a6,6i6,a6,6i6,a6,6i6)') p%pedigree(p%hdMap(i))%originalId, &
 	results%counts(i,1,ALL_,CORRECT_), results%counts(i,2,ALL_,CORRECT_), &
@@ -822,8 +827,8 @@ end function ReadInParameterFile
     end if
     
     if (params%outputIndivMistakesPercent) then
-      write (filout, '(".",a1,"Simulation",a1,"IndivMistakesPercent",i0,".txt")') DASH, DASH, OutputPoint
-      open (unit = 20, FILE = filout, status = 'unknown')
+      write (filout, '(a1,"Simulation",a1,"IndivMistakesPercent",i0,".txt")') DASH, DASH, OutputPoint
+      open (unit = 20, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
 
       do i = 1, nAnisG
 	write (20, '(a20,6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') p%pedigree(p%hdMap(i))%originalId, &
@@ -844,8 +849,8 @@ end function ReadInParameterFile
     end if
     
     if (params%outputCoreMistakesPercent) then
-      write (filout, '(".",a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
-      open (unit = 31, FILE = filout, status = 'unknown', position = 'append')
+      write (filout, '(a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
+      open (unit = 31, FILE = trim(params%outputDirectory)//filout, status = 'unknown', position = 'append')
       write (31, '(6f9.4)') &
       (results%percentAll(1,ALL_,CORRECT_) + results%percentAll(2,ALL_,CORRECT_)) / 2, &
       (results%percentAll(1,HET_,CORRECT_) + results%percentAll(2,HET_,CORRECT_)) / 2, &
@@ -942,11 +947,11 @@ end function ReadInParameterFile
   end subroutine Titles
 
   subroutine PrintTimerTitles(params)
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
 
     implicit none
 
-    class(ProgramParameters), intent(in) :: params
+    class(OutputParameters), intent(in) :: params
 
     real :: etime ! Declare the type of etime()
     real :: elapsed(2) ! For receiving user and system time
@@ -989,12 +994,12 @@ end function ReadInParameterFile
     nHaps = library%getSize()
 
     if (params%outputHaplotypeLibraryText) then
-      write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
-      open (unit = 24, FILE = filout, status = 'unknown')
+      write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
+      open (unit = 24, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
     endif
     if (params%outputHaplotypeLibraryBinary) then
-      write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
-      open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
+      write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
+      open (unit = 34, FILE = trim(params%outputDirectory)//filout, form = "unformatted", status = 'unknown')
       
       write (34) nHaps, SizeCore
     end if
