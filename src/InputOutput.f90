@@ -286,10 +286,10 @@ contains
     call CountInData(nAnisRawPedigree, nAnisG, params)
 
     if (trim(params%PedigreeFile) /= "NoPedigree") then
-       p = PedigreeHolder(params%GenotypeFile,nAnisRawPedigree,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile )
+      p = PedigreeHolder(params%GenotypeFile,nAnisG,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile )
 
     else
-      p = PedigreeHolder(params%GenotypeFile,nAnisRawPedigree,params%nSnp, params%GenotypeFileFormat )
+      p = PedigreeHolder(params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat )
     endif
 
      if (p%nHd == 0) then
