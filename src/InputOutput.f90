@@ -37,17 +37,16 @@ module InputOutput
   
 contains
 
-  subroutine WriteOutResults(allCores, startIndex, endIndex, p, writeSwappable, params)
+  subroutine WriteOutResults(allCores, startIndex, endIndex, p, params)
     use PedigreeModule
     use CoreDefinition
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
     use HaplotypeModule
 
     type(Core), dimension(:), intent(in) :: allCores
     integer, dimension(:), intent(in) :: startIndex, endIndex
     type(PedigreeHolder), intent(in) :: p
-    logical :: writeSwappable
-    type(ProgramParameters), intent(in) :: params
+    type(OutputParameters), intent(in) :: params
 
     integer(kind=1), dimension(:), allocatable :: tempPhase
 
@@ -66,7 +65,7 @@ contains
       nSnp = nSnp + allCores(i)%getNCoreSnp()
     end do
 
-    if (params%outputParams%outputFinalPhase) then
+    if (params%outputFinalPhase) then
       open (unit = 15, file = "."//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
       allocate(tempPhase(nSnp))
       write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
@@ -88,7 +87,7 @@ contains
       close(15)
     end if
 
-    if (params%outputParams%outputCoreIndex) then
+    if (params%outputCoreIndex) then
       open (unit = 25, file = "."//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
       do i = 1, nCores
         write (25, *) i, startIndex(i), endIndex(i)
@@ -96,7 +95,7 @@ contains
       close(25)
     end if
 
-    if (params%outputParams%outputSnpPhaseRate) then
+    if (params%outputSnpPhaseRate) then
       open (unit = 28, file = "."//DASH//"PhasingResults"//DASH//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
         do j = 1, allCores(i)%getNCoreSnp()
@@ -113,7 +112,7 @@ contains
       close(28)
     end if
 
-    if (params%outputParams%outputIndivPhaseRate) then
+    if (params%outputIndivPhaseRate) then
       open (unit = 30, file = "."//DASH//"PhasingResults"//DASH//"IndivPhaseRate.txt", status = "unknown")
       allocate(CoreCount(nCores * 2))
       write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'f7.2)'
@@ -135,7 +134,7 @@ contains
       close(30)
     end if
 
-    if (params%outputParams%outputHapIndex) then
+    if (params%outputHapIndex) then
       open (unit = 33, file = "."//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
       allocate(WorkOut(nCores * 2))
       write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'i8)'
@@ -152,7 +151,7 @@ contains
       close(33)
     end if
 
-    if ((params%outputParams%outputSwappable) .and. (writeSwappable)) then
+    if (params%outputSwappable) then
       open (unit = 44, file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
       allocate(TempSwap(nCores))
       write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
@@ -166,7 +165,7 @@ contains
       close(44)
     end if
     
-    if (params%outputParams%outputPhasingYield) then
+    if (params%outputPhasingYield) then
       open (unit = 29, file = "."//DASH//"PhasingResults"//DASH//"PhasingYield.txt", status = "unknown")
       do j = 1,nCores
 	write (29, '(i10,f7.2)') j, AllCores(j)%getTotalYield()
@@ -175,18 +174,17 @@ contains
     end if
   end subroutine WriteOutResults
 
-  subroutine writeOutCore(c, coreID, coreStart, p, writeSwappable, params)
+  subroutine writeOutCore(c, coreID, coreStart, p, params)
     use PedigreeModule
     use CoreDefinition
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
     use HaplotypeModule
 
     type(Core), intent(in) :: c
     integer, intent(in) :: coreID
     integer, intent(in) :: coreStart
     type(PedigreeHolder), intent(in) :: p
-    logical :: writeSwappable
-    class(ProgramParameters) :: params
+    class(OutputParameters) :: params
 
     integer :: i, j, counter, CounterM, CounterP, nAnisG, nSnp
     integer, allocatable, dimension(:) :: WorkOut
@@ -205,7 +203,7 @@ contains
 
     coreIDtxt = itoa(coreID)
 
-    if (params%outputParams%outputFinalPhase) then
+    if (params%outputFinalPhase) then
       open (unit = 15, file = "."//DASH//"PhasingResults"//DASH//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
       write(fmt, '(a,i10,a)') '(a20,', c%getNSnp(), 'i2)'
       do i = 1, nAnisG
@@ -219,7 +217,7 @@ contains
       close(15)
     end if
 
-    if (params%outputParams%outputSnpPhaseRate) then
+    if (params%outputSnpPhaseRate) then
       open (unit = 28, file = "."//DASH//"PhasingResults"//DASH//"SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nSnp
         counter = 0
@@ -234,7 +232,7 @@ contains
       close(28)
     end if
 
-    if (params%outputParams%outputIndivPhaseRate) then
+    if (params%outputIndivPhaseRate) then
       open (unit = 30, file = "."//DASH//"PhasingResults"//DASH//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
         hap1 => c%phase(j, 1)
@@ -248,7 +246,7 @@ contains
       close(30)
     end if
 
-    if (params%outputParams%outputHapIndex) then
+    if (params%outputHapIndex) then
       open (unit = 33, file = "."//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
         WorkOut(1) = c%getHapAnis(i, 1)
@@ -258,7 +256,7 @@ contains
       close(33)
     end if
 
-    if ((params%outputParams%outputSwappable) .and. (writeSwappable)) then
+    if (params%outputSwappable) then
       open (unit = 44, file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
       do i = 1, nAnisG
         write (44, '(a20,i2)') p%pedigree(p%hdMap(i))%originalId, c%getSwappable(i)
@@ -275,14 +273,13 @@ contains
     res = trim(tmp)
   end function
 
-  subroutine CombineResults(nAnisG, writeSwappable, params)
+  subroutine CombineResults(nAnisG, params)
     use PedigreeModule
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
     use CoreUtils
 
     integer, intent(in) :: nAnisG
-    logical :: writeSwappable
-    type(ProgramParameters) :: params
+    type(OutputParameters) :: params
 
     integer, dimension(:,:), pointer :: CoreIndex
     integer :: nCores
@@ -304,7 +301,7 @@ contains
 
     nCores = size(CoreIndex,1)
 
-    if (params%outputParams%outputCoreIndex) then
+    if (params%outputCoreIndex) then
       open (unit = 25, file = "."//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
       do i = 1, nCores
         write (25, *) i, CoreIndex(i,:)
@@ -312,7 +309,7 @@ contains
       close(25)
     end if
 
-    if (params%outputParams%outputFinalPhase) then
+    if (params%outputFinalPhase) then
       !!! FINAL PHASE !!!
       open (unit = 15, file = "."//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
       allocate(inUnits(nCores))
@@ -346,7 +343,7 @@ contains
       close(15)
     end if
 
-    if (params%outputParams%outputHapIndex) then
+    if (params%outputHapIndex) then
       !!! HAPINDCARRY !!!
       open (unit = 33, file = "."//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
       allocate(inUnits(nCores))
@@ -377,7 +374,7 @@ contains
       close(33)
     end if
 
-    if (params%outputParams%outputIndivPhaseRate) then
+    if (params%outputIndivPhaseRate) then
       !!! INDIVPHASE !!!
       open (unit = 30, file = "."//DASH//"PhasingResults"//DASH//"IndivPhaseRate.txt", status = "unknown")
       allocate(inUnits(nCores))
@@ -408,7 +405,7 @@ contains
       close(30)
     end if
 
-    if (params%outputParams%outputSnpPhaseRate) then
+    if (params%outputSnpPhaseRate) then
       !!! SNPPHASE !!!
       open (unit = 28, file = "."//DASH//"PhasingResults"//DASH//"SnpPhaseRate.txt", status = "unknown")
       do i = 1, nCores
@@ -424,8 +421,8 @@ contains
       close(28)
     end if
 
-    !!! SWAPHAPMAT !!!
-    if (params%outputParams%outputSwappable .and. writeSwappable) then
+    !!! SWAPPATMAT !!!
+    if (params%outputSwappable) then
       open (unit = 44, file = "."//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
       allocate(inUnits(nCores))
       do i = 1, nCores
@@ -526,6 +523,7 @@ contains
     character(len=300) :: first, line
     character(len=:), allocatable::tag
     character(len=300),dimension(:),allocatable :: second
+    logical :: singleRun, singleSurrogates
 
     params = ProgramParameters()
 
@@ -774,6 +772,24 @@ contains
     params%outputParams%outputCoreMistakesPercent = .false.
     params%outputParams%outputMistakes = .false.
   end if
+  
+  singleRun = (params%params%StartCoreChar .eq. "1") .and. (params%params%EndCoreChar .eq. "Combine")
+  ! Should probably have an input option to always output per core even when a single run - hence two lines here - but not
+  ! currently implemented
+  params%outputParams%perCore = .not. singleRun
+  
+  ! No purpose is served in writing out swappable info if data is prephased
+  params%outputParams%outputSwappable = params%outputParams%outputSwappable .and. (.not. (params%GenotypeFileFormat /= 2))
+  
+  ! Only write out surrogate information if we only do one lot of surrogate calculations per core
+  singleSurrogates = (params%params%ItterateType .eq. "Off") .and. (params%params%numIter == 1)
+  params%outputParams%outputSurrogates = params%outputParams%outputSurrogates .and. singleSurrogates
+  params%outputParams%outputSurrogatesSummary = params%outputParams%outputSurrogatesSummary .and. singleSurrogates
+  
+  !Only write "simulation" results if we run in that mode
+  params%outputParams%outputIndivMistakes = params%outputParams%outputIndivMistakes .and. params%Simulation
+  params%outputParams%outputIndivMistakesPercent = params%outputParams%outputIndivMistakesPercent .and. params%Simulation
+  params%outputParams%outputCoreMistakesPercent = params%outputParams%outputCoreMistakesPercent .and. params%Simulation
 
   PercSurrDisagree = PercSurrDisagree/100
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
@@ -785,11 +801,11 @@ end function ReadInParameterFile
 
   subroutine HapCommonality(library, OutputPoint, params)
     use HaplotypeLibraryDefinition
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
     
     type(HaplotypeLibrary), intent(in) :: library
     integer, intent(in) :: OutputPoint
-    class(ProgramParameters), intent(in) :: params
+    class(OutputParameters), intent(in) :: params
     
     integer :: i, SizeCore, nHaps
     character(len = 300) :: filout
@@ -799,16 +815,14 @@ end function ReadInParameterFile
     SizeCore = library%getNumSnps()
     nHaps = library%getSize()
 
-    if (params%outputParams%outputHapCommonality) then
-      write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"Extras",a1,"HapCommonality",i0,".txt")') DASH, DASH, DASH, DASH, OutputPoint
-      open (unit = 27, FILE = filout, status = 'unknown')
-      
-      HapRel = library%getHapRel()
+    write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"Extras",a1,"HapCommonality",i0,".txt")') DASH, DASH, DASH, DASH, OutputPoint
+    open (unit = 27, FILE = filout, status = 'unknown')
 
-      do i = 1, nHaps
-	write (27, '(i10,20000F5.2,20000F5.2,20000F5.2,20000F5.2)') i, float(HapRel(i,:))/SizeCore
-      enddo
-    endif
+    HapRel = library%getHapRel()
+
+    do i = 1, nHaps
+      write (27, '(i10,20000F5.2,20000F5.2,20000F5.2,20000F5.2)') i, float(HapRel(i,:))/SizeCore
+    enddo
 
     close(27)
 
@@ -817,7 +831,7 @@ end function ReadInParameterFile
   subroutine WriteSurrogates(definition, OutputPoint, p, params)
     use SurrogateDefinition
     use PedigreeModule
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
 
     character(len = 300) :: filout
     integer :: i, j, nSurrogates
@@ -825,14 +839,14 @@ end function ReadInParameterFile
     type(Surrogate), intent(in) :: definition
     integer, intent(in) :: OutputPoint
     type(PedigreeHolder), intent(in) :: p
-    type(ProgramParameters), intent(in) :: params
+    type(OutputParameters), intent(in) :: params
 
     integer :: nAnisG
     character(len=100) :: fmt
 
     nAnisG = size(definition%numOppose,1)
 
-    if (params%outputParams%outputSurrogates) then
+    if (params%outputSurrogates) then
       write (filout, '(".",a1,"Miscellaneous",a1,"Surrogates",i0,".txt")') DASH, DASH, OutputPoint
       open (unit = 13, FILE = filout, status = 'unknown')
       write(fmt, '(a,i10,a)') '(a20,', size(definition%partition,2), 'i6)'
@@ -843,7 +857,7 @@ end function ReadInParameterFile
     end if
     
     
-    if (params%outputParams%outputSurrogatesSummary) then
+    if (params%outputSurrogatesSummary) then
       write (filout, '(".",a1,"Miscellaneous",a1,"SurrogatesSummary",i0,".txt")') DASH, DASH, OutputPoint
       open (unit = 19, FILE = filout, status = 'unknown')
       do i = 1, nAnisG
@@ -951,12 +965,12 @@ end function ReadInParameterFile
     use PedigreeModule
     use CoreDefinition
     use TestResultDefinition
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
 
     type(TestResults), intent(in) :: results
     type(Core), intent(in) :: c
     type(PedigreeHolder), intent(in) :: p
-    type(ProgramParameters), intent(in) :: params
+    type(OutputParameters), intent(in) :: params
     integer, intent(in) :: OutputPoint
 
     integer :: i
@@ -966,7 +980,7 @@ end function ReadInParameterFile
     nAnisG = c % getNAnisG()
     nSNp = c % getNCoreSnp()
 
-    if (params%outputParams%outputIndivMistakes) then
+    if (params%outputIndivMistakes) then
       write (filout, '(".",a1,"Simulation",a1,"IndivMistakes",i0,".txt")') DASH, DASH, OutputPoint
       open (unit = 17, FILE = filout, status = 'unknown')
       do i = 1, nAnisG
@@ -987,7 +1001,7 @@ end function ReadInParameterFile
       close(17)
     end if
     
-    if (params%outputParams%outputIndivMistakesPercent) then
+    if (params%outputIndivMistakesPercent) then
       write (filout, '(".",a1,"Simulation",a1,"IndivMistakesPercent",i0,".txt")') DASH, DASH, OutputPoint
       open (unit = 20, FILE = filout, status = 'unknown')
 
@@ -1009,7 +1023,7 @@ end function ReadInParameterFile
       close(20)
     end if
     
-    if (params%outputParams%outputCoreMistakesPercent) then
+    if (params%outputCoreMistakesPercent) then
       write (filout, '(".",a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
       open (unit = 31, FILE = filout, status = 'unknown', position = 'append')
       write (31, '(6f9.4)') &
@@ -1024,17 +1038,17 @@ end function ReadInParameterFile
   end subroutine WriteTestResults
 
   subroutine CombineTestResults(nCores, params)
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
 
     integer, intent(in) :: nCores
-    type(ProgramParameters) :: params
+    type(OutputParameters) :: params
 
     character(len = 300) :: filout
     double precision, allocatable, dimension(:,:) :: AverageMatrix
     
     integer :: i
 
-    if (params%outputParams%outputCoreMistakesPercent) then
+    if (params%outputCoreMistakesPercent) then
       allocate(AverageMatrix(nCores, 6))
       write (filout, '(".",a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
       open (unit = 31, FILE = filout, status = 'unknown')
@@ -1163,14 +1177,14 @@ end function ReadInParameterFile
   end subroutine PrintTimerTitles
   
   subroutine WriteHapLib(library, currentcore, params)
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
     use CoreDefinition
     use HaplotypeModule
     use HaplotypeLibraryDefinition
     
     class(HaplotypeLibrary), intent(in) :: library
     integer, intent(in) :: currentcore
-    type(ProgramParameters), intent(in) :: params
+    type(OutputParameters), intent(in) :: params
 
     integer :: i, SizeCore, nHaps
     character(len = 300) :: filout
@@ -1180,11 +1194,11 @@ end function ReadInParameterFile
 
     nHaps = library%getSize()
 
-    if (params%outputParams%outputHaplotypeLibraryText) then
+    if (params%outputHaplotypeLibraryText) then
       write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
       open (unit = 24, FILE = filout, status = 'unknown')
     endif
-    if (params%outputParams%outputHaplotypeLibraryBinary) then
+    if (params%outputHaplotypeLibraryBinary) then
       write (filout, '(".",a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
       open (unit = 34, FILE = filout, form = "unformatted", status = 'unknown')
       
@@ -1193,23 +1207,56 @@ end function ReadInParameterFile
     
     do i = 1, nHaps
       hap = library%getHap(i)
-      if (params%outputParams%outputHaplotypeLibraryText) then	
+      if (params%outputHaplotypeLibraryText) then	
 	write (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
 	i, library%getHapFreq(i), " ", hap%toIntegerArray()
       end if
-      if (params%outputParams%outputHaplotypeLibraryBinary) then
+      if (params%outputHaplotypeLibraryBinary) then
 	write (34) hap%toIntegerArray()
       end if
     end do
 
-    if (params%outputParams%outputHaplotypeLibraryText) then
+    if (params%outputHaplotypeLibraryText) then
       close(24)
     end if
-    if (params%outputParams%outputHaplotypeLibraryBinary) then
+    if (params%outputHaplotypeLibraryBinary) then
       close(34)
     end if
   end subroutine WriteHapLib
   
+  subroutine writeAlphaPhaseResults(results,p,params)
+    use AlphaPhaseResultsDefinition
+    use PedigreeDefinition
+    use OutputParametersDefinition
+    
+    class(AlphaPhaseResults), intent(in) :: results
+    class(PedigreeHolder), intent(in) :: p
+    class(OutputParameters), intent(in) :: params
+    
+    integer :: i, id
+    
+    do i = 1, results%nCores
+      id = results%ids(i)
+      call WriteHapLib(results%libraries(i), id, params)
+      if (params%outputHapCommonality) then
+        call HapCommonality(results%libraries(i), id, params)
+      end if
+      if (params%perCore) then
+        call WriteOutCore(results%cores(i), id, results%startIndexes(i), p, params)
+      end if
+      call writeSurrogates(results%surrogates(i), id, p, params)
+      call WriteTestResults(results%testResults(i),results%cores(i),p,id,params)
+    end do
+
+    if ((.not. SingleRun) .and. combine) then
+      call CombineResults(nAnisG,params)     
+      call CombineTestResults(results%nCores,params)
+    else
+      call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
+    end if
+
+
+  end subroutine writeAlphaPhaseResults  
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)

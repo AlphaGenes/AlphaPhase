@@ -78,36 +78,12 @@ program AlphaPhase
       results = createLibraries(Phase, params%params)
     end if
 
+    call writeAlphaPhaseResults(results, params%outputParams)    
+    
     singleSurrogates = (params%params%ItterateType .eq. "Off") .and. (params%params%numIter == 1)
     singleRun = (params%params%StartCoreChar .eq. "1") .and. (params%params%EndCoreChar .eq. "Combine")
     combine = (params%params%EndCoreChar .eq. "Combine")
-
-    do i = 1, results%nCores
-      id = results%ids(i)
-      call WriteHapLib(results%libraries(i), id, params)
-      if (params%outputParams%outputHapCommonality) then
-        call HapCommonality(results%libraries(i), id, params)
-      end if
-      if (.not. singleRun) then
-        call WriteOutCore(results%cores(i), id, results%startIndexes(i), p, notPrephased, params)
-      end if
-      if (singleSurrogates) then
-        call writeSurrogates(results%surrogates(i), id, p, params)
-      end if
-      if (params%Simulation) then
-        call WriteTestResults(results%testResults(i),results%cores(i),p,id,params)
-      end if
-    end do
-
-    if ((.not. SingleRun) .and. combine) then
-      call CombineResults(nAnisG,notPrephased,params)
-    else
-      call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,notPrephased,params)
-    end if
-    if (params%Simulation) then
-      call CombineTestResults(results%nCores,params)
-    end if
-
+    
     call PrintTimerTitles(params)
   end subroutine main
 

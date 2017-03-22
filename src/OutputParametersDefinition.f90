@@ -20,6 +20,7 @@ module OutputParametersDefinition
     logical :: outputIndivMistakesPercent
     logical :: outputCoreMistakesPercent
     logical :: outputMistakes  
+    logical :: perCore
     
   end type OutputParameters
 end module OutputParametersDefinition
