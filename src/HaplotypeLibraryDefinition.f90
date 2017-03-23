@@ -51,11 +51,14 @@ module HaplotypeLibraryDefinition
     procedure :: limitedMatchWithError
     procedure :: limitedCompatPairsWithError
     procedure :: getSize
+    procedure :: setSize
     procedure :: getHapRel
     procedure :: getNumSnps
+    procedure :: setNumSnps
     procedure :: resetHapFreq
     procedure :: incrementHapFreq
     procedure :: getHapFreq
+    procedure :: setHapFreq
     procedure :: getCompatHaps
     procedure :: matchAddHap
     procedure :: getCompatHapsFreq
@@ -443,6 +446,14 @@ contains
     size = library % size
   end function getSize
 
+  subroutine setSize(library, size)
+
+    class(HaplotypeLibrary) :: library
+    integer,intent(in) :: size
+
+      library%size = size
+  end subroutine setSize
+
   function getHapRel(library) result (rel)
     class(HaplotypeLibrary) :: library
     integer, allocatable, dimension (:,:) :: rel
@@ -471,6 +482,13 @@ contains
     num = library % nSnps
   end function getNumSnps
 
+    subroutine setNumSnps(library, num)
+    class(HaplotypeLibrary) :: library
+    integer, intent(in) :: num
+
+    library % nSnps = num
+  end subroutine setNumSnps
+
   subroutine resetHapFreq(library)
     class(HaplotypeLibrary) :: library
 
@@ -491,6 +509,14 @@ contains
 
     freq = library%hapFreq(id)
   end function getHapFreq
+
+
+  subroutine setHapFreq(library, id, freq)
+    class(HaplotypeLibrary) :: library
+    integer, intent(in) :: id,freq
+
+    library%hapFreq(id) = freq
+  end subroutine setHapFreq
 
   function getCompatHaps(library, g, percgenohaplodisagree) result (compatHaps)
     use GenotypeModule

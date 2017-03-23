@@ -1010,7 +1010,7 @@ end function ReadInParameterFile
     integer :: i, id
     
     call MakeDirectories(params)
-    
+    ! write out core index - 
     do i = 1, results%nCores
       id = results%ids(i)
       call WriteHapLib(results%libraries(i), id, params)
@@ -1032,6 +1032,204 @@ end function ReadInParameterFile
   end subroutine writeAlphaPhaseResults  
 
 
+
+
+    
+  subroutine readHapLib(library, currentcore, params)
+    use OutputParametersDefinition
+    use CoreDefinition
+    use HaplotypeModule
+    use HaplotypeLibraryDefinition
+    
+    class(HaplotypeLibrary), intent(in) :: library
+    integer, intent(in) :: currentcore
+    type(OutputParameters), intent(in) :: params
+
+    integer :: i, SizeCore, nHaps,freq, dumI
+    character(len = 300) :: filout
+    character(len=IDLENGTH) :: dum
+    character(len=1) :: dumC
+    type(Haplotype) :: hap
+    integer(kind=1), dimension(:), allocatable :: hapArray
+
+    if (params%outputHaplotypeLibraryText) then
+      write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
+      open (unit = 24, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+    endif
+    if (params%outputHaplotypeLibraryBinary) then
+      write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
+      open (unit = 34, FILE = trim(params%outputDirectory)//filout, form = "unformatted", status = 'unknown')
+      
+      read (34) nHaps, SizeCore
+
+      call library%setNumSnps(SizeCore)
+      call library%setSize(nHaps)
+    end if
+    
+
+    allocate(hapArray(SizeCore))
+    do i = 1, nHaps
+      
+      if (params%outputHaplotypeLibraryText) then	
+	read (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
+	dumI, freq, dumC, hapArray
+    call library%setHapFreq(i,freq)
+      end if
+      if (params%outputHaplotypeLibraryBinary) then
+	      read (34) hapArray
+      end if
+    end do
+    hap = Haplotype(hapArray)
+    dumI = library%addHap(hap)
+    if (params%outputHaplotypeLibraryText) then
+      close(24)
+    end if
+    if (params%outputHaplotypeLibraryBinary) then
+      close(34)
+    end if
+  end subroutine readHapLib
+
+
+
+
+  ! subroutine readInResults(allCores, startIndex, endIndex, p, params)
+  !   use PedigreeModule
+  !   use CoreDefinition
+  !   use OutputParametersDefinition
+  !   use HaplotypeModule
+
+  !   type(Core), dimension(:), intent(in) :: allCores
+  !   integer, dimension(:), intent(in) :: startIndex, endIndex
+  !   type(PedigreeHolder), intent(in) :: p
+  !   type(OutputParameters), intent(in) :: params
+
+  !   integer(kind=1), dimension(:), allocatable :: tempPhase
+
+  !   integer :: i, j, k, l, counter, CounterM, CounterP, nAnisG, nSnp, nCores
+  !   integer, allocatable, dimension(:) :: WorkOut
+  !   double precision, allocatable, dimension(:) :: CoreCount
+  !   integer(kind=1), allocatable, dimension(:) :: TempSwap
+  !   character(len=100) :: fmt
+
+  !   type(Haplotype), pointer :: hap1, hap2
+
+  !   nAnisG = allCores(1)%getNAnisG()
+  !   nCores = size(allCores)
+  !   nSnp = 0
+  !   do i = 1, nCores
+  !     nSnp = nSnp + allCores(i)%getNCoreSnp()
+  !   end do
+
+  !   if (params%outputFinalPhase) then
+  !     open (unit = 15, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
+  !     allocate(tempPhase(nSnp))
+  !     write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
+  !     do i = 1, nAnisG
+  !       do j = 1, nCores
+  !         hap1 => allCores(j)%phase(i,1)
+  !         TempPhase(startIndex(j):endIndex(j)) = hap1%toIntegerArray()
+  !       end do
+  !       write(15, fmt) p%pedigree(p%hdMap(i))%originalId, &
+  !         TempPhase
+  !       do j = 1, nCores
+  !         hap2 => allCores(j)%phase(i,2)
+  !         TempPhase(startIndex(j):endIndex(j)) = hap2%toIntegerArray()
+  !       end do
+  !       write(15, fmt) p%pedigree(p%hdMap(i))%originalId, &
+  !         TempPhase
+  !     end do
+  !     deallocate(tempPhase)
+  !     close(15)
+  !   end if
+
+  !   if (params%outputCoreIndex) then
+  !     open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
+  !     do i = 1, nCores
+  !       write (25, *) i, startIndex(i), endIndex(i)
+  !     end do
+  !     close(25)
+  !   end if
+
+  !   if (params%outputSnpPhaseRate) then
+  !     open (unit = 28, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SnpPhaseRate.txt", status = "unknown")
+  !     do i = 1, nCores
+  !       do j = 1, allCores(i)%getNCoreSnp()
+  !         hap1 => allCores(i)%phase(j,1)
+  !         hap2 => allCores(i)%phase(j,2)
+  !         counter = 0
+  !         do k = 1, nAnisG
+  !           if ((hap1%getPhaseMod(j) == 0).or.(hap1%getPhaseMod(j) == 1)) counter = counter + 1
+  !           if ((hap2%getPhaseMod(j) == 0).or.(hap2%getPhaseMod(j) == 1)) counter = counter + 1
+  !         end do
+  !         write (28, '(i10,f7.2)') startIndex(i) + j - 1, (100 * (float(counter)/(2 * nAnisG)))
+  !       end do
+  !     end do
+  !     close(28)
+  !   end if
+
+  !   if (params%outputIndivPhaseRate) then
+  !     open (unit = 30, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"IndivPhaseRate.txt", status = "unknown")
+  !     allocate(CoreCount(nCores * 2))
+  !     write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'f7.2)'
+  !     do i = 1, nAnisG
+  !       l = 0
+  !       do j = 1, nCores
+  !         hap1 => allCores(j)%phase(i,1)
+  !         CounterP = allCores(j)%getNCoreSnp() - hap1%numberMissing()
+  !         l = l + 1
+  !         CoreCount(l) = (float(counterP)/allCores(j)%getNCoreSnp()) * 100
+  !         hap2 => allCores(j)%phase(i,1)
+  !         CounterM = allCores(j)%getNCoreSnp() - hap2%numberMissing()
+  !         l = l + 1
+  !         CoreCount(l) = (float(counterM)/allCores(j)%getNCoreSnp()) * 100
+  !       end do
+  !       write (30, fmt) p%pedigree(p%hdMap(i))%originalId, CoreCount(:)
+  !     end do
+  !     deallocate(CoreCount)
+  !     close(30)
+  !   end if
+
+  !   if (params%outputHapIndex) then
+  !     open (unit = 33, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
+  !     allocate(WorkOut(nCores * 2))
+  !     write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'i8)'
+  !     do i = 1, nAnisG
+  !       k = 0
+  !       do j = 1, nCores
+  !         k = k + 2
+  !         WorkOut(k - 1) = AllCores(j)%getHapAnis(i,1)
+  !         WorkOut(k) = AllCores(j)%getHapAnis(i,2)
+  !       end do
+  !       write (33, fmt) p%pedigree(p%hdMap(i))%originalId, WorkOut(:)
+  !     end do
+  !     deallocate(WorkOut)
+  !     close(33)
+  !   end if
+
+  !   if (params%outputSwappable) then
+  !     open (unit = 44, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
+  !     allocate(TempSwap(nCores))
+  !     write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
+  !     do i = 1, nAnisG
+  !       do j = 1, nCores
+  !         TempSwap(j) = AllCores(j)%getSwappable(i)
+  !       end do
+  !       write (44, fmt) p%pedigree(p%hdMap(i))%originalId, TempSwap
+  !     end do
+  !     deallocate(TempSwap)
+  !     close(44)
+  !   end if
+    
+  !   if (params%outputPhasingYield) then
+  !     open (unit = 29, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"PhasingYield.txt", status = "unknown")
+  !     do j = 1,nCores
+	! write (29, '(i10,f7.2)') j, AllCores(j)%getTotalYield()
+  !     end do
+  !     close(29)
+  !   end if
+  ! end subroutine readInResults
+
+! TODO still need to do ,readSurrogates,readTestResults,readOutResults
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
