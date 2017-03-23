@@ -48,7 +48,6 @@ program AlphaPhase
     end if
     params = ReadInParameterFile(specfile)
 
-    call MakeDirectories(params)
     p = ParsePedigreeAndGenotypeData(params)
     nAnisG = p%nHd
 

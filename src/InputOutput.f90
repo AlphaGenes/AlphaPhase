@@ -1,30 +1,12 @@
 #ifdef OS_UNIX
 
-#define STRINGIFY(x)#x
-#define TOSTRING(x) STRINGIFY(x)
-
 #DEFINE DASH "/"
-#DEFINE COPY "cp"
-#DEFINE MD "mkdir"
-#DEFINE RM "rm"
-#DEFINE RENAME "mv"
-#DEFINE SH "sh"
-#DEFINE EXE ""
-#DEFINE NULL ""
+#DEFINE MD "mkdir "
 
 #else
 
-#define STRINGIFY(x)#x
-#define TOSTRING(x) STRINGIFY(x)
-
 #DEFINE DASH "\"
-#DEFINE COPY "copy"
-#DEFINE MD "md"
-#DEFINE RM "del"
-#DEFINE RENAME "MOVE /Y"
-#DEFINE SH "BAT"
-#DEFINE EXE ".exe"
-#DEFINE NULL " >NUL"
+#DEFINE MD "md "
 #endif
 
 module InputOutput
@@ -745,23 +727,21 @@ end function ReadInParameterFile
   end subroutine CountInData
 
   subroutine MakeDirectories(params)
-    use ProgramParametersDefinition
+    use OutputParametersDefinition
     
-    type(ProgramParameters), intent(in) :: params
+    type(OutputParameters), intent(in) :: params
     
     print*, ""
 
-    call system(MD // "PhasingResults")
-    call system(MD // "PhasingResults"//DASH//"HaplotypeLibrary")
-    if (params%outputParams%outputHapCommonality) call system(MD // "PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
-    call system(MD // "Miscellaneous")
+    call system(MD // trim(params%outputDirectory) // DASH // "PhasingResults")
+    call system(MD // trim(params%outputDirectory) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary")
+    if (params%outputHapCommonality) call system(MD // trim(params%outputDirectory) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
+    call system(MD // trim(params%outputDirectory) // DASH //"Miscellaneous")
     
-    if (params%Simulation) then
-      if (params%outputParams%outputIndivMistakes .or. params%outputParams%outputIndivMistakesPercent .or. params%outputParams%outputCoreMistakesPercent .or. &
-	    params%outputParams%outputMistakes) then
-	call system(MD // "Simulation")
-      endif
-    end if
+    if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent .or. &
+	  params%outputMistakes) then
+      call system(MD // trim(params%outputDirectory) // DASH //"Simulation")
+    endif
 
   end subroutine MakeDirectories  
   
@@ -1028,6 +1008,8 @@ end function ReadInParameterFile
     class(OutputParameters), intent(in) :: params
     
     integer :: i, id
+    
+    call MakeDirectories(params)
     
     do i = 1, results%nCores
       id = results%ids(i)
