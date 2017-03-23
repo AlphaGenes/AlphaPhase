@@ -34,6 +34,7 @@ module HaplotypeLibraryDefinition
     procedure :: allMissing
     procedure :: oneZeroNoOnes
     procedure :: oneOneNoZeros
+    procedure :: numberFullyPhased
     procedure :: rationalise
     procedure :: removeHap
     final :: destroy
@@ -330,7 +331,8 @@ contains
   end function limitedMatchWithErrorAndMinOverlap
   
   function limitedCompatPairsWithError(library, geno, ErrorAllow, limit, nAnisG) result(pairs)
-    !!!! THIS IS TRICKY WITH THE MULTI-HD STUFF - SEE NOTES !!!!
+    ! No sensible way to make this funciton work with multi-HD / minOverlap stuff so leaving unchanged
+    ! Should probably do something like this at end with only fully phased haps.
     
     use GenotypeModule
     class(HaplotypeLibrary) :: library
@@ -688,5 +690,19 @@ contains
     library%newstore(id:library%size-1) = library%newstore(id+1:library%size)
     library%size = library%size - 1
   end subroutine removeHap
+  
+  function numberFullyPhased(library) result(num)
+    class(HaplotypeLibrary), intent(in) :: library
+    integer :: num
+    
+    integer :: i
+    
+    num = 0
+    do i = 1, library%size
+      if (library%newstore(i)%fullyphased()) then
+	num = num + 1
+      end if
+    end do
+  end function numberFullyPhased
 
 end module HaplotypeLibraryDefinition

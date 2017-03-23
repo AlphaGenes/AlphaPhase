@@ -24,7 +24,7 @@ contains
     
     class(CoreSubSet), intent(in) :: cs    
     integer, intent(in) :: threshold
-    integer :: incommonThreshold = 0
+    integer :: incommonThreshold = 900
     logical, intent(in) :: writeProgress
     type(Surrogate) :: definition
     
