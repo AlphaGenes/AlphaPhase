@@ -1,4 +1,4 @@
-#ifdef OS_UNIX
+#ifndef _WIN32
 
 #DEFINE DASH "/"
 #DEFINE MD "mkdir "
@@ -1000,7 +1000,7 @@ end function ReadInParameterFile
   
   subroutine writeAlphaPhaseResults(results,p,params)
     use AlphaPhaseResultsDefinition
-    use PedigreeDefinition
+    use PedigreeModule
     use OutputParametersDefinition
     
     class(AlphaPhaseResults), intent(in) :: results
@@ -1030,6 +1030,8 @@ end function ReadInParameterFile
 
 
   end subroutine writeAlphaPhaseResults  
+
+
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
