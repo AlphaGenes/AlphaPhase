@@ -142,9 +142,11 @@ contains
 		      found = found + 1
 		    end if
 		  else
+		    if (.not. Genos(next)%isMissing(j)) then
 		      toVisitPos = toVisitPos + 1
 		      toVisit(toVisitPos) = next
 		      depth(toVisitPos) = depth(visiting) + 1
+		    end if
 		  end if
 		end if
 		visited(next) = .true.
