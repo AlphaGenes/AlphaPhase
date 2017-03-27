@@ -286,6 +286,8 @@ contains
     val = c%swappable(animal)
   end function getSwappable
 
+
+
   function getCoreGenos(c,animal) result(g)
     use GenotypeModule
     class(Core), intent(in) :: c
