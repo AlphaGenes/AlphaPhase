@@ -48,8 +48,6 @@ contains
 
     type(MemberManager) :: manager
     
-    double precision :: percMinHapPresent
-    
     if (.not. present(quiet)) then
       quietInternal = .true.
     else
@@ -122,7 +120,7 @@ contains
 	do while (manager%hasNext())
 	  cs = CoreSubSet(c, p, manager%getNext())
 
-	  surrogates = Surrogate(cs, threshold, printOldProgress)
+	  surrogates = Surrogate(cs, threshold, params%minOverlap, printOldProgress)
 	  if (singleSurrogates) then
 	    results%surrogates(h-startCore+1) = surrogates
 	  end if
@@ -142,13 +140,12 @@ contains
 	  end if
 	end do
 
-	call UpdateHapLib(c, library)
+	call UpdateHapLib(c, library, params%minpresent, params%minoverlap)
 	if ((params%ItterateType .eq. "Off") .and. (.not. quietInternal)) then
 	  print*, " "
 	  print*, "  ", "Haplotype library imputation step"
 	end if
-	percMinHapPresent = 1.0
-	call imputeFromLib(library, c, params%PercGenoHaploDisagree, percMinHapPresent, params%minHapFreq, quietInternal)
+	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%minPresent, params%minoverlap, params%minHapFreq, quietInternal)
 
 	if ((.not. printOldProgress) .and. (.not. quietInternal)) then
 	  print '(4x, a9, 20x, i6, a19, f6.2, a25)', "After HLI", library%getSize(), " Haplotypes found, ", &
@@ -236,7 +233,7 @@ contains
       else
 	library = existingLibraries(h)
       end if
-      call UpdateHapLib(c,library) 
+      call UpdateHapLib(c,library,params%minpresent,params%minoverlap) 
 
       results%libraries(h-startCore+1) = library
       results%cores(h-startCore+1) = c

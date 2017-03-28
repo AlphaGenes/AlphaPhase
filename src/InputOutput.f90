@@ -747,26 +747,12 @@ contains
 
       case("iteratesubsetsize")
         if(allocated(second)) then
-          read(second(1), *) hold
-          if (hold(1:1) == "*") then
-            read(hold,"(X,I2)") cl
-            call get_command_argument(cl,hold)
-            read(hold,*) params%params%itterateNumber
-          else
-            read(hold,*) params%params%itterateNumber
-          end if
+          read(second(1), *) params%params%itterateNumber
         end if
 
       case("iterateiterations")
         if (allocated(second)) then
-          read(second(1), *) hold
-          if (hold(1:1) == "*") then
-            read(hold,"(X,I2)") cl
-            call get_command_argument(cl,hold)
-            read(hold,*) params%params%numIter
-          else
-            read(hold,*) params%params%numIter
-          end if
+          read(second(1), *) params%params%numIter
         end if
         if (params%params%itterateType .eq. "Off") then
           params%params%numIter = 1
@@ -781,20 +767,28 @@ contains
 	
       case("minhapfreq")
         if(allocated(second)) then
-          read (second, *) hold
-          if (hold(1:1) == "*") then
-            read(hold,"(X,I2)") cl
-            call get_command_argument(cl,hold)
-            read(hold,*) params%params%minHapFreq
-          else
-            read(hold,*) params%params%minHapFreq
-          end if
+          read (second(1), *) params%params%minHapFreq
         end if
 
       case("library")
         if (allocated(second)) then
           read(second(1), *) params%library
        endif
+       
+      case("minoverlap")
+	if(allocated(second)) then
+	  read(second(1), *) params%params%minoverlap
+	end if
+	
+      case("minpresent")
+	if(allocated(second)) then
+	  read(second(1),*) params%params%minPresent
+	end if
+	
+      case("mintokeep")
+	if (allocated(second)) then
+	  read(second(1),*) params%params%minToKeep
+	end if	
        
       case("graphics")
 	write(*,"(A)") "graphics is no longer a valid option for the AlphaPhase Spec File."

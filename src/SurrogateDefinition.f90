@@ -18,13 +18,13 @@ module SurrogateDefinition
   end interface Surrogate
 
 contains
-  function newSurrogate(cs, threshold, writeProgress) result(definition)
+  function newSurrogate(cs, threshold, incommonThreshold, writeProgress) result(definition)
     use ClusteringModule
     use CoreSubSetDefinition
     
     class(CoreSubSet), intent(in) :: cs    
     integer, intent(in) :: threshold
-    integer :: incommonThreshold = 900
+    integer, intent(in) :: incommonThreshold
     logical, intent(in) :: writeProgress
     type(Surrogate) :: definition
     

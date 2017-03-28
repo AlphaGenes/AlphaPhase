@@ -3,12 +3,9 @@ module HaplotypeLibraryPhasing
   implicit none
 
   integer, parameter, private :: nMaxRounds = 100
-  
-  integer, parameter :: minPresentInt = 800
-  integer, parameter :: minOverlap = 300
     
 contains
-  subroutine UpdateHapLib(c, library)
+  subroutine UpdateHapLib(c, library, minpresent, minoverlap)
     use HaplotypeLibraryDefinition
     use HaplotypeModule
     use CoreDefinition
@@ -16,6 +13,7 @@ contains
     
     type(Core), intent(in) :: c
     type(HaplotypeLibrary), intent(in) :: library
+    integer, intent(in) :: minpresent, minoverlap
     
     type(Haplotype) :: hap
 
@@ -24,25 +22,25 @@ contains
     do i = 1, c % getNAnisG()
       !Paternal Haps
       hap = c % phase(i, 1)
-      if (hap%numberNotMissing() >= minPresentInt) then
-	call newHaplotype(c, i, 1, library)
+      if (hap%numberNotMissing() >= minpresent) then
+	call newHaplotype(c, i, 1, library, minoverlap)
       endif
 
       !Maternal Haps
       hap = c % phase(i, 2)
-      if (hap%numberNotMissing() >= minPresentInt) then
-	call newHaplotype(c, i, 2, library)
+      if (hap%numberNotMissing() >= minpresent) then
+	call newHaplotype(c, i, 2, library, minoverlap)
       endif
     enddo
   end subroutine UpdateHapLib
 
-  subroutine newHaplotype(c, animal, phase, library)
+  subroutine newHaplotype(c, animal, phase, library, minoverlap)
     use HaplotypeModule
     use CoreDefinition
     use HaplotypeLibraryDefinition
 
     class(Core) :: c
-    integer, intent(in) :: animal, phase
+    integer, intent(in) :: animal, phase, minoverlap
     class(HaplotypeLibrary) :: library
 
     integer :: id
@@ -107,27 +105,26 @@ contains
        c%hapAnis(animal, phase) = id
   end subroutine newHaplotype
   
-  subroutine imputeFromLib(library, c, PercGenoHaploDisagree, percMinHapPresent, minHapFreq, quiet)
+  subroutine imputeFromLib(library, c, PercGenoHaploDisagree, minpresent, minoverlap, minHapFreq, quiet)
     use HaplotypeLibraryDefinition
     use CoreDefinition
     
     type(HaplotypeLibrary), intent(in) :: library
     class(Core) :: c
-    double precision, intent(in) :: PercGenoHaploDisagree, percMinHapPresent
-    integer, intent(in) :: minHapFreq
+    double precision, intent(in) :: PercGenoHaploDisagree
+    integer, intent(in) :: minHapFreq, minoverlap, minpresent
     logical, intent(in) :: quiet
     
-    integer :: nOldHaps, iterations, errorallow, minpresent
+    integer :: nOldHaps, iterations, errorallow
     
     errorallow = int(percGenoHaploDisagree * c%getNCoreSnp())
-    minpresent = int(percMinHapPresent * c%getNCoreSnp())
     
     if (.not. quiet) then
       print *, "Found ", library%getSize(), " haplotypes after long range phasing, (", library%numberFullyPhased(), ")" 
       print *
     end if
     
-    call complementStart(library, c, errorallow, minpresentInt, minhapfreq)
+    call complementStart(library, c, errorallow, minpresent, minoverlap, minhapfreq)
     if (.not. quiet) then
       print *, "Found ", library%getSize(), " haplotypes after complementing, (", library%numberFullyPhased(), ")" 
       print *
@@ -137,7 +134,7 @@ contains
     iterations = 0
     do while (nOldHaps /= library%getSize())
       nOldHaps = library%getSize()
-      call singleImputationRound(library, c, errorallow, minpresentInt, minhapfreq)
+      call singleImputationRound(library, c, errorallow, minpresent, minoverlap,  minhapfreq)
       iterations = iterations + 1
       if (.not. quiet) then
 	print *, "Found ", library%getSize(), " haplotypes after ", iterations, " iterations, (", library%numberFullyPhased(), ")" 
@@ -147,7 +144,7 @@ contains
     call library%rationalise()
   end subroutine imputeFromLib
   
-  subroutine singleImputationRound(library, c, errorAllow, minPresent, minHapFreq)
+  subroutine singleImputationRound(library, c, errorAllow, minPresent, minOverlap, minHapFreq)
     use HaplotypeLibraryDefinition
     use CoreDefinition
     use GenotypeModule
@@ -155,7 +152,7 @@ contains
     
     type(HaplotypeLibrary), intent(in) :: library
     class(Core) :: c
-    integer, intent(in) :: errorAllow, minPresent, minHapFreq
+    integer, intent(in) :: errorAllow, minPresent, minOverlap, minHapFreq
     
     integer :: i
     type(Genotype), pointer :: geno
@@ -186,8 +183,8 @@ contains
 	  call newHap%setFromOther(libHap)
 	  hap1changed = .not. newHap%equalHap(hap1)
 	  c%phase(i,1) = newHap
-	  if (hap1changed .and. (newHap%numberNotMissing() >= minPresentInt)) then
-	    call newHaplotype(c, i, 1, library)
+	  if (hap1changed .and. (newHap%numberNotMissing() >= minpresent)) then
+	    call newHaplotype(c, i, 1, library, minoverlap)
 	  end if
 	end if
 	
@@ -197,8 +194,8 @@ contains
 	  call newHap%setFromOther(libHap)
 	  hap2changed = .not. newHap%equalHap(hap2)
 	  c%phase(i,2) = newHap
-	  if (hap2changed .and. (newHap%numberNotMissing() >= minPresentInt)) then
-	    call newHaplotype(c, i, 2, library)
+	  if (hap2changed .and. (newHap%numberNotMissing() >= minpresent)) then
+	    call newHaplotype(c, i, 2, library, minoverlap)
 	  end if
 	end if
 	
@@ -214,8 +211,8 @@ contains
 	    call newHap%setFromOther(libHap)
 	    hap1changed = .not. newHap%equalHap(hap1)
 	    c%phase(i,1) = newHap
-	    if (hap1changed .and. (newHap%numberNotMissing() >= minPresentInt)) then
-	      call newHaplotype(c, i, 1, library)
+	    if (hap1changed .and. (newHap%numberNotMissing() >= minpresent)) then
+	      call newHaplotype(c, i, 1, library, minoverlap)
 	    end if
 
 	    libHap = getLibraryHap(library, candPairs(:,2))
@@ -223,8 +220,8 @@ contains
 	    call newHap%setFromOther(libHap)
 	    hap2changed = .not. newHap%equalHap(hap2)
 	    c%phase(i,2) = newHap
-	    if (hap2changed .and. (newHap%numberNotMissing() >= minPresentInt)) then
-	      call newHaplotype(c, i, 2, library)
+	    if (hap2changed .and. (newHap%numberNotMissing() >= minpresent)) then
+	      call newHaplotype(c, i, 2, library, minoverlap)
 	    end if
 	  end if
 	end if
@@ -232,7 +229,7 @@ contains
 	if (hap1changed) then
 	  hap2 = c%phase(i,2)
 	  comp = geno%complement(c%phase(i,1))
-	  candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresentInt, compatHaps)
+	  candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
 	  newHap = Haplotype(hap2)
 	  if (size(candHapsPat) > 0) then
 	    libHap = getLibraryHap(library, candHapsPat)
@@ -241,15 +238,15 @@ contains
 	    call newHap%setFromOther(comp)
 	  end if
 	  c%phase(i,2) = newHap
-	  if (.not. newHap%equalHap(hap2) .and. (newHap%numberNotMissing() >= minPresentInt)) then
-	    call newHaplotype(c, i, 2, library)
+	  if (.not. newHap%equalHap(hap2) .and. (newHap%numberNotMissing() >= minpresent)) then
+	    call newHaplotype(c, i, 2, library, minoverlap)
 	  end if
 	end if
 	
 	if (hap2changed) then
 	  hap1 = c%phase(i,1)
 	  comp = geno%complement(c%phase(i,2))
-	  candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresentInt, compatHaps)
+	  candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
 	  newHap = Haplotype(hap1)
 	  if (size(candHapsMat) > 0) then
 	    libHap = getLibraryHap(library, candHapsMat)
@@ -258,8 +255,8 @@ contains
 	    call newHap%setFromOther(comp)
 	  end if
 	  c%phase(i,1) = newHap
-	  if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minPresentInt)) then
-	    call newHaplotype(c, i, 1, library)
+	  if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minpresent)) then
+	    call newHaplotype(c, i, 1, library, minoverlap)
 	  end if
 	end if
       end if
@@ -267,7 +264,7 @@ contains
     
   end subroutine singleImputationRound
   
-  subroutine complementStart(library, c, errorAllow, minPresent, minHapFreq)
+  subroutine complementStart(library, c, errorAllow, minPresent, minOverlap, minHapFreq)
     use HaplotypeLibraryDefinition
     use CoreDefinition
     use GenotypeModule
@@ -275,7 +272,7 @@ contains
     
     type(HaplotypeLibrary), intent(in) :: library
     class(Core) :: c
-    integer, intent(in) :: errorAllow, minPresent, minHapFreq
+    integer, intent(in) :: errorAllow, minPresent, minOverlap, minHapFreq
     
     type(Haplotype) :: hap1, hap2, comp, libHap, newHap
     type(Genotype), pointer :: geno
@@ -287,7 +284,7 @@ contains
       compatHaps => library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
       hap2 = c%phase(i,2)
       comp = geno%complement(c%phase(i,1))
-      candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresentInt, compatHaps)
+      candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
       newHap = Haplotype(hap2)
       if (size(candHapsPat) > 0) then
 	libHap = getLibraryHap(library, candHapsPat)
@@ -297,13 +294,13 @@ contains
       end if
       
       c%phase(i,2) = newHap
-      if (.not. newHap%equalHap(hap2) .and. (newHap%numberNotMissing() >= minPresentInt)) then
-	call newHaplotype(c, i, 2, library)
+      if (.not. newHap%equalHap(hap2) .and. (newHap%numberNotMissing() >= minPresent)) then
+	call newHaplotype(c, i, 2, library, minoverlap)
       end if
 
       hap1 = c%phase(i,1)
       comp = geno%complement(c%phase(i,2))
-      candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresentInt, compatHaps)
+      candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
       newHap = Haplotype(hap1)
       if (size(candHapsMat) > 0) then
 	libHap = getLibraryHap(library, candHapsMat)
@@ -312,8 +309,8 @@ contains
 	call newHap%setFromOther(comp)
       end if
       c%phase(i,1) = newHap
-      if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minPresentInt)) then
-	call newHaplotype(c, i, 1, library)
+      if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minPresent)) then
+	call newHaplotype(c, i, 1, library, minoverlap)
       end if
     end do
     

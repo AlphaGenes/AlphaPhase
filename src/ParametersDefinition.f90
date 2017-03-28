@@ -7,7 +7,8 @@ module ParametersDefinition
     logical :: Offset
     integer :: UseSurrsN
     integer :: NumSurrDisagree
-    double precision :: PercGenoHaploDisagree, minOverlap, minPresent, minToKeep
+    integer ::  minOverlap, minPresent, minToKeep
+    double precision :: PercGenoHaploDisagree
     double precision :: GenotypeMissingErrorPercentage
 
     character (len = 300) :: itterateType
