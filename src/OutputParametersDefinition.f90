@@ -36,5 +36,21 @@ contains
     type(OutputParameters) :: outputParams
     
     outputParams%outputDirectory = "."
+    outputParams%outputFinalPhase = .true.
+    outputParams%outputCoreIndex = .true.
+    outputParams%outputSnpPhaseRate = .true.
+    outputParams%outputIndivPhaseRate = .true.
+    outputParams%outputHapIndex = .true.
+    outputParams%outputSwappable = .true.
+    outputParams%outputHapCommonality = .true.
+    outputParams%outputSurrogates = .true.
+    outputParams%outputSurrogatesSummary = .true.
+    outputParams%outputHaplotypeLibraryText = .true.
+    outputParams%outputPhasingYield = .true.
+    outputParams%outputIndivMistakes = .true.
+    outputParams%outputMistakes = .true.
+    outputParams%outputCombined = .true.
+
+
   end function newOutputParameters
 end module OutputParametersDefinition

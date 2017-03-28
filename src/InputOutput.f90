@@ -155,6 +155,7 @@ contains
       end do
       close(29)
     end if
+
   end subroutine WriteOutResults
 
   subroutine writeOutCore(c, coreID, coreStart, p, params)
@@ -190,12 +191,12 @@ contains
       open (unit = 15, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
       write(fmt, '(a,i10,a)') '(a20,', c%getNSnp(), 'i2)'
       do i = 1, nAnisG
-	hap1 => c%phase(j, 1)
-	hap2 => c%phase(j, 2)
-	write(15, fmt) p%pedigree(p%hdMap(i))%originalId, &
-	hap1%toIntegerArray()
-	write(15, fmt) p%pedigree(p%hdMap(i))%originalId, &
-	hap2%toIntegerArray()
+        hap1 => c%phase(i, 1)
+        hap2 => c%phase(i, 2)
+        write(15, fmt) p%pedigree(p%hdMap(i))%originalId, &
+        hap1%toIntegerArray()
+        write(15, fmt) p%pedigree(p%hdMap(i))%originalId, &
+        hap2%toIntegerArray()
       end do
       close(15)
     end if
@@ -1026,7 +1027,7 @@ end function ReadInParameterFile
       call writeSurrogates(results%surrogates(i), id, p, params)
       call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
      enddo
-
+     print *, "AlphaPhase results written out"
   end subroutine writeAlphaPhaseResults  
 
 
@@ -1141,12 +1142,12 @@ end function ReadInParameterFile
       write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
       
       do i = 1, nAnisG
-        read(15, fmt) dumC, TempPhase
+        read(15, *) dumC, TempPhase
         do j = 1, nCores
           hap1 = Haplotype(TempPhase(startIndex(j):endIndex(j)))
           allCores(j)%phase(i,1) = hap1
         end do
-        read(15, fmt) dumC, TempPhase
+        read(15, *) dumC, TempPhase
         do j = 1, nCores
           hap2 = Haplotype(TempPhase(startIndex(j):endIndex(j)))
           allCores(j)%phase(i,2) = hap2
@@ -1162,7 +1163,7 @@ end function ReadInParameterFile
       write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'i8)'
       do i = 1, nAnisG
         k = 0
-        read (33, fmt) dumC, WorkOut
+        read (33, *) dumC, WorkOut
         do j = 1, nCores
           k = k + 2
           call AllCores(j)%setHapAnis(i,1,WorkOut(k - 1))
