@@ -132,7 +132,7 @@ contains
     type(Haplotype) :: tmpHap
     integer :: nAnisG, nSnp
     integer :: i, j, k
-
+    print *,results%cores(1)%nCoreSnps
     nAnisG = results%cores(1)%getNAnisG()
     nSnp = 0
     do i = 1, size(results%cores)

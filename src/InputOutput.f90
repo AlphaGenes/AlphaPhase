@@ -1040,7 +1040,7 @@ end function ReadInParameterFile
     use HaplotypeModule
     use HaplotypeLibraryDefinition
     
-    class(HaplotypeLibrary), intent(in) :: library
+    type(HaplotypeLibrary), intent(out) :: library
     integer, intent(in) :: currentcore
     type(OutputParameters), intent(in) :: params
 
@@ -1059,26 +1059,25 @@ end function ReadInParameterFile
       open (unit = 34, FILE = trim(params%outputDirectory)//filout, form = "unformatted", status = 'unknown')
       
       read (34) nHaps, SizeCore
-
-      call library%setNumSnps(SizeCore)
-      call library%setSize(nHaps)
+      library = HaplotypeLibrary(sizeCore,nHaps,1)
     end if
     
 
     allocate(hapArray(SizeCore))
     do i = 1, nHaps
       
-      if (params%outputHaplotypeLibraryText) then	
-	read (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
-	dumI, freq, dumC, hapArray
-    call library%setHapFreq(i,freq)
-      end if
+     
       if (params%outputHaplotypeLibraryBinary) then
 	      read (34) hapArray
       end if
-    end do
-    hap = Haplotype(hapArray)
+       hap = Haplotype(hapArray)
     dumI = library%addHap(hap)
+     if (params%outputHaplotypeLibraryText) then	
+	      read (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') dumI, freq, hapArray
+        call library%setHapFreq(i,freq)
+      end if
+    end do
+   
     if (params%outputHaplotypeLibraryText) then
       close(24)
     end if
@@ -1090,7 +1089,7 @@ end function ReadInParameterFile
 
 
 
-  subroutine readInResults(results, params)
+  subroutine readInResults(results, params, p)
     use PedigreeModule
     use CoreDefinition
     use OutputParametersDefinition
@@ -1101,16 +1100,16 @@ end function ReadInParameterFile
     integer, dimension(:), allocatable :: startIndex, endIndex
     type(AlphaPhaseResults), intent(out) :: results
     type(OutputParameters), intent(in) :: params
-
+    type(pedigreeHolder), intent(in) :: p
     integer(kind=1), dimension(:), allocatable :: tempPhase
 
-    integer :: i, j, k, counter, nAnisG, nSnp, nCores,dumI
+    integer :: i, j, k, nAnisG, nSnp, nCores,dumI
     integer, allocatable, dimension(:) :: WorkOut
     integer(kind=1), allocatable, dimension(:) :: TempSwap
     character(len=100) :: fmt
     character(len=IDLENGTH) :: dumC
 
-    type(Haplotype), pointer :: hap1, hap2
+    type(Haplotype) :: hap1, hap2
 
     nSnp = 0
 
@@ -1121,14 +1120,13 @@ end function ReadInParameterFile
       read (25, *) nCores
       read (25, *) nAnisG
       read (25, *) nSnp
-
       results = AlphaPhaseResults(nCores, .true., .true.)
       allocate(startIndex(nCores))
       allocate(endIndex(nCores))
       allocate(allCores(nCores))
       do i = 1, nCores
         read (25, *) dumI , startIndex(i), endIndex(i)
-        
+        allcores(i) = Core(p,startIndex(i),startIndex(i),endIndex(i),endIndex(i))
       end do
       close(25)
     end if
@@ -1191,22 +1189,22 @@ end function ReadInParameterFile
     end if
 
     results%cores = allCores
-  
   end subroutine readInResults
 
-    subroutine readAlphaPhaseResults(results,params)
+    subroutine readAlphaPhaseResults(results,params,p)
     use AlphaPhaseResultsDefinition
     use PedigreeModule
     use OutputParametersDefinition
     
     class(AlphaPhaseResults), intent(out) :: results
     class(OutputParameters), intent(in) :: params
+    type(PedigreeHolder), intent(in) :: p
     integer :: i, id
 
 
-    call readInResults(results,params)
-    do i = 1, results%nCores        
-      call readHapLib(results%libraries(i), id, params)
+    call readInResults(results,params, p)
+    do i = 1, results%nCores     
+      call readHapLib(results%libraries(i), i, params)
     end do
 
 

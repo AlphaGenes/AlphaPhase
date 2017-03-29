@@ -201,19 +201,19 @@ contains
 
       allocate(tempHapFreq(library % storeSize))
       tempHapFreq = library%hapFreq
-      deallocate(library%hapFreq)
+      ! if (allocated(library%hapFreq)) then
+      !   deallocate(library%hapFreq)
+      ! endif
       allocate(library%hapFreq(newStoreSize))
       library % hapFreq = 0
       library % hapFreq(1:library % Size) = tempHapFreq
-      deallocate(tempHapFreq)
-
       allocate(tempNewStore(library % storeSize))
       tempNewStore = library%newStore
-      deallocate(library%newStore)
+      ! if (allocated(library%newStore)) then
+      !   deallocate(library%newStore)
+      ! endif
       allocate(library%newStore(newStoreSize))
       library % newStore(1:library % Size) = tempNewStore
-      deallocate(tempNewStore)
-
       library % StoreSize = newStoreSize
     end if
 
