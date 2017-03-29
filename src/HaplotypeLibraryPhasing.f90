@@ -231,38 +231,34 @@ contains
 	  end if
 	end if
 
-	if (hap1changed) then
-	  hap2 = c%phase(i,2)
-	  comp = geno%complement(c%phase(i,1))
-	  candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
-	  newHap = Haplotype(hap2)
-	  if (size(candHapsPat) > 0) then
-	    libHap = getLibraryHap(library, candHapsPat)
-	    call newHap%setFromOther(libHap)
-	  else
-	    call newHap%setFromOther(comp)
-	  end if
-	  c%phase(i,2) = newHap
-	  if (.not. newHap%equalHap(hap2) .and. (newHap%numberNotMissing() >= minpresent)) then
-	    call newHaplotype(c, i, 2, library, minoverlap)
-	  end if
+	hap2 = c%phase(i,2)
+	comp = geno%complement(c%phase(i,1))
+	candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+	newHap = Haplotype(hap2)
+	if (size(candHapsPat) > 0) then
+	  libHap = getLibraryHap(library, candHapsPat)
+	  call newHap%setFromOther(libHap)
+	else
+	  call newHap%setFromOther(comp)
 	end if
-	
-	if (hap2changed) then
-	  hap1 = c%phase(i,1)
-	  comp = geno%complement(c%phase(i,2))
-	  candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
-	  newHap = Haplotype(hap1)
-	  if (size(candHapsMat) > 0) then
-	    libHap = getLibraryHap(library, candHapsMat)
-	    call newHap%setFromOther(libHap)
-	  else
-	    call newHap%setFromOther(comp)
-	  end if
-	  c%phase(i,1) = newHap
-	  if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minpresent)) then
-	    call newHaplotype(c, i, 1, library, minoverlap)
-	  end if
+	c%phase(i,2) = newHap
+	if (.not. newHap%equalHap(hap2) .and. (newHap%numberNotMissing() >= minpresent)) then
+	  call newHaplotype(c, i, 2, library, minoverlap)
+	end if
+
+	hap1 = c%phase(i,1)
+	comp = geno%complement(c%phase(i,2))
+	candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+	newHap = Haplotype(hap1)
+	if (size(candHapsMat) > 0) then
+	  libHap = getLibraryHap(library, candHapsMat)
+	  call newHap%setFromOther(libHap)
+	else
+	  call newHap%setFromOther(comp)
+	end if
+	c%phase(i,1) = newHap
+	if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minpresent)) then
+	  call newHaplotype(c, i, 1, library, minoverlap)
 	end if
       end if
     end do
