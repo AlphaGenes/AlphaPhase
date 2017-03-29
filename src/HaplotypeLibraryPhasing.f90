@@ -205,9 +205,6 @@ contains
 	end if
 	
 	if ((size(candHapsPat) > 0) .and. (size(candHapsMat) > 0)) then
-	  !! THIS WAS ORIGINALLY FIND ALL PAIRS THAT ARE COMPAT WITH GENO IRRERGARDLESS OF CURRENT PHASE IF BOTH SIZES WERE
-	  ! GREATER THAN ONE. THIS WILL CAUSE ALL SORTS OF PROBLEMS WITH CLUSTERING SO FOR NOW GOING TO LEAVE THIS HERE INSTEAD
-	  ! COULD POTENTIALLY DO AN ALL PAIRS THINGS AT THE END WITH HAPLOTYPES WITH ENOUGH PHASE
 	  candPairs => getCompatPairsWithError(library, geno, ErrorAllow, CandHapsPat, CandHapsMat, c%getNAnisG())
 	  
 	  if (size(CandPairs,1) > 0) then
