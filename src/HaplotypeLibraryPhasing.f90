@@ -47,7 +47,7 @@ contains
     integer, dimension(:), pointer :: ids
     type(Haplotype) :: hap, merged
     
-    integer :: i, j, n
+    integer :: i, j, k, n
     
     hap = c % phase(animal, phase)
       ids => library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
@@ -96,6 +96,13 @@ contains
 	  do i = size(ids), 2, -1
 	    library%hapfreq(id) = library%hapfreq(id) + library%hapfreq(ids(i))
 	    call library%removehap(ids(i))
+	    do j = 1, c%getNAnisG()
+	      do k = 1, 2
+		if (c%hapanis(j,k) > ids(i)) then
+		  c%hapanis(j,k) = c%hapanis(j,k) - 1
+		end if
+	      end do
+	    end do
 	  end do
 	else
 	  id = library%addHap(hap)
@@ -140,8 +147,6 @@ contains
 	print *, "Found ", library%getSize(), " haplotypes after ", iterations, " iterations, (", library%numberFullyPhased(), ")" 
       end if
     end do
-    
-    call library%rationalise()
   end subroutine imputeFromLib
   
   subroutine singleImputationRound(library, c, errorAllow, minPresent, minOverlap, minHapFreq)

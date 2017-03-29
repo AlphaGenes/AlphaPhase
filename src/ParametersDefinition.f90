@@ -7,9 +7,10 @@ module ParametersDefinition
     logical :: Offset
     integer :: UseSurrsN
     integer :: NumSurrDisagree
-    integer ::  minOverlap, minPresent, minToKeep
+    integer ::  minOverlap, minPresent
     double precision :: PercGenoHaploDisagree
     double precision :: GenotypeMissingErrorPercentage
+    double precision :: percMinToKeep
 
     character (len = 300) :: itterateType
     integer :: itterateNumber
@@ -34,7 +35,7 @@ contains
     params%minHapFreq = 1
     params%minOverlap = 0
     params%minPresent = 100
-    params%minToKeep = 100
+    params%percMinToKeep = 100
   end function newParameters
     
 end module ParametersDefinition

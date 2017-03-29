@@ -665,23 +665,38 @@ contains
     res = trim(tmp)
   end function
   
-  subroutine rationalise(library) 
+  function rationalise(library, percThreshold, c) result(newlib)
+    use CoreDefinition
+    
     class(HaplotypeLibrary), intent(in) :: library
+    double precision, intent(in) :: percThreshold
+    type(Core), optional :: c
+    type(HaplotypeLibrary) :: newlib
     
-    integer :: i
+    integer :: threshold, i, add
+    integer, dimension(library%size) :: newIDs
     
-    i = 1
+    newlib = HaplotypeLibrary(library%nSnps,library%size,library%stepsize)
     
-    !! NEED TO UPDATE HAP CARRY AFTER THIS
+    threshold = int(percThreshold * library%nSnps)
+    newIDs = MissingHaplotypeCode
     
-    do while (i <= library%size)
-      if (library%newstore(i)%fullyphased()) then
-	i = i + 1
-      else
-	call library%removeHap(i)
+    do i = 1, library%size
+      if (library%newstore(i)%numberNotMissing() >= threshold) then
+	newlib%size = newlib%size + 1
+	newlib%newstore(newlib%size) = library%newstore(i)
+	newlib%hapfreq(newlib%size) = library%hapfreq(i)
+	newIDs(i) = newlib%size
       end if
     end do
-  end subroutine rationalise
+    
+    if (present(c)) then
+      do i = 1, size(c%hapAnis,1)
+	c%hapAnis(i,1) = newIDs(c%hapAnis(i,1))
+	c%hapAnis(i,2) = newIDs(c%hapAnis(i,2))
+      end do
+    end if
+  end function rationalise
   
   subroutine removeHap(library, id)
     class(HaplotypeLibrary) :: library

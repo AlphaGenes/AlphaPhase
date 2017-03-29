@@ -785,9 +785,9 @@ contains
 	  read(second(1),*) params%params%minPresent
 	end if
 	
-      case("mintokeep")
+      case("percmintokeep")
 	if (allocated(second)) then
-	  read(second(1),*) params%params%minToKeep
+	  read(second(1),*) params%params%percMinToKeep
 	end if	
        
       case("graphics")
@@ -899,7 +899,10 @@ contains
     params%outputMistakes = .false.
   end if
 
+  !! These perc need to go above!
   PercSurrDisagree = PercSurrDisagree/100
+  params%params%PercMinToKeep = params%params%PercMinToKeep / 100
+  
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
   params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100
   params%params%GenotypeMissingErrorPercentage = params%params%GenotypeMissingErrorPercentage/100

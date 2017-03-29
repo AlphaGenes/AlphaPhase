@@ -146,6 +146,7 @@ contains
 	  print*, "  ", "Haplotype library imputation step"
 	end if
 	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%minPresent, params%minoverlap, params%minHapFreq, quietInternal)
+	library = library%rationalise(params%percMinToKeep,c)
 
 	if ((.not. printOldProgress) .and. (.not. quietInternal)) then
 	  print '(4x, a9, 20x, i6, a19, f6.2, a25)', "After HLI", library%getSize(), " Haplotypes found, ", &
