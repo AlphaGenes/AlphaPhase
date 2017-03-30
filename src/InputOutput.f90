@@ -1051,7 +1051,6 @@ end function ReadInParameterFile
     integer(kind=1), dimension(:), allocatable :: hapArray
 
     if (params%outputHaplotypeLibraryText) then
-      print *, currentcore
       write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
       open (unit = 24, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
     endif
@@ -1127,7 +1126,7 @@ end function ReadInParameterFile
       allocate(allCores(nCores))
       do i = 1, nCores
         read (25, *) dumI , startIndex(i), endIndex(i)
-        allcores(i) = Core(p,startIndex(i),startIndex(i),endIndex(i),endIndex(i))
+        allcores(i) = newCore(p,startIndex(i),startIndex(i),endIndex(i),endIndex(i))
       end do
       close(25)
     end if
@@ -1202,9 +1201,10 @@ end function ReadInParameterFile
     type(PedigreeHolder), intent(in) :: p
     integer :: i, id
 
-
+    
     call readInResults(results,params, p)
-    do i = 1, results%nCores     
+    
+    do i = 1, results%nCores   
       call readHapLib(results%libraries(i), i, params)
     end do
 

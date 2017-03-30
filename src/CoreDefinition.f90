@@ -258,7 +258,7 @@ contains
   subroutine setHapAnis(c,animal,phase,id)
     class(Core) :: c
     integer, intent(in) :: animal, phase, id
-
+    
     c%hapAnis(animal,phase) = id
   end subroutine setHapAnis
 
