@@ -305,9 +305,9 @@ contains
 
     do i = 1, nAnisG
       read (3, *) dummy, ReadingVector(:)
-      Phase(i,1) = Haplotype(ReadingVector)
+      Phase(i,1) = newHaplotypeInt(ReadingVector)
       read (3, *) dummy, ReadingVector(:)
-      Phase(i,2) = Haplotype(ReadingVector)
+      Phase(i,2) = newHaplotypeInt(ReadingVector)
     enddo
 
     close(3)
@@ -1051,6 +1051,7 @@ end function ReadInParameterFile
     integer(kind=1), dimension(:), allocatable :: hapArray
 
     if (params%outputHaplotypeLibraryText) then
+      print *, currentcore
       write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
       open (unit = 24, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
     endif
@@ -1073,7 +1074,7 @@ end function ReadInParameterFile
        hap = Haplotype(hapArray)
     dumI = library%addHap(hap)
      if (params%outputHaplotypeLibraryText) then	
-	      read (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') dumI, freq, hapArray
+	      read (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') dumI, freq,dumC, hapArray
         call library%setHapFreq(i,freq)
       end if
     end do
