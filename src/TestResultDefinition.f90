@@ -42,7 +42,7 @@ contains
     do i = 1, c%getNAnisG()
       geno => c%getCoreGenos(i)
       hap1 => c%phase(i,1)
-      hap2 => c%phase(i,1)
+      hap2 => c%phase(i,2)
       trueHap1 => TruePhase(i,1)
       trueHap2 => TruePhase(i,2)
       do j = 1, c%getNCoreSnp()
