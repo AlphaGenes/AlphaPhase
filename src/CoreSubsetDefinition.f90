@@ -201,7 +201,7 @@ contains
     
     type(Haplotype), pointer :: hap
     
-    hap => set%parentCore%phase(animal, phase)
+    hap => set%parentCore%phase(set%sub2full(animal), phase)
   end function getHaplotypeCoreSubset
     
     
