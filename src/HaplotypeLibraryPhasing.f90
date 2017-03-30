@@ -5,7 +5,7 @@ module HaplotypeLibraryPhasing
   integer, parameter, private :: nMaxRounds = 100
     
 contains
-  subroutine UpdateHapLib(c, library, minpresent, minoverlap)
+  subroutine UpdateHapLib(c, library, percminpresent, minoverlap, percGenoHaploDisagree)
     use HaplotypeLibraryDefinition
     use HaplotypeModule
     use CoreDefinition
@@ -13,34 +13,38 @@ contains
     
     type(Core), intent(in) :: c
     type(HaplotypeLibrary), intent(in) :: library
-    integer, intent(in) :: minpresent, minoverlap
+    integer, intent(in) :: minoverlap
+    double precision, intent(in) :: PercGenoHaploDisagree, percminpresent
     
     type(Haplotype) :: hap
 
-    integer :: i
+    integer :: i, errorallow, minpresent
+    
+    errorallow = int(percGenoHaploDisagree * c%getNCoreSnp())
+    minpresent = int(percminpresent * c%getNCoreSnp())
     
     do i = 1, c % getNAnisG()
       !Paternal Haps
       hap = c % phase(i, 1)
       if (hap%numberNotMissing() >= minpresent) then
-	call newHaplotype(c, i, 1, library, minoverlap)
+	call newHaplotype(c, i, 1, library, minoverlap, errorallow)
       endif
 
       !Maternal Haps
       hap = c % phase(i, 2)
       if (hap%numberNotMissing() >= minpresent) then
-	call newHaplotype(c, i, 2, library, minoverlap)
+	call newHaplotype(c, i, 2, library, minoverlap, errorallow)
       endif
     enddo
   end subroutine UpdateHapLib
 
-  subroutine newHaplotype(c, animal, phase, library, minoverlap)
+  subroutine newHaplotype(c, animal, phase, library, minoverlap, errorallow)
     use HaplotypeModule
     use CoreDefinition
     use HaplotypeLibraryDefinition
 
     class(Core) :: c
-    integer, intent(in) :: animal, phase, minoverlap
+    integer, intent(in) :: animal, phase, minoverlap, errorallow
     class(HaplotypeLibrary) :: library
 
     integer :: id
@@ -78,8 +82,7 @@ contains
 	  merged = merged%mergeMod(library%newstore(ids(i)))
 	end do
 	
-	!! Should be some sort of error parameter not zero!
-	if (merged%numberError() <= 0) then
+	if (merged%numberError() <= ErrorAllow) then
 	  library%newstore(id) = merged
 	  do n = 1, size(ids)
 	    do i = 1, c%getNAnisG()
@@ -112,20 +115,21 @@ contains
        c%hapAnis(animal, phase) = id
   end subroutine newHaplotype
   
-  subroutine imputeFromLib(library, c, PercGenoHaploDisagree, minpresent, minoverlap, minHapFreq, percMinToKeep, quiet)
+  subroutine imputeFromLib(library, c, PercGenoHaploDisagree, percminpresent, minoverlap, minHapFreq, percMinToKeep, quiet)
     use HaplotypeLibraryDefinition
     use CoreDefinition
     
     type(HaplotypeLibrary), intent(in) :: library
     class(Core) :: c
     double precision, intent(in) :: PercGenoHaploDisagree
-    integer, intent(in) :: minHapFreq, minoverlap, minpresent
-    double precision :: percMinToKeep
+    integer, intent(in) :: minHapFreq, minoverlap
+    double precision :: percMinToKeep, percminpresent
     logical, intent(in) :: quiet
     
-    integer :: nOldHaps, iterations, errorallow
+    integer :: nOldHaps, iterations, errorallow, minpresent
     
     errorallow = int(percGenoHaploDisagree * c%getNCoreSnp())
+    minpresent = int(percminpresent * c%getNCoreSnp())
     
     call complementStart(library, c, errorallow, minpresent, minoverlap, minhapfreq)
     if (.not. quiet) then
@@ -186,7 +190,7 @@ contains
 	  hap1changed = .not. newHap%equalHap(hap1)
 	  c%phase(i,1) = newHap
 	  if (hap1changed .and. (newHap%numberNotMissing() >= minpresent)) then
-	    call newHaplotype(c, i, 1, library, minoverlap)
+	    call newHaplotype(c, i, 1, library, minoverlap, errorallow)
 	  end if
 	end if
 	
@@ -197,7 +201,7 @@ contains
 	  hap2changed = .not. newHap%equalHap(hap2)
 	  c%phase(i,2) = newHap
 	  if (hap2changed .and. (newHap%numberNotMissing() >= minpresent)) then
-	    call newHaplotype(c, i, 2, library, minoverlap)
+	    call newHaplotype(c, i, 2, library, minoverlap, errorallow)
 	  end if
 	end if
 	
@@ -211,7 +215,7 @@ contains
 	    hap1changed = .not. newHap%equalHap(hap1)
 	    c%phase(i,1) = newHap
 	    if (hap1changed .and. (newHap%numberNotMissing() >= minpresent)) then
-	      call newHaplotype(c, i, 1, library, minoverlap)
+	      call newHaplotype(c, i, 1, library, minoverlap, errorallow)
 	    end if
 
 	    libHap = getLibraryHap(library, candPairs(:,2))
@@ -220,7 +224,7 @@ contains
 	    hap2changed = .not. newHap%equalHap(hap2)
 	    c%phase(i,2) = newHap
 	    if (hap2changed .and. (newHap%numberNotMissing() >= minpresent)) then
-	      call newHaplotype(c, i, 2, library, minoverlap)
+	      call newHaplotype(c, i, 2, library, minoverlap, errorallow)
 	    end if
 	  end if
 	end if
@@ -237,7 +241,7 @@ contains
 	end if
 	c%phase(i,2) = newHap
 	if (.not. newHap%equalHap(hap2) .and. (newHap%numberNotMissing() >= minpresent)) then
-	  call newHaplotype(c, i, 2, library, minoverlap)
+	  call newHaplotype(c, i, 2, library, minoverlap, errorallow)
 	end if
 
 	hap1 = c%phase(i,1)
@@ -252,7 +256,7 @@ contains
 	end if
 	c%phase(i,1) = newHap
 	if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minpresent)) then
-	  call newHaplotype(c, i, 1, library, minoverlap)
+	  call newHaplotype(c, i, 1, library, minoverlap, errorallow)
 	end if
       end if
     end do
@@ -290,7 +294,7 @@ contains
       
       c%phase(i,2) = newHap
       if (.not. newHap%equalHap(hap2) .and. (newHap%numberNotMissing() >= minPresent)) then
-	call newHaplotype(c, i, 2, library, minoverlap)
+	call newHaplotype(c, i, 2, library, minoverlap, errorallow)
       end if
 
       hap1 = c%phase(i,1)
@@ -305,7 +309,7 @@ contains
       end if
       c%phase(i,1) = newHap
       if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minPresent)) then
-	call newHaplotype(c, i, 1, library, minoverlap)
+	call newHaplotype(c, i, 1, library, minoverlap, errorallow)
       end if
     end do
     

@@ -782,7 +782,7 @@ contains
 	
       case("minpresent")
 	if(allocated(second)) then
-	  read(second(1),*) params%params%minPresent
+	  read(second(1),*) params%params%percMinPresent
 	end if
 	
       case("percmintokeep")
@@ -902,6 +902,7 @@ contains
   !! These perc need to go above!
   PercSurrDisagree = PercSurrDisagree/100
   params%params%PercMinToKeep = params%params%PercMinToKeep / 100
+  params%params%PercMinPresent = params%params%PercMinPresent / 100
   
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
   params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100

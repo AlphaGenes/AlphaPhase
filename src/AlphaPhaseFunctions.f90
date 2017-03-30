@@ -133,7 +133,7 @@ contains
 	  end if
 	end do
 	
-	call UpdateHapLib(c, library, params%minpresent, params%minoverlap)
+	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then
 	  if (params%ItterateType .eq. "Off") then
 	    print '(6x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
@@ -141,7 +141,7 @@ contains
 	  end if
 	  print*, "   Haplotype Library Imputation step"
 	end if
-	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%minPresent, params%minoverlap, params%minHapFreq, &
+	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%percMinPresent, params%minoverlap, params%minHapFreq, &
 	  params%percMinToKeep, quietInternal)
       end do
       
@@ -223,7 +223,7 @@ contains
       else
 	library = existingLibraries(h)
       end if
-      call UpdateHapLib(c,library,params%minpresent,params%minoverlap) 
+      call UpdateHapLib(c,library,params%percminpresent,params%minoverlap,params%PercGenoHaploDisagree) 
 
       results%libraries(h-startCore+1) = library
       results%cores(h-startCore+1) = c
