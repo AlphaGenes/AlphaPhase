@@ -4,7 +4,7 @@ module LongRangePhasing
   
 contains
   
-  subroutine Erdos(surrogates, c, numsurrdisagree, useSurrsN, printProgress)
+  subroutine Erdos(surrogates, c, numsurrdisagree, useSurrsN)
     use SurrogateDefinition
     use CoreSubsetDefinition
     use GenotypeModule
@@ -13,7 +13,6 @@ contains
     type(Surrogate), intent(in) :: surrogates
     type(CoreSubSet) :: c
     integer, intent(in) :: numsurrdisagree, useSurrsN
-    logical, intent(in) :: printProgress
 
     type(Genotype), dimension(:), pointer :: genos
     integer, dimension(:,:), allocatable :: surrList
@@ -78,20 +77,8 @@ contains
     end do
 
     do side = 1, 2
-      if (printProgress) then
-	print*, " "
-	select case (side)
-	  case (1)
-	    print*, " Phasing genotyped individuals for Paternal allele"
-	  case (2)
-	    print*, " Phasing genotyped individuals for Maternal allele"
-	end select
-      end if
       highestErdos = 0
       do i = 1, nAnisG
-	if ((mod(i, 400) == 0) .and. printProgress) then
-	  print*, "   Phasing done for genotyped individual --- ", i
-	end if
 	hap => c%getHaplotypeCoreSubset(i, side)
 	do j = 1, nSnp
 	  if (hap%isMissing(j)) then
@@ -183,15 +170,6 @@ contains
 	  end if
 	end do
       end do
-      if (printProgress) then
-	print*, " "
-	select case (side)
-	  case (1)
-	    print*, " ", highestErdos, " was the highest Erdos used on Paternal Side"
-	  case (2)
-	    print*, " ", highestErdos, " was the highest Erdos used on Maternal Side"
-	end select
-      end if
     end do
     
     deallocate(surrList)

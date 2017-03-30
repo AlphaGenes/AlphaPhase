@@ -35,6 +35,7 @@ module HaplotypeLibraryDefinition
     procedure :: oneZeroNoOnes
     procedure :: oneOneNoZeros
     procedure :: numberFullyPhased
+    procedure :: numberPercentPhased
     procedure :: rationalise
     procedure :: removeHap
     final :: destroy
@@ -719,5 +720,24 @@ contains
       end if
     end do
   end function numberFullyPhased
+  
+  function numberPercentPhased(library, percThreshold) result (num)
+    class(HaplotypeLibrary), intent(in) :: library
+    double precision, intent(in) :: percThreshold
+    integer :: num
+    
+    integer :: threshold
+    
+    integer :: i
+    
+    threshold = int(percThreshold * library%nSnps)
+    
+    num = 0
+    do i = 1, library%size
+      if (library%newstore(i)%numberNotMissing() >= threshold) then
+	num = num + 1
+      end if
+    end do
+  end function numberPercentPhased
 
 end module HaplotypeLibraryDefinition

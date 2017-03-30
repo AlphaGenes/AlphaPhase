@@ -18,14 +18,13 @@ module SurrogateDefinition
   end interface Surrogate
 
 contains
-  function newSurrogate(cs, threshold, incommonThreshold, writeProgress) result(definition)
+  function newSurrogate(cs, threshold, incommonThreshold) result(definition)
     use ClusteringModule
     use CoreSubSetDefinition
     
     class(CoreSubSet), intent(in) :: cs    
     integer, intent(in) :: threshold
     integer, intent(in) :: incommonThreshold
-    logical, intent(in) :: writeProgress
     type(Surrogate) :: definition
     
     type(Genotype), dimension (:), pointer :: genos
@@ -61,11 +60,6 @@ contains
     numPassThres = 0
     passThres = 0
 
-    if (writeProgress) then
-      print*, " "
-      print*, " Identifying surrogates"
-    end if
-    
     if (allocated(definition%partition)) then
       deallocate(definition%partition)
       deallocate(definition%numoppose)
@@ -114,9 +108,6 @@ contains
 	end if
       end do
       definition%numoppose(i, i) = 0
-      if ((mod(i, 400) == 0) .and. writeProgress) then
-	print*, "   Surrogate identification done for genotyped individual --- ", i
-      end if
     end do
     
     ProgCount = 0
@@ -129,10 +120,6 @@ contains
       end if
     end do
 
-    if (writeProgress) then
-      print*, " "
-      print*, " Partitioning surrogates"
-    end if
     do i = 1, nAnisG
 
       DumSire = 0
@@ -314,9 +301,6 @@ contains
 	endif
 	definition%method(i) = 6
       endif
-      if ((mod(i, 400) == 0) .and. writeProgress) then
-	print*, "   Partitioning done for genotyped individual --- ", i
-      end if
       definition%partition(i, i) = 0
           
       if (definition%method(i) > 3) then

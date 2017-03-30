@@ -102,8 +102,7 @@ contains
 
       if (.not. quietInternal) then
 	print*, " "
-	print*, " "
-	print*, " Starting Core", h, "/", nCores
+	print*, "Starting Core", h, "/", nCores
       end if
 
       c = Core(Genos, startSurrSnp, startCoreSnp, endCoreSnp, endSurrSnp)
@@ -113,6 +112,7 @@ contains
 	library = existingLibraries(h)
       end if
 
+      print *, "   Long Range Phasing step"
       do i = 1, params%NumIter	
 	manager = MemberManager(c, params%itterateType, params%itterateNumber)
 
@@ -120,46 +120,34 @@ contains
 	do while (manager%hasNext())
 	  cs = CoreSubSet(c, p, manager%getNext())
 
-	  surrogates = Surrogate(cs, threshold, params%minOverlap, printOldProgress)
+	  surrogates = Surrogate(cs, threshold, params%minOverlap)
 	  if (singleSurrogates) then
 	    results%surrogates(h-startCore+1) = surrogates
 	  end if
-	  call Erdos(surrogates, cs, params%numsurrdisagree, params%useSurrsN, printOldProgress)
+	  call Erdos(surrogates, cs, params%numsurrdisagree, params%useSurrsN)
 	  call CheckCompatHapGeno(cs, params%percgenohaplodisagree)
 
 	  subsetCount = subsetCount + 1
-	  if (.not. quietInternal) then
-	    if (printOldProgress) then
-	      print*, " "
-	      write (*, '(a3,f6.2,a45)') "  ", cs%getYieldCoreSubset(1), "% was the Paternal allele yield for this core"
-	      write (*, '(a3,f6.2,a45)') "  ", cs%getYieldCoreSubset(2), "% was the Maternal allele yield for this core"
-	    else
-	      print '(8x, i5, a20, f6.2, a16, f6.2, a16)', subsetCount, " Subsets completed, ", c%getYield(1), "% Paternal yield, ", &
-		c%getYield(2), "% Maternal Yield"
-	    end if
+	  if ((.not. quietInternal) .and. (params%ItterateType .ne. "Off")) then
+	    print '(8x, i5, a22, f6.2, a7)', subsetCount, " Subsets completed, ", c%getTotalYield(), "% Yield"
 	  end if
 	end do
-
+	
 	call UpdateHapLib(c, library, params%minpresent, params%minoverlap)
-	if ((params%ItterateType .eq. "Off") .and. (.not. quietInternal)) then
-	  print*, " "
-	  print*, "  ", "Haplotype library imputation step"
+	if (.not. quietInternal) then
+	  if (params%ItterateType .eq. "Off") then
+	    print '(8x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
+	      library%numberPercentPhased(params%percMinToKeep), " Haplotypes"
+	  end if
+	  print*, "   Haplotype Library Imputation step"
 	end if
-	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%minPresent, params%minoverlap, params%minHapFreq, quietInternal)
+	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%minPresent, params%minoverlap, params%minHapFreq, &
+	  params%percMinToKeep, quietInternal)
 	library = library%rationalise(params%percMinToKeep,c)
-
-	if ((.not. printOldProgress) .and. (.not. quietInternal)) then
-	  print '(4x, a9, 20x, i6, a19, f6.2, a25)', "After HLI", library%getSize(), " Haplotypes found, ", &
-	    c%getPercentFullyPhased(), "% Haplotypes fully phased"
-	  print '(33x, f6.2, a16, f6.2, a16)', c%getYield(1), "% Paternal yield, ", c%getYield(2), "% Maternal Yield"
-	end if
       end do
 
-      if ((params%ItterateType .eq. "Off") .and. (.not. quietInternal)) then
-	print*, "   ", "Final iteration found ", library%getSize(), "haplotypes"
-
-	print*, ""
-	write (*, '(a4,a30,f5.2,a1)') "   ", "Final yield for this core was ", c%getTotalYield(), "%"
+      if (.not. quietInternal) then
+	print *, "   Core complete"
       end if
 
       if (present(TruePhase)) then

@@ -125,7 +125,6 @@ contains
 	  manager%order(curOrder) = i
 	  numUsed = numUsed + 1
 	  curSize = 1
-	  !print *, "Seed", i
 	  exit
 	end if
       end do

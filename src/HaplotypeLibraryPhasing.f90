@@ -112,7 +112,7 @@ contains
        c%hapAnis(animal, phase) = id
   end subroutine newHaplotype
   
-  subroutine imputeFromLib(library, c, PercGenoHaploDisagree, minpresent, minoverlap, minHapFreq, quiet)
+  subroutine imputeFromLib(library, c, PercGenoHaploDisagree, minpresent, minoverlap, minHapFreq, percMinToKeep, quiet)
     use HaplotypeLibraryDefinition
     use CoreDefinition
     
@@ -120,21 +120,17 @@ contains
     class(Core) :: c
     double precision, intent(in) :: PercGenoHaploDisagree
     integer, intent(in) :: minHapFreq, minoverlap, minpresent
+    double precision :: percMinToKeep
     logical, intent(in) :: quiet
     
     integer :: nOldHaps, iterations, errorallow
     
     errorallow = int(percGenoHaploDisagree * c%getNCoreSnp())
     
-    if (.not. quiet) then
-      print *, "Found ", library%getSize(), " haplotypes after long range phasing, (", library%numberFullyPhased(), ")" 
-      print *
-    end if
-    
     call complementStart(library, c, errorallow, minpresent, minoverlap, minhapfreq)
     if (.not. quiet) then
-      print *, "Found ", library%getSize(), " haplotypes after complementing, (", library%numberFullyPhased(), ")" 
-      print *
+      print '(8x, a21, 5x, f6.2, a8, i7, a11)', " After complementing ", c%getTotalYield(), "% Yield ", &
+	library%numberPercentPhased(percMinToKeep), " Haplotypes"
     end if
     
     nOldHaps = 0
@@ -144,7 +140,8 @@ contains
       call singleImputationRound(library, c, errorallow, minpresent, minoverlap,  minhapfreq)
       iterations = iterations + 1
       if (.not. quiet) then
-	print *, "Found ", library%getSize(), " haplotypes after ", iterations, " iterations, (", library%numberFullyPhased(), ")" 
+	print '(8x, a7, i2, a12, 5x, f6.2, a8, i7, a11)', " After ", iterations, " iterations ", c%getTotalYield(), "% Yield ", &
+	  library%numberPercentPhased(percMinToKeep), " Haplotypes"
       end if
     end do
   end subroutine imputeFromLib
