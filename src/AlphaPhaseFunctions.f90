@@ -112,8 +112,8 @@ contains
 	library = existingLibraries(h)
       end if
 
-      print *, "   Long Range Phasing step"
       do i = 1, params%NumIter	
+	print *, "   Long Range Phasing step"
 	manager = MemberManager(c, params%itterateType, params%itterateNumber)
 
 	subsetCount = 0
@@ -129,22 +129,23 @@ contains
 
 	  subsetCount = subsetCount + 1
 	  if ((.not. quietInternal) .and. (params%ItterateType .ne. "Off")) then
-	    print '(8x, i5, a22, f6.2, a7)', subsetCount, " Subsets completed, ", c%getTotalYield(), "% Yield"
+	    print '(6x, i5, a21, f6.2, a7)', subsetCount, " Subsets completed ", c%getTotalYield(), "% Yield"
 	  end if
 	end do
 	
 	call UpdateHapLib(c, library, params%minpresent, params%minoverlap)
 	if (.not. quietInternal) then
 	  if (params%ItterateType .eq. "Off") then
-	    print '(8x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
+	    print '(6x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
 	      library%numberPercentPhased(params%percMinToKeep), " Haplotypes"
 	  end if
 	  print*, "   Haplotype Library Imputation step"
 	end if
 	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%minPresent, params%minoverlap, params%minHapFreq, &
 	  params%percMinToKeep, quietInternal)
-	library = library%rationalise(params%percMinToKeep,c)
       end do
+      
+      library = library%rationalise(params%percMinToKeep,c)
 
       if (.not. quietInternal) then
 	print *, "   Core complete"

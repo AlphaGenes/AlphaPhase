@@ -1328,8 +1328,6 @@ end function ReadInParameterFile
     call Header
     print*, ""
     print*, ""
-    print*, ""
-    print*, ""
 
   end subroutine Titles
 

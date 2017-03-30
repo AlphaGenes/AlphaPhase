@@ -78,7 +78,7 @@ contains
 	  merged = merged%mergeMod(library%newstore(ids(i)))
 	end do
 	
-	! Should be some sort of error parameter not zero!
+	!! Should be some sort of error parameter not zero!
 	if (merged%numberError() <= 0) then
 	  library%newstore(id) = merged
 	  do n = 1, size(ids)
@@ -129,7 +129,7 @@ contains
     
     call complementStart(library, c, errorallow, minpresent, minoverlap, minhapfreq)
     if (.not. quiet) then
-      print '(8x, a21, 5x, f6.2, a8, i7, a11)', " After complementing ", c%getTotalYield(), "% Yield ", &
+      print '(6x, a21, 5x, f6.2, a8, i7, a11)', " After complementing ", c%getTotalYield(), "% Yield ", &
 	library%numberPercentPhased(percMinToKeep), " Haplotypes"
     end if
     
@@ -140,7 +140,7 @@ contains
       call singleImputationRound(library, c, errorallow, minpresent, minoverlap,  minhapfreq)
       iterations = iterations + 1
       if (.not. quiet) then
-	print '(8x, a7, i2, a12, 5x, f6.2, a8, i7, a11)', " After ", iterations, " iterations ", c%getTotalYield(), "% Yield ", &
+	print '(6x, a7, i2, a12, 5x, f6.2, a8, i7, a11)', " After ", iterations, " iterations ", c%getTotalYield(), "% Yield ", &
 	  library%numberPercentPhased(percMinToKeep), " Haplotypes"
       end if
     end do

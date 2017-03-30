@@ -333,7 +333,7 @@ contains
   
   function limitedCompatPairsWithError(library, geno, ErrorAllow, limit, nAnisG) result(pairs)
     ! No sensible way to make this funciton work with multi-HD / minOverlap stuff so leaving unchanged
-    ! Should probably do something like this at end with only fully phased haps.
+    !! Should probably do something like this at end with only fully phased haps.
     
     use GenotypeModule
     class(HaplotypeLibrary) :: library

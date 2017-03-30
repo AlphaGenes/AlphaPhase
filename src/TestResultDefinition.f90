@@ -35,9 +35,6 @@ contains
     type(Genotype), pointer :: geno
     type(Haplotype), pointer:: hap1, hap2, trueHap1, trueHap2
     
-    print*, " "
-    print*, " Checking simulation"
-    print*, " "
     
     allocate(results%countA(C%getNAnisG(),2,4,3))
     results%countA = 0
@@ -104,20 +101,18 @@ contains
       end do
     end do
     
-    print *, "   Summary statistics                               ", "Paternal  Maternal"
-    write (*, '(a40,a12,2f8.1)') "Percent correctly phased    All Snps", " ", &
+    print '(7x, a18, 33x, a8, 3x, a8)', "Summary statistics", "Paternal", "Maternal"
+    print '(7x, a24, 7x, a8, 15x, f5.1, 6x, f5.1)', "Percent correctly phased", "All Snps", &
       results%percentAll(1,ALL_,CORRECT_), results%percentAll(2,ALL_,CORRECT_)
-    write (*, '(a49,a3,2f8.1)') "Percent correctly phased    Heterozygous Snps", " ", &
+    print '(7x, a24, 7x, a17, 6x, f5.1, 6x, f5.1)', "Percent correctly phased", "Heterozygous Snps", &
       results%percentAll(1,HET_,CORRECT_), results%percentAll(2,HET_,CORRECT_)
-    write (*, *) " "
-    write (*, '(a34,a18,2f8.1)') "Percent not phased    All Snps", " ", &
+    print '(7x, a18, 13x, a8, 15x, f5.1, 6x, f5.1)', "Percent not phased", "All Snps", &
       results%percentAll(1,ALL_,NOTPHASED_), results%percentAll(2,ALL_,NOTPHASED_)
-    write (*, '(a43,a9,2f8.1)') "Percent not phased    Heterozygous Snps", " ", &
+    print '(7x, a18, 13x, a17, 6x, f5.1, 6x, f5.1)', "Percent not phased", "Heterozygous Snps", &
       results%percentAll(1,HET_,NOTPHASED_), results%percentAll(2,HET_,NOTPHASED_)
-    write (*, *) " "
-    write (*, '(a42,a10,2f8.1)') "Percent incorrectly phased    All Snps", " ", &
+    print '(7x, a26, 5x, a8, 15x, f5.1, 6x, f5.1)', "Percent incorrectly phased","All Snps", &
       results%percentAll(1,ALL_,INCORRECT_), results%percentAll(2,ALL_,INCORRECT_)
-    write (*, '(a51,a1,2f8.1)') "Percent incorrectly phased    Heterozygous Snps", " ", &
+    print '(7x, a26, 5x, a17, 6x, f5.1, 6x, f5.1)', "Percent incorrectly phased","Heterozygous Snps", &
       results%percentAll(1,HET_,INCORRECT_), results%percentAll(2,HET_,INCORRECT_)
   end function newResults
   
