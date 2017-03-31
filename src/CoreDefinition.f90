@@ -213,7 +213,7 @@ contains
     type(Haplotype), dimension(:,:), pointer, intent(in) :: TruePhase
 
     integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth
-    type(Haplotype), pointer :: W1, W2
+    type(Haplotype) :: W1, W2
     type(Haplotype), pointer :: hap1, hap2, truehap1, truehap2
     integer :: HA1, HA2
     integer :: nAnisG, nSnp
@@ -241,8 +241,8 @@ contains
       if ((CountAgreeSwitch2 > CountAgreeStay2).and.(CountAgreeStay1 <= CountAgreeSwitch1)) truth = 1
       if ((CountAgreeSwitch1 > CountAgreeStay1).and.(CountAgreeStay2 <= CountAgreeSwitch2)) truth = 1
       if (truth == 1) then
-	W1 => c%phase(i,1)
-	W2 => c%phase(i,2)
+	W1 = c%phase(i,1)
+	W2 = c%phase(i,2)
 	c%phase(i,1) = W2
 	c%phase(i,2) = W1
 	
