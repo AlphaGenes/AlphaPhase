@@ -9,11 +9,11 @@ module CoreDefinition
     type(Genotype), dimension(:), pointer :: coreGenos
     type(Haplotype), dimension(:,:), pointer :: phase
     integer, dimension(:,:), allocatable :: hapAnis
-    
+
     integer(kind=1), dimension(:), allocatable :: swappable
-    
+
     integer :: nCoreAndTailSnps, nCoreSnps
-    
+
   contains
     procedure :: getCoreAndTailGenos
     procedure :: getNAnisG
@@ -36,26 +36,27 @@ module CoreDefinition
 
 contains
 
-  function newCore(genos, startTailSnp, startCoreSnp, endCoreSnp, endTailSnp) result(c)
-    
-    type(Genotype), pointer, dimension(:), intent(in) :: genos
+  function newCore(p, startTailSnp, startCoreSnp, endCoreSnp, endTailSnp) result(c)
+    use PedigreeModule
+
+    type(PedigreeHolder), intent(in) :: p
     integer, intent(in) :: startCoreSnp, endCoreSnp, startTailSnp, endTailSnp
     type(Core) :: c
     type(Genotype) :: tempFullGeno
-    
+
     integer :: nAnisG, i
-    
-    
-    nAnisG = size(genos,1)
+
+
+    nAnisG = p%nHd
     c%nCoreAndTailSnps = endTailSnp - startTailSnp + 1
     c%nCoreSnps = endCoreSnp - startCoreSnp + 1
-    
+
     allocate(c%coreAndTailGenos(nAnisG))
     allocate(c%coreGenos(nAnisG))
     allocate(c%phase(nAnisG,2))
-    
+
     do i = 1, nAnisG
-      tempFullGeno = Genos(i)
+      tempFullGeno = p%pedigree(p%hdMap(i))%individualGenotype
       c%coreGenos(i) = tempFullGeno%subset(startCoreSnp, endCoreSnp)
       c%coreAndTailGenos(i) = tempFullGeno%subset(startTailSnp, endTailSnp)
       c%phase(i,1) = Haplotype(c%nCoreSnps)
@@ -67,24 +68,24 @@ contains
     allocate(c%swappable(nAnisG)) 
 
     c%hapAnis = MissingHaplotypeCode
-    
+
     c%swappable = 0
   end function newCore
-  
+
   function newPhaseCore(phase, startSnp, endSnp) result(c)
-    
+
     type(Haplotype), dimension(:,:), intent(in) :: phase
     integer, intent(in) :: startSnp, endSnp
     type(Core) :: c
-    
+
     integer :: nAnisG, i
     type(Haplotype) :: tempFullHaplotype
-    
+
     nAnisG = size(phase,1)
-    
+
     allocate(c%phase(nAnisG,2))
     allocate(c%hapAnis(nAnisG,2))
-    
+
     c%nCoreSnps = endSnp - startSnp + 1
     c%nCoreAndTailSnps = c%nCoreSnps
     do i = 1, size(phase,1)
@@ -95,7 +96,7 @@ contains
     end do
     c%hapAnis = MissingHaplotypeCode
   end function newPhaseCore
-  
+
   subroutine destroyCore(c)
     type(Core) :: c
     
@@ -103,45 +104,46 @@ contains
       deallocate(c%hapAnis)
     end if
   end subroutine destroyCore
-  
+
   function getCoreAndTailGenos(c) result (ctGenos)
-        
+    ! use GenotypeModule needed here due to compiler issues (Roberto / 16.0.3)
+    use GenotypeModule
     class(Core), target :: c
     type(Genotype), dimension(:), pointer :: ctGenos
-    
+
     ctGenos => c%coreAndTailGenos
-    
+
     return
   end function getCoreAndTailGenos
-  
+
   function getNAnisG(c) result(num)
     class(Core) :: c
     integer :: num
-    
+
     num = size(c%phase,1)
   end function getNAnisG
-  
+
   function getNSnp(c) result(num)
     class(Core) :: c
     integer :: num
-    
+
     num = c%nCoreAndTailSnps
   end function getNSnp
-  
+
   function getNCoreSnp(c) result(num)
     class(Core) :: c
     integer :: num
-    
+
     num = c%nCoreSnps
   end function getNCoreSnp
-  
+
   function getNCoreTailSnp(c) result(num)
     class(Core) :: c
     integer :: num
-    
+
     num = c%nCoreAndTailSnps
   end function getNCoreTailSnp
-  
+
   function getYield(c,phase) result (yield)
     class(Core) :: c
     integer, intent(in) :: phase
@@ -156,12 +158,12 @@ contains
     
     yield = (float(counter)/(size(c%phase,1) * c%getNCoreSnp())) * 100
   end function getYield
-  
+
   function getTotalYield(c) result(yield)
     class(Core) :: c
     integer :: counter, i
     double precision :: yield
-    
+
     counter = 0
     do i = 1, size(c%phase,1)
       counter = counter + c%phase(i,1)%numberNotMissing()
@@ -169,12 +171,12 @@ contains
     end do
     yield = (float(counter)/(size(c%phase,1) * c%nCoreSnps * 2)) * 100
   end function getTotalYield
-  
+
   function getHaplotype(c,animal, phase) result(haplotype)
     class(Core) :: c
     integer, intent(in) :: animal, phase
     type(Haplotype), pointer :: haplotype
-    
+
     haplotype => c%phase(animal,phase)
   end function getHaplotype
   
@@ -198,14 +200,15 @@ contains
   end function getPercentFullyPhased
   
   function getCoreGenos(c,animal) result(g)
+    use GenotypeModule
     class(Core), intent(in) :: c
     integer, intent(in) :: animal
-    
+
     type(Genotype), pointer :: g
-    
+
     g => c%coreGenos(animal)
   end function getCoreGenos
-  
+
   subroutine flipHaplotypes(c, TruePhase)
     use HaplotypeModule
 
@@ -254,6 +257,6 @@ contains
     end do
 
   end subroutine flipHaplotypes
-    
+
 end module CoreDefinition
 

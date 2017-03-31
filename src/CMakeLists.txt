@@ -9,10 +9,9 @@ SET(ALPHAPHASE_src
             InputOutput.f90
             LongRangePhasing.f90
             MemberManagerDefinition.f90
+	    OutputParametersDefinition.f90
             ParametersDefinition.f90
 	    ProgramParametersDefinition.f90
-            PedigreeDefinition.f90
-            Random.f90
             SurrogateDefinition.f90
             TestResultDefinition.f90        
 	    AlphaPhaseFunctions.f90

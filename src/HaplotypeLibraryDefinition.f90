@@ -1,3 +1,36 @@
+#ifndef _WIN32
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "/"
+#DEFINE COPY "cp"
+#DEFINE MD "mkdir"
+#DEFINE RMDIR "rm -r"
+#DEFINE RM "rm"
+#DEFINE RENAME "mv"
+#DEFINE SH "sh"
+#DEFINE EXE ""
+#DEFINE NULL ""
+
+#else
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "\"
+#DEFINE COPY "copy"
+#DEFINE MD "md"
+#DEFINE RMDIR "RMDIR /S /Q"
+#DEFINE RM "del"
+#DEFINE RENAME "MOVE /Y"
+#DEFINE SH "BAT"
+#DEFINE EXE ".exe"
+#DEFINE NULL " >NUL"
+#endif
+
+
+
 module HaplotypeLibraryDefinition
   use ConstantModule
   use HaplotypeModule
@@ -20,12 +53,15 @@ module HaplotypeLibraryDefinition
     procedure :: limitedMatchWithErrorAndMinOverlap
     procedure :: limitedCompatPairsWithError
     procedure :: getSize
+    procedure :: setSize
     procedure :: getHapRel
     procedure :: getNumSnps
+    procedure :: setNumSnps
     procedure :: resetHapFreq
     procedure :: incrementHapFreq
     procedure :: getHapFreq
-    procedure :: getCompatHaps   
+    procedure :: setHapFreq
+    procedure :: getCompatHaps
     procedure :: getCompatHapsFreq
     procedure :: allZero
     procedure :: allOne
@@ -40,7 +76,7 @@ module HaplotypeLibraryDefinition
     procedure :: removeHap
     final :: destroy
   end type HaplotypeLibrary
-  
+
   interface HaplotypeLibrary
     module procedure newHaplotypeLibrary
     module procedure haplotypeLibraryFromFile
@@ -58,29 +94,29 @@ contains
     library % storeSize = storeSize
     library % stepSize = stepSize
     allocate(library % hapFreq(storeSize))
-    library % hapFreq = 0    
+    library % hapFreq = 0
     allocate(library%newstore(library%storeSize))
   end function newHaplotypeLibrary
-  
+
   function haplotypeLibraryFromFile(filename, stepsize, text) result(library)
     type(HaplotypeLibrary) :: library
     character(*), intent(in) :: filename
     integer, intent(in) :: stepSize
     logical, optional, intent(in) :: text
-    
+
     integer(kind=1), dimension(:), allocatable ::holdHap
     integer :: i, j, f
     character(len=10000) :: line
     logical :: binary
-    
+
     binary = .true.
     if (present(text)) then
       if (text) then
 	binary = .false.
       end if
     end if
-    
-    if (binary) then 
+
+    if (binary) then
       open (unit=2001,file=trim(filename),status="old",form="unformatted")
 
       ! Read the number of Hap in the library and how long they are
@@ -95,7 +131,7 @@ contains
 
       allocate(holdHap(library%nSnps))
       do i=1,library%storeSize
-	read(2001) holdHap
+	   read(2001) holdHap
 	j = library%addHap(Haplotype(holdHap))
       enddo
       close (2001)
@@ -110,7 +146,7 @@ contains
 	  exit
 	endif
       enddo
-      
+
       library%nSnps = len(trim(line))
       library%size = 0
       library%stepSize = stepSize
@@ -118,7 +154,7 @@ contains
       library % hapFreq = 0
       allocate(library%newstore(library%storeSize))
       allocate(holdHap(library%nSnps))
-      
+
       rewind(2001)
       do i = 1, library%storeSize
 	read(2001,'(6X,I6,2X,'//itoa(library%nSnps)//'I1)') f, holdHap
@@ -126,14 +162,14 @@ contains
 	library%hapFreq(i) = f
       end do
       close(2001)
-      
+
     end if
-    
+
   end function haplotypeLibraryFromFile
-  
+
   subroutine destroy(library)
     type(HaplotypeLibrary) :: library
-    
+
     if (allocated(library%newstore)) then
       deallocate(library%newstore)
       deallocate(library%hapFreq)
@@ -146,7 +182,7 @@ contains
     integer :: id
 
     integer :: i
-    
+
     id = 0
     do i = 1, library%size
       if (library%newstore(i)%compareHaplotype(hap)) then
@@ -164,31 +200,31 @@ contains
     integer :: newStoreSize
     type(Haplotype), dimension(:), pointer :: tempNewStore
     integer, dimension(:), allocatable :: tempHapFreq
-    
+
     if (library % Size == library % storeSize) then
       newStoreSize = library % storeSize + library % stepSize
-      
+
       allocate(tempHapFreq(library % storeSize))
       tempHapFreq = library%hapFreq
-      deallocate(library%hapFreq)
+      if (allocated(library%hapFreq)) then
+        deallocate(library%hapFreq)
+      endif
       allocate(library%hapFreq(newStoreSize))
       library % hapFreq = 0
       library % hapFreq(1:library % Size) = tempHapFreq
-      deallocate(tempHapFreq)
-      
       allocate(tempNewStore(library % storeSize))
       tempNewStore = library%newStore
-      deallocate(library%newStore)
+      if (allocated(library%newStore)) then
+        deallocate(library%newStore)
+      endif
       allocate(library%newStore(newStoreSize))
       library % newStore(1:library % Size) = tempNewStore
-      deallocate(tempNewStore)
-      
       library % StoreSize = newStoreSize
     end if
 
     library % Size = library % Size + 1
     library%newStore(library%Size) = hap
-    
+
     library%hapfreq(library%size) = 1
     id = library%size
   end function addHap
@@ -201,13 +237,13 @@ contains
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, e, num, invalid
-    
+
     allocate(tempMatches(library % size))
 
     num = 0
-    
+
     invalid = hap%numberError()
-    
+
     if (invalid <= allowedError) then
 
       do i = 1, library%size
@@ -219,12 +255,12 @@ contains
 	end if
       end do
     end if
-    
+
     allocate(matches(num))
     matches(:) = tempMatches(1:num)
     deallocate(tempMatches)
   end function matchWithError
-  
+
   function matchWithErrorAndMinOverlap(library, hap, allowedError, minOverlap) result(matches)
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
@@ -234,13 +270,13 @@ contains
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, e, num, invalid
-    
+
     allocate(tempMatches(library % size))
-    
+
     num = 0
-    
+
     invalid = hap%numberError()
-    
+
     if (invalid <= allowedError) then
 
       do i = 1, library%size
@@ -254,12 +290,12 @@ contains
 	end if
       end do
     end if
-    
+
     allocate(matches(num))
     matches(:) = tempMatches(1:num)
     deallocate(tempMatches)
   end function matchWithErrorAndMinOverlap
-  
+
   function limitedMatchWithError(library, hap, allowedError, limit) result(matches)
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
@@ -268,14 +304,14 @@ contains
     integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
-    integer :: i, k, e, num, invalid    
+    integer :: i, k, e, num, invalid
 
     allocate(tempMatches(library % size))
 
     num = 0
-    
+
     invalid = hap%numberError()
-    
+
     if (invalid <= allowedError) then
 
       do k = 1, size(limit)
@@ -288,12 +324,12 @@ contains
 	end if
       end do
     end if
-    
+
     allocate(matches(num))
     matches(:) = tempMatches(1:num)
     deallocate(tempMatches)
   end function limitedMatchWithError
-  
+
   function limitedMatchWithErrorAndMinOverlap(library, hap, allowedError, minOverlap, limit) result(matches)
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
@@ -303,14 +339,14 @@ contains
     integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
-    integer :: i, k, e, num, invalid    
+    integer :: i, k, e, num, invalid
 
     allocate(tempMatches(library % size))
 
     num = 0
-    
+
     invalid = hap%numberError()
-    
+
     if (invalid <= allowedError) then
 
       do k = 1, size(limit)
@@ -325,12 +361,12 @@ contains
 	end if
       end do
     end if
-    
+
     allocate(matches(num))
     matches(:) = tempMatches(1:num)
     deallocate(tempMatches)
   end function limitedMatchWithErrorAndMinOverlap
-  
+
   function limitedCompatPairsWithError(library, geno, ErrorAllow, limit, nAnisG) result(pairs)
     ! No sensible way to make this funciton work with multi-HD / minOverlap stuff so leaving unchanged
     !! Should probably do something like this at end with only fully phased haps.
@@ -342,12 +378,12 @@ contains
     integer, dimension(:), intent(in) :: limit
     integer, intent(in) :: nAnisG
     integer, dimension(:,:), pointer :: pairs
-    
+
     integer, dimension(:,:), pointer :: tempPairs
     integer :: i, j, p, ii, jj
 
     allocate(tempPairs(nAnisG*2,2))
-    
+
     p = 0
     i = 1
     do while ((i <= size(limit)) .and. ((p*p) <= (nAnisG - 1)))
@@ -364,31 +400,33 @@ contains
       end do
       i = i + 1
     end do
-    
+
     allocate(pairs(p,2))
     pairs = tempPairs(1:p,:)
     deallocate(tempPairs)
   end function limitedCompatPairsWithError
-	
+
 
   function getHap(library, id) result(hap)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, intent(in) :: id
     type(Haplotype) :: hap
 
-    
-    hap = library % newstore(id) 
+
+    hap = library % newstore(id)
   end function getHap
-  
+
   function getHaps(library, ids) result(haps)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
     type(Haplotype), dimension(:), pointer :: haps
-    
+
     integer :: i
-    
+
     allocate(haps(size(ids,1)))
-    
+
     do i = 1, size(ids,1)
       haps(i) = library%getHap(ids(i))
     end do
@@ -400,6 +438,14 @@ contains
 
     size = library % size
   end function getSize
+
+  subroutine setSize(library, size)
+
+    class(HaplotypeLibrary) :: library
+    integer,intent(in) :: size
+
+      library%size = size
+  end subroutine setSize
 
   function getHapRel(library) result (rel)
     class(HaplotypeLibrary) :: library
@@ -428,29 +474,44 @@ contains
 
     num = library % nSnps
   end function getNumSnps
-  
+
+    subroutine setNumSnps(library, num)
+    class(HaplotypeLibrary) :: library
+    integer, intent(in) :: num
+
+    library % nSnps = num
+  end subroutine setNumSnps
+
   subroutine resetHapFreq(library)
     class(HaplotypeLibrary) :: library
-    
+
     library%HapFreq = 0
   end subroutine resetHapFreq
-  
+
   subroutine incrementHapFreq(library, id)
     class(HaplotypeLibrary) :: library
     integer, intent(in) :: id
-    
+
     library%HapFreq(id) = library%HapFreq(id) + 1
   end subroutine incrementHapFreq
-  
+
   function getHapFreq(library, id) result (freq)
     class(HaplotypeLibrary) :: library
     integer, intent(in) :: id
     integer :: freq
-    
+
     freq = library%hapFreq(id)
   end function getHapFreq
-  
-  function getCompatHaps(library, g, errorallow) result (compatHaps)
+
+
+  subroutine setHapFreq(library, id, freq)
+    class(HaplotypeLibrary) :: library
+    integer, intent(in) :: id,freq
+
+    library%hapFreq(id) = freq
+  end subroutine setHapFreq
+
+  function getCompatHaps(library, g, errorAllow) result (compatHaps)
     use GenotypeModule
     class(HaplotypeLibrary) :: library
     type(Genotype), intent(in), pointer :: g
@@ -466,7 +527,7 @@ contains
     type(Genotype), intent(in), pointer :: g
     integer, intent(in) :: freq, errorallow
     integer, dimension(:), pointer :: compatHaps
-    
+
     integer, dimension(:), allocatable :: tempCompatHaps
     integer :: i, numCompatHaps 
     
@@ -484,180 +545,190 @@ contains
     compatHaps = tempCompatHaps(1:numCompatHaps)
     deallocate(tempCompatHaps)
   end function getCompatHapsFreq
-  
+
   function allOne(library, ids) result(all)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
-    
+
     integer(kind=8), dimension(library%nSnps/64 + 1) :: all
 
     integer :: i, j, sections
     type(Haplotype) :: hap
-    
+
     sections = library%nSnps/64+1
-    
+
     all = 0
     all = NOT(all)
-    
+
     hap = Haplotype(library%nSnps)
-    
+
     do i = 1, size(ids)
       hap = library%newstore(ids(i))
       do j = 1, sections
 	all(j) = IAND(all(j), IAND(hap%phase(j), NOT(hap%missing(j))))
       end do
     end do
-   
+
   end function allOne
-  
+
   function allZero(library, ids) result(all)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
-    
+
     integer(kind=8), dimension(library%nSnps/64 + 1) :: all
 
     integer :: i, j, sections, overhang
     type(Haplotype) :: hap
-    
+
     sections = library%nSnps/64+1
-    
+
     all = 0
     all = NOT(all)
-    
+
     hap = Haplotype(library%nSnps)
-    
+
     do i = 1, size(ids)
       hap = library%newstore(ids(i))
       do j = 1, sections
 	all(j) = IAND(all(j), IAND(NOT(hap%phase(j)), NOT(hap%missing(j))))
       end do
     end do
-    
+
     overhang = 64 - (library%nSnps - (sections - 1) * 64)
     do i = 64 - overhang + 1, 64
         all(sections) = ibclr(all(sections), i - 1)
     end do
-    
+
   end function allZero
-  
+
   function allOneOrMissing(library, ids) result(all)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
-    
+
     integer(kind=8), dimension(library%nSnps/64 + 1) :: all
 
     integer :: i, j, sections
     type(Haplotype) :: hap
-    
+
     sections = library%nSnps/64+1
-    
+
     all = 0
     all = NOT(all)
-    
+
     hap = Haplotype(library%nSnps)
-    
+
     do i = 1, size(ids)
       hap = library%newstore(ids(i))
       do j = 1, sections
 	all(j) = IAND(all(j), IOR(hap%phase(j), hap%missing(j)))
       end do
     end do
-   
+
   end function allOneOrMissing
-  
+
   function allZeroOrMissing(library, ids) result(all)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
-    
+
     integer(kind=8), dimension(library%nSnps/64 + 1) :: all
 
     integer :: i, j, sections, overhang
     type(Haplotype) :: hap
-    
+
     sections = library%nSnps/64+1
-    
+
     all = 0
     all = NOT(all)
-    
+
     hap = Haplotype(library%nSnps)
-    
+
     do i = 1, size(ids)
       hap = library%newstore(ids(i))
       do j = 1, sections
 	all(j) = IAND(all(j), IOR(NOT(hap%phase(j)), hap%missing(j)))
       end do
     end do
-    
+
     overhang = 64 - (library%nSnps - (sections - 1) * 64)
     do i = 64 - overhang + 1, 64
         all(sections) = ibclr(all(sections), i - 1)
     end do
-    
+
   end function allZeroOrMissing
-  
+
   function allMissing(library, ids) result(all)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
-    
+
     integer(kind=8), dimension(library%nSnps/64 + 1) :: all
 
     integer :: i, j, sections
     type(Haplotype) :: hap
-    
+
     sections = library%nSnps/64+1
-    
+
     all = 0
     all = NOT(all)
-    
+
     hap = Haplotype(library%nSnps)
-    
+
     do i = 1, size(ids)
       hap = library%newstore(ids(i))
       do j = 1, sections
 	all(j) = IAND(all(j), hap%missing(j))
       end do
     end do
-    
+
   end function allMissing
-  
+
   function oneZeroNoOnes(library, ids) result(all)
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
-    
+
     integer(kind=8), dimension(library%nSnps/64 + 1) :: all, azm, am
 
     integer :: i, sections
-    
+
     sections = library%nSnps/64+1
-    
+
     azm = library%allZeroOrMissing(ids)
     am = library%allMissing(ids)
-    
+
     do i = 1, sections
       all(i) = IAND(azm(i), NOT(am(i)))
     end do
-    
+
   end function oneZeroNoOnes
-  
+
   function oneOneNoZeros(library, ids) result(all)
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
-    
+
     integer(kind=8), dimension(library%nSnps/64 + 1) :: all, aom, am
 
     integer :: i, sections
-    
+
     sections = library%nSnps/64+1
-    
+
     aom = library%allOneOrMissing(ids)
     am = library%allMissing(ids)
-    
+
     do i = 1, sections
       all(i) = IAND(aom(i), NOT(am(i)))
     end do
-    
+
   end function oneOneNoZeros
-  
+
   function itoa(i) result(res)
     character(:),allocatable :: res
     integer,intent(in) :: i
@@ -674,7 +745,7 @@ contains
     type(Core), optional :: c
     type(HaplotypeLibrary) :: newlib
     
-    integer :: threshold, i, add
+    integer :: threshold, i
     integer, dimension(library%size) :: newIDs
     
     newlib = HaplotypeLibrary(library%nSnps,library%size,library%stepsize)

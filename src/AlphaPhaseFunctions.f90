@@ -1,29 +1,53 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     AlphaPhaseFunctions.f90
+!
+! DESCRIPTION:
+!> @brief    Module allowing for functionality of alphaphase to be run independently
+!
+!
+!> @date     January 4, 2017
+!
+!> @version  1.0.0
+!
+!
+!-------------------------------------------------------------------------------
+
 module AlphaPhaseFunctions
-  use HaplotypeLibraryDefinition 
+  use HaplotypeLibraryDefinition
   use SurrogateDefinition
   use CoreSubsetDefinition
-  use PedigreeDefinition
+  use PedigreeModule
   use CoreDefinition
   use MemberManagerDefinition
-  use ParametersDefinition
+  use AlphaPhaseParametersDefinition
   use TestResultDefinition
   use CoreUtils
   use InputOutput
   use AlphaPhaseResultsDefinition
-  
+
   use LongRangePhasing
   use HaplotypeLibraryPhasing
-  
+
   use InputOutput
-  
+
   use HaplotypeModule
   implicit none
-  
+
 contains
-  function phaseAndCreateLibraries(genos, p, params, existingLibraries, truePhase, quiet) result(results)
-    type(Genotype), pointer, dimension(:), intent(in) :: genos
-    type(Pedigree), intent(in) :: p
-    type(Parameters) :: params
+  function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, quiet) result(results)
+    ! Following use statements needed here due to compiler issues (Roberto / 16.0.3)
+    use HaplotypeLibraryDefinition
+    use PedigreeModule
+    use HaplotypeModule
+
+    type(PedigreeHolder), intent(inout) :: p
+    type(AlphaPhaseParameters) :: params
     type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
     type(Haplotype), pointer, dimension(:,:), intent(in), optional :: truePhase
     logical, optional :: quiet
@@ -42,51 +66,47 @@ contains
     integer :: subsetCount
     type(Haplotype), pointer :: hap
     type(AlphaPhaseResults) :: results
-    
+
     integer :: startCore, endCore
-    logical :: combine, singleRun, printOldProgress, singleSurrogates, quietInternal
+    logical :: printOldProgress, singleSurrogates, quietInternal
 
     type(MemberManager) :: manager
-    
+
     if (.not. present(quiet)) then
       quietInternal = .true.
     else
       quietInternal = quiet
     end if
 
-    nAnisG = p%getNAnis()
-    nSnp = genos(1)%getLength()
+    if (p%nHd == 0) then
+    ! TODO check if this is wanted behaviour
+      p%nHd = p%nGenotyped
+      p%hdMap = p%genotypeMap
+      p%hdDictionary = p%genotypeDictionary
+    endif
+    nAnisG = p%nHd
+    nSnp = p%pedigree(p%hdMap(1))%individualGenotype%getLength()
 
     if (.not. present(existingLibraries)) then
-      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    
+      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
     else
       CoreIndex => getCoresFromLibraries(existingLibraries)
     end if
     TailIndex => calculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
-    nCores = size(CoreIndex,1)  
+    nCores = size(CoreIndex,1)
 
     threshold = int(params%GenotypeMissingErrorPercentage*params%CoreAndTailLength)
 
-    singleRun = .true.
-    if (params%startCoreChar .eq. "Combine") then
-      startCore = nCores + 1
-      combine = .true.
-      singleRun = .false.
+    if (params%startCoreChar .eq. "0") then
+      startCore = 1
     else
       read(params%startCoreChar, '(i10)') startCore
-      combine = .false.
-      if (startCore /= 1) then
-	singleRun = .false.
-      end if
     end if
 
-    if (params%endCoreChar .eq. "Combine") then
+    if (params%endCoreChar .eq. "0") then
       endCore = nCores
-      combine = .true.
     else
       read(params%endCoreChar, '(i10)') endCore
-      combine = .false.
-      singleRun = .false.
     end if
 
     printOldProgress = (params%ItterateType .eq. "Off") .and. (.not. quietInternal)
@@ -105,15 +125,14 @@ contains
 	print*, "Starting Core", h, "/", nCores
       end if
 
-      c = Core(Genos, startSurrSnp, startCoreSnp, endCoreSnp, endSurrSnp)
+      c = Core(p, startSurrSnp, startCoreSnp, endCoreSnp, endSurrSnp)
       if (.not. present(existingLibraries)) then
 	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
       else
 	library = existingLibraries(h)
       end if
 
-      do i = 1, params%NumIter	
-	print *, "   Long Range Phasing step"
+      do i = 1, params%NumIter
 	manager = MemberManager(c, params%itterateType, params%itterateNumber)
 
 	subsetCount = 0
@@ -171,12 +190,16 @@ contains
       results%endIndexes(h-startCore+1) = CoreIndex(h,2)
     end do
   end function phaseAndCreateLibraries
-  
+
   function createLibraries(phase, params, existingLibraries) result (results)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
+    use HaplotypeLibraryDefinition
+    use HaplotypeModule
+
     type(Haplotype), pointer, dimension(:,:), intent(in) :: phase
-    type(Parameters) :: params
+    type(AlphaPhaseParameters) :: params
     type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
-    
+
     type(AlphaPhaseResults) :: results
 
     integer :: h
@@ -184,18 +207,18 @@ contains
     type(HaplotypeLibrary) :: library
     type(Core) :: c
     integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
-    integer, dimension (:,:), pointer :: CoreIndex, TailIndex    
+    integer, dimension (:,:), pointer :: CoreIndex, TailIndex
     integer :: startCore, endCore, nCores, nSnp
 
     nSnp = phase(1,1)%getLength()
 
     if (.not. present(existingLibraries)) then
-      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)    
+      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
     else
       CoreIndex => getCoresFromLibraries(existingLibraries)
     end if
     TailIndex => calculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
-    nCores = size(CoreIndex,1) 
+    nCores = size(CoreIndex,1)
 
     if (params%startCoreChar .eq. "Combine") then
       startCore = nCores + 1
@@ -232,6 +255,6 @@ contains
       results%endIndexes(h-startCore+1) = CoreIndex(h,2)
     end do
   end function createLibraries
-    
+
 end module AlphaPhaseFunctions
 

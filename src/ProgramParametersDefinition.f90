@@ -1,5 +1,6 @@
 module ProgramParametersDefinition
-  use ParametersDefinition
+  use AlphaPhaseParametersDefinition
+  use OutputParametersDefinition
   implicit none
   
   type:: ProgramParameters
@@ -9,25 +10,8 @@ module ProgramParametersDefinition
     character (len = 300) :: PedigreeFile, TruePhaseFile, Library
     integer :: nSnp
 
-    logical :: outputFinalPhase
-    logical :: outputCoreIndex
-    logical :: outputSnpPhaseRate
-    logical :: outputIndivPhaseRate
-    logical :: outputHapIndex
-    logical :: outputSwappable
-    logical :: outputHapCommonality
-    logical :: outputSurrogates
-    logical :: outputSurrogatesSummary
-    logical :: outputHaplotypeLibraryText
-    logical :: outputHaplotypeLibraryBinary
-    logical :: outputPhasingYield
-    logical :: outputTimer
-    logical :: outputIndivMistakes
-    logical :: outputIndivMistakesPercent
-    logical :: outputCoreMistakesPercent
-    logical :: outputMistakes
-    
-    type(Parameters) :: params
+    type(OutputParameters) :: outputParams
+    type(AlphaPhaseParameters) :: params
     
   end type ProgramParameters
 
@@ -39,7 +23,8 @@ contains
   function newProgramParameters result(programParams)
     type(ProgramParameters) :: programParams
     
-    programParams%params = Parameters()
+    programParams%params = AlphaPhaseParameters()
+    programParams%outputParams = OutputParameters()
     programParams%library = "None"
   end function newProgramParameters
     
