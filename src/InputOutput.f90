@@ -780,7 +780,7 @@ contains
 	  read(second(1), *) params%params%minoverlap
 	end if
 	
-      case("minpresent")
+      case("percminpresent")
 	if(allocated(second)) then
 	  read(second(1),*) params%params%percMinPresent
 	end if
