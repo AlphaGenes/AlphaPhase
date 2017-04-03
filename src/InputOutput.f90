@@ -916,11 +916,11 @@ end function ReadInParameterFile
   
   subroutine Header
     print*, ""
-    print*, "                              **********************                         "
-    print*, "                              *                    *                         "
-    print*, "                              *   AlphaPhase 1.1   *                         "
-    print*, "                              *                    *                         "
-    print*, "                              **********************                         "
+    print*, "                              ************************                         "
+    print*, "                              *                      *                         "
+    print*, "                              *   AlphaPhase 1.3.0   *                         "
+    print*, "                              *                      *                         "
+    print*, "                              ************************                         "
     print*, "                                                                              "
     print*, "                    Software For Phasing and Imputing Genotypes               "
   end subroutine Header
