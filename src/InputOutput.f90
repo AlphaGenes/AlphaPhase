@@ -1021,10 +1021,12 @@ end function ReadInParameterFile
       if (params%outputPerCore) then
         call WriteOutCore(results%cores(i), id, results%startIndexes(i), p, params)
       end if
-      call writeSurrogates(results%surrogates(i), id, p, params)
+      if (params%outputSurrogates .or. params%outputSurrogatesSummary) then
+	call writeSurrogates(results%surrogates(i), id, p, params)
+      end if
       call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
-     enddo
-     print *, "AlphaPhase results written out"
+    enddo
+    print *, "AlphaPhase results written out"
   end subroutine writeAlphaPhaseResults  
 
 
