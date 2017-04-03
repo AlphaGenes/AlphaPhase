@@ -1026,7 +1026,6 @@ end function ReadInParameterFile
       end if
       call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
     enddo
-    print *, "AlphaPhase results written out"
   end subroutine writeAlphaPhaseResults  
 
 
