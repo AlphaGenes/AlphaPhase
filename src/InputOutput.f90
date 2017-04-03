@@ -529,27 +529,25 @@ contains
     params%outputParams%outputCoreMistakesPercent = .false.
     params%outputParams%outputMistakes = .false.
   end if
-  if (hold .eq. "SeqOpt") then
-    params%outputFinalPhase = .false. 
-    params%outputCoreIndex = .false. 
-    params%outputSnpPhaseRate = .false. 
-    params%outputIndivPhaseRate = .false. 
-    params%outputHapIndex = .true. 
-    params%outputSwappable = .false. 
-    params%outputHapCommonality = .false. 
-    params%outputSurrogates = .false. 
-    params%outputSurrogatesSummary = .false. 
-    params%outputHaplotypeLibraryText = .true. 
-    params%outputHaplotypeLibraryBinary = .false. 
-    params%outputPhasingYield = .false. 
-    params%outputTimer = .false. 
-    params%outputIndivMistakes = .false. 
-    params%outputIndivMistakesPercent = .false. 
-    params%outputCoreMistakesPercent = .false. 
-    params%outputMistakes = .false.
-    params%outputNRM = .false.
+  if (outputoption .eq. "SeqOpt") then
+    params%outputParams%outputFinalPhase = .false. 
+    params%outputParams%outputCoreIndex = .false. 
+    params%outputParams%outputSnpPhaseRate = .false. 
+    params%outputParams%outputIndivPhaseRate = .false. 
+    params%outputParams%outputHapIndex = .true. 
+    params%outputParams%outputSwappable = .false. 
+    params%outputParams%outputHapCommonality = .false. 
+    params%outputParams%outputSurrogates = .false. 
+    params%outputParams%outputSurrogatesSummary = .false. 
+    params%outputParams%outputHaplotypeLibraryText = .true. 
+    params%outputParams%outputHaplotypeLibraryBinary = .false. 
+    params%outputParams%outputPhasingYield = .false. 
+    params%outputParams%outputTimer = .false. 
+    params%outputParams%outputIndivMistakes = .false. 
+    params%outputParams%outputIndivMistakesPercent = .false. 
+    params%outputParams%outputCoreMistakesPercent = .false. 
+    params%outputParams%outputMistakes = .false.
   end if
-
   if ((outputoption .eq. "Full") .or. (outputoption .eq. "1")) then
     params%outputParams%outputFinalPhase = .true.
     params%outputParams%outputCoreIndex = .true.
