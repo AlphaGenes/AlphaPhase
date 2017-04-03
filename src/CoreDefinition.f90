@@ -100,7 +100,7 @@ contains
   subroutine destroyCore(c)
     type(Core) :: c
     
-    if (allocated(c%coreGenos)) then
+    if (associated(c%coreGenos)) then
       deallocate(c%hapAnis)
     end if
   end subroutine destroyCore
