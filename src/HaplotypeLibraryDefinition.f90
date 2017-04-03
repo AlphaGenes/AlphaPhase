@@ -764,8 +764,12 @@ contains
     
     if (present(c)) then
       do i = 1, size(c%hapAnis,1)
-	c%hapAnis(i,1) = newIDs(c%hapAnis(i,1))
-	c%hapAnis(i,2) = newIDs(c%hapAnis(i,2))
+	if (c%hapAnis(i,1) /= MissingHaplotypeCode) then
+	  c%hapAnis(i,1) = newIDs(c%hapAnis(i,1))
+	end if
+	if (c%hapAnis(i,2) /= MissingHaplotypeCode) then
+	  c%hapAnis(i,2) = newIDs(c%hapAnis(i,2))
+	end if
       end do
     end if
   end function rationalise
