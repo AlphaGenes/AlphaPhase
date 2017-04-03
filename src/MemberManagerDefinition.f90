@@ -2,23 +2,18 @@ module MemberManagerDefinition
   use CoreDefinition
   
   implicit none
-  private
 
-  type, public :: MemberManager
-    private
+  type :: MemberManager
     
     type(Core), pointer :: c
     integer :: number
     integer :: curPos
     integer, dimension(:), allocatable :: order
-    integer :: numIter
-    integer :: completeIter
     logical :: noneLeft
     logical :: random
   contains
-    private
-    procedure, public :: hasNext
-    procedure, public :: getNext
+    procedure :: hasNext
+    procedure :: getNext
     final :: destroy      
   end type MemberManager
   
@@ -38,17 +33,13 @@ contains
       call createAll(manager, c)
     end if
     if (itterateType .eq. "InputOrder") then
-      !Change how numIter is used but for now keeping this here in case I go back to this method.  If we keep the current way
-      !then obviously no need to pass one!
-      !call createInputOrder(manager, c, itterateNumber, numIter)
-      call createInputOrder(manager, c, itterateNumber, 1)
+      call createInputOrder(manager, c, itterateNumber)
     end if
     if (itterateType .eq. "RandomOrder") then
-      !call createRandomOrder(manager, c, itterateNumber, numIter)
-      call createRandomOrder(manager, c, itterateNumber, 1)
+       call createRandomOrder(manager, c, itterateNumber)
     end if
     if (itterateType .eq. "Cluster") then
-      call createCluster(manager, c, itterateNumber, 1)
+      call createCluster(manager, c, itterateNumber)
     end if
   end function newMemberManager
   
@@ -60,10 +51,10 @@ contains
     end if
   end subroutine destroy
   
-  subroutine createInputOrder(manager, c, number, numIter)
+  subroutine createInputOrder(manager, c, number)
     class(MemberManager) :: manager
     class(Core), intent(in), target :: c
-    integer, intent(in) :: number, numIter
+    integer, intent(in) :: number
     
     integer :: nAnisG, i
 
@@ -79,19 +70,17 @@ contains
     manager%noneleft = .false.
     manager%number = number
     manager%curPos = 1
-    manager%numIter = numIter
-    manager%completeIter = 0
     manager%random = .false.
   end subroutine createInputOrder
   
-  subroutine createRandomOrder(manager, c, number, numIter)
+  subroutine createRandomOrder(manager, c, number)
     use Random
     
     class(MemberManager) :: manager
     class(Core), intent(in), target :: c
-    integer, intent(in) :: number, numIter
+    integer, intent(in) :: number
     
-    integer :: nAnisG, i, secs, nCount
+    integer :: nAnisG, secs, nCount
 
     manager%c => c
     
@@ -105,18 +94,18 @@ contains
     manager%noneleft = .false.
     manager%number = number
     manager%curPos = 1
-    manager%numIter = numIter
-    manager%completeIter = 0
     manager%random = .true.
   end subroutine createRandomOrder
   
-  subroutine createCluster(manager, c, number, numIter)
+  subroutine createCluster(manager, c, number)
+    use GenotypeModule
     class(MemberManager) :: manager
     class(Core), intent(in), target :: c
-    integer, intent(in) :: number, numIter
+    integer, intent(in) :: number
     
     logical, dimension(c%getNAnisG()) :: used
     integer :: nAnisG, numUsed, curMax, curOrder, seed, i, curIndiv, curSize
+    type(Genotype), pointer :: g1, g2
     
     manager%c => c
     
@@ -136,7 +125,6 @@ contains
 	  manager%order(curOrder) = i
 	  numUsed = numUsed + 1
 	  curSize = 1
-	  !print *, "Seed", i
 	  exit
 	end if
       end do
@@ -145,13 +133,14 @@ contains
       curIndiv = 1
       do while ((curSize < number) .and. (numUsed < nAnisG))
 	if (.not. used(curIndiv)) then
-	  if (dist(c%getSingleCoreAndTailGenos(seed),c%getSingleCoreAndTailGenos(curIndiv)) <= curMax) then
+	  g1 = c%coreAndTailGenos(seed)
+	  g2 = c%coreAndTailGenos(curIndiv)
+	  if (dist(g1%toIntegerArray(),g2%toIntegerArray()) <= curMax) then
 	    used(curIndiv) = .true.
 	    curOrder = curOrder + 1
 	    manager%order(curOrder) = curIndiv
 	    numUsed = numUsed + 1
 	    curSize = curSize + 1
-	    !print *, "      Added", curIndiv, curMax
 	  end if
 	end if
 	curIndiv = curIndiv + 1
@@ -165,14 +154,11 @@ contains
     manager%noneleft = .false.
     manager%number = number
     manager%curPos = 1
-    manager%numIter = numIter
-    manager%completeIter = 0
     manager%random = .false.
     
   end subroutine createCluster
   
   function dist(input1, input2) result (d)
-    use Constants
     integer(kind=1), dimension(:), intent(in) :: input1, input2
     integer :: d
     
@@ -194,14 +180,14 @@ contains
     class(Core), intent(in), target :: c
     
     manager%noneleft = .false.
-    call createInputOrder(manager, c, c%getNAnisG(),1)
+    call createInputOrder(manager, c, c%getNAnisG())
   end subroutine createAll
   
   function hasNext(manager) result (has)
     class(MemberManager) :: manager
     logical :: has
     
-    has = ((manager%completeIter < manager%numIter) .and. (.not. manager%noneLeft))
+    has = .not. manager%noneLeft
   end function hasNext
   
   function getNext(manager) result(members)
@@ -209,15 +195,14 @@ contains
     class(MemberManager) :: manager
     integer, dimension(:), allocatable :: members
     
-    !integer, dimension(:), allocatable :: tempMembers
     integer :: maxNumber, unPhased
     integer :: c, i
     
-    integer :: nCount, secs, nAnisG
+    integer :: nCount, secs
     
     unPhased = 0
     do i = 1, manager%c%getNAnisG()
-      if (.not. manager%c%getBothFullyPhased(i)) then
+      if (.not. (manager%c%phase(i,1)%fullyPhased() .and. manager%c%phase(i,2)%fullyPhased())) then
 	unPhased = unPhased + 1
       end if
     end do
@@ -229,30 +214,24 @@ contains
     end if
     allocate(members(maxNumber))
     c = 0
-    !allocate(tempMembers(manager%number))
-    !do while ((manager%curPos < size(manager%order,1)) .and. (c < manager%number))
-    !do while (c < manager%number)
     do while (c < maxNumber)
-      if (.not. manager%c%getBothFullyPhased(manager%curPos)) then
+      if (.not. (manager%c%phase(manager%curPos,1)%fullyPhased() .and. manager%c%phase(manager%curPos,2)%fullyPhased())) then
 	c  = c + 1
-	!tempMembers(c) = manager%curPos
 	members(c) = manager%order(manager%curPos)
       end if
       if (manager%curPos == size(manager%order,1)) then
 	manager%curPos = 1
-	manager%completeIter = manager%completeIter + 1
 	if (manager%random) then
 	  call system_clock(nCount)
 	  secs = mod(nCount, int(1e6))
 	  call RandomOrder(manager%order, size(manager%order,1), 1, -abs(secs))
 	end if
+	manager%noneLeft = .true.
       else
 	manager%curPos = manager%curPos + 1
       end if
     end do
     
-    !allocate(members(c))
-    !members(:) = tempMembers(1:c)
   end function getNext
   
 end module MemberManagerDefinition

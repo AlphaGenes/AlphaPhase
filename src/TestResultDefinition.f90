@@ -1,54 +1,61 @@
 module TestResultDefinition
-  use Constants
+  use ConstantModule
+  use GenotypeModule
+  use HaplotypeModule
   implicit none
-!  private
   
-  type, public :: TestResults
-    private
-    
+  type:: TestResults
     integer, dimension(:,:,:,:), allocatable :: countA
   contains
-    procedure, public :: percentAll
-    procedure, public :: counts
-    procedure, public :: percent
+    procedure :: percentAll
+    procedure :: counts
+    procedure :: percent
   end type TestResults
   
   interface TestResults
     module procedure newResults
   end interface TestResults
   
-  integer, parameter, public :: ALL_ = 1, HET_ = 2, ERROR_ = 3, MISS_ = 4
-  integer, parameter, public :: CORRECT_ = 1, INCORRECT_ = 2, NOTPHASED_ = 3
+  integer, parameter :: ALL_ = 1, HET_ = 2, ERROR_ = 3, MISS_ = 4
+  integer, parameter :: CORRECT_ = 1, INCORRECT_ = 2, NOTPHASED_ = 3
 
 contains
 
   function newResults(c, TruePhase) result (results)
     use CoreDefinition
-    use Constants
     
     type(Core) :: c
-    integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase    
+    type(Haplotype), dimension(:,:), pointer, intent(in) :: TruePhase    
     type(TestResults) :: results
     
     integer :: i, j, k
-    integer(kind=1) :: p, g
+    integer(kind=1) :: p, t, g
     logical :: het, miss, error
     
-    print*, " "
-    print*, " Checking simulation"
-    print*, " "
+    type(Genotype), pointer :: geno
+    type(Haplotype), pointer:: hap1, hap2, trueHap1, trueHap2
+    
     
     allocate(results%countA(C%getNAnisG(),2,4,3))
     results%countA = 0
     
     do i = 1, c%getNAnisG()
+      geno => c%getCoreGenos(i)
+      hap1 => c%phase(i,1)
+      hap2 => c%phase(i,2)
+      trueHap1 => TruePhase(i,1)
+      trueHap2 => TruePhase(i,2)
       do j = 1, c%getNCoreSnp()
-	g = c%getCoreGeno(i,j)
+	g = geno%getGenotype(j)
 	het = (g == 1)
 	miss = (g == MissingGenotypeCode)
-	error = ((.not. miss) .and. ( (TruePhase(i,j,1) + TruePhase(i,j,2)) /= g))
+	error = ((.not. miss) .and. ( (trueHap1%getPhaseMod(j) + trueHap2%getPhaseMod(j)) /= g))
 	do k = 1, 2
-	  p = c%getPhase(i,j,k)
+	  if (k == 1) then
+	    p = hap1%getPhaseMod(j)
+	  else
+	    p = hap2%getPhaseMod(j)
+	  end if
 	  if (p == MissingPhaseCode) then
 	    results%countA(i,k,ALL_,NOTPHASED_) = results%countA(i,k,ALL_,NOTPHASED_) + 1
 	    if (het) then
@@ -61,7 +68,12 @@ contains
 	      results%countA(i,k,ERROR_,NOTPHASED_) = results%countA(i,k,ERROR_,NOTPHASED_) + 1
 	    end if
 	  else
-	    if (p == TruePhase(i,j,k)) then
+	    if (k == 1) then
+	      t = truehap1%getPhaseMod(j)
+	    else
+	      t = truehap2%getPhaseMod(j)
+	    end if
+	    if (p == t) then
 	      results%countA(i,k,ALL_,CORRECT_) = results%countA(i,k,ALL_,CORRECT_) + 1
 	      if (het) then
 		results%countA(i,k,HET_,CORRECT_) = results%countA(i,k,HET_,CORRECT_) + 1
@@ -89,20 +101,18 @@ contains
       end do
     end do
     
-    print *, "   Summary statistics                               ", "Paternal  Maternal"
-    write (*, '(a40,a12,2f8.1)') "Percent correctly phased    All Snps", " ", &
+    print '(7x, a18, 33x, a8, 3x, a8)', "Summary statistics", "Paternal", "Maternal"
+    print '(7x, a24, 7x, a8, 15x, f5.1, 6x, f5.1)', "Percent correctly phased", "All Snps", &
       results%percentAll(1,ALL_,CORRECT_), results%percentAll(2,ALL_,CORRECT_)
-    write (*, '(a49,a3,2f8.1)') "Percent correctly phased    Heterozygous Snps", " ", &
+    print '(7x, a24, 7x, a17, 6x, f5.1, 6x, f5.1)', "Percent correctly phased", "Heterozygous Snps", &
       results%percentAll(1,HET_,CORRECT_), results%percentAll(2,HET_,CORRECT_)
-    write (*, *) " "
-    write (*, '(a34,a18,2f8.1)') "Percent not phased    All Snps", " ", &
+    print '(7x, a18, 13x, a8, 15x, f5.1, 6x, f5.1)', "Percent not phased", "All Snps", &
       results%percentAll(1,ALL_,NOTPHASED_), results%percentAll(2,ALL_,NOTPHASED_)
-    write (*, '(a43,a9,2f8.1)') "Percent not phased    Heterozygous Snps", " ", &
+    print '(7x, a18, 13x, a17, 6x, f5.1, 6x, f5.1)', "Percent not phased", "Heterozygous Snps", &
       results%percentAll(1,HET_,NOTPHASED_), results%percentAll(2,HET_,NOTPHASED_)
-    write (*, *) " "
-    write (*, '(a42,a10,2f8.1)') "Percent incorrectly phased    All Snps", " ", &
+    print '(7x, a26, 5x, a8, 15x, f5.1, 6x, f5.1)', "Percent incorrectly phased","All Snps", &
       results%percentAll(1,ALL_,INCORRECT_), results%percentAll(2,ALL_,INCORRECT_)
-    write (*, '(a51,a1,2f8.1)') "Percent incorrectly phased    Heterozygous Snps", " ", &
+    print '(7x, a26, 5x, a17, 6x, f5.1, 6x, f5.1)', "Percent incorrectly phased","Heterozygous Snps", &
       results%percentAll(1,HET_,INCORRECT_), results%percentAll(2,HET_,INCORRECT_)
   end function newResults
   
@@ -141,48 +151,5 @@ contains
 
     c = results%countA(animal,phase,group,state)
   end function counts 
-
-  subroutine Flipper(c, TruePhase)
-    !! This needs a new home
-    use CoreDefinition
-
-    type(Core) :: c
-    integer(kind=1), dimension(:,:,:), intent(in) :: TruePhase
-
-    integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth
-    integer(kind = 1), allocatable, dimension(:) :: W1, W2
-    character(len = 300) :: dumC
-
-    integer :: nAnisG, nSnp
-
-    nAnisG = c%getNAnisG()
-    nSnp = c%getNCoreSnp()
-
-    allocate(W1(nSnp))
-    allocate(W2(nSnp))
-
-    do i = 1, nAnisG
-      CountAgreeStay1 = 0
-      CountAgreeStay2 = 0
-      CountAgreeSwitch1 = 0
-      CountAgreeSwitch2 = 0
-      truth = 0
-      do j = 1, nSnp
-	if (TruePhase(i, j, 1) == c%getPhase(i, j, 1)) CountAgreeStay1 = CountAgreeStay1 + 1
-	if (TruePhase(i, j, 2) == c%getPhase(i, j, 1)) CountAgreeSwitch1 = CountAgreeSwitch1 + 1
-	if (TruePhase(i, j, 1) == c%getPhase(i, j, 2)) CountAgreeSwitch2 = CountAgreeSwitch2 + 1
-	if (TruePhase(i, j, 2) == c%getPhase(i, j, 2)) CountAgreeStay2 = CountAgreeStay2 + 1
-      end do
-      if ((CountAgreeSwitch2 > CountAgreeStay2).and.(CountAgreeStay1 <= CountAgreeSwitch1)) truth = 1
-      if ((CountAgreeSwitch1 > CountAgreeStay1).and.(CountAgreeStay2 <= CountAgreeSwitch2)) truth = 1
-      if (truth == 1) then
-	W1(:) = c%getHaplotype(i,1)
-	W2(:) = c%getHaplotype(i,2)
-	call c%setHaplotype(i,1,W2)
-	call c%setHaplotype(i,2,W1)
-      end if
-    end do
-
-  end subroutine Flipper
 
 end module TestResultDefinition

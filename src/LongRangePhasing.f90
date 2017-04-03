@@ -1,19 +1,20 @@
 module LongRangePhasing
-  use Constants
+  use ConstantModule
   implicit none
   
 contains
   
-  subroutine Erdos(surrogates, c, threshold, numsurrdisagree, useSurrsN, consistent, printProgress)
+  subroutine Erdos(surrogates, c, numsurrdisagree, useSurrsN)
     use SurrogateDefinition
     use CoreSubsetDefinition
+    use GenotypeModule
+    use HaplotypeModule
     
     type(Surrogate), intent(in) :: surrogates
     type(CoreSubSet) :: c
-    integer, intent(in) :: threshold, numsurrdisagree, useSurrsN
-    logical, intent(in) :: consistent, printProgress
+    integer, intent(in) :: numsurrdisagree, useSurrsN
 
-    integer(kind=1), dimension(:,:), pointer :: genos
+    type(Genotype), dimension(:), pointer :: genos
     integer, dimension(:,:), allocatable :: surrList
     integer, dimension(:), allocatable :: nSurrList
     integer :: nAnisG, nSnp
@@ -26,13 +27,13 @@ contains
     integer, dimension(2) :: alleleCount
     integer :: total, counter
     integer, dimension(:), allocatable :: surrAveDiff
-    integer(kind=1) :: iAllele
     integer :: current
     integer :: highestErdos
+    type(Haplotype), pointer :: hap
 
-    nAnisG = c%getNAnisG()
-    nSnp = c%getNCoreSnp()
-    genos => c%getCoreGenos()
+    nAnisG = c%getNAnisGCoreSubset()
+    nSnp = c%getNCoreSnpCoreSubset()
+    genos => c%getCoreGenosCoreSubset()
 
 
     allocate(surrList(nAnisG,nAnisG))
@@ -46,7 +47,8 @@ contains
 
     do i = 1, nAnisG
       do j = 1, nAnisG
-	if (surrogates%numOppose(i,j) <= threshold) then
+	if ((surrogates%numOppose(i,j) <= surrogates%threshold) .and. &
+	surrogates%enoughIncommon(i,j)) then
 	  if (i /= j) then
 	    nSurrList(i) = nSurrList(i) + 1
 	    surrList(i,nSurrList(i)) = j
@@ -59,7 +61,8 @@ contains
       total = 0
       counter = 0
       do j = 1, nAnisG
-	if (surrogates%numOppose(i, j) > threshold) then
+	if ((surrogates%numOppose(i, j) > surrogates%threshold) .and. &
+	surrogates%enoughInCommon(i,j)) then
 	  total = total+surrogates%numOppose(i, j)
 	  counter = counter + 1
 	endif
@@ -74,23 +77,11 @@ contains
     end do
 
     do side = 1, 2
-!      if (ItterateType .eq. "Off") then
-      if (printProgress) then
-	print*, " "
-	select case (side)
-	  case (1)
-	    print*, " Phasing genotyped individuals for Paternal allele"
-	  case (2)
-	    print*, " Phasing genotyped individuals for Maternal allele"
-	end select
-      end if
       highestErdos = 0
       do i = 1, nAnisG
-	if ((mod(i, 400) == 0) .and. printProgress) then
-	  print*, "   Phasing done for genotyped individual --- ", i
-	end if
+	hap => c%getHaplotypeCoreSubset(i, side)
 	do j = 1, nSnp
-	  if (c%getPhase(i, j, side) == MissingPhaseCode) then
+	  if (hap%isMissing(j)) then
 	    visited = .false.
 	    toVisit = 0
 	    toVisit(1) = i
@@ -103,16 +94,14 @@ contains
 	    allelecount = 0
 	    visiting = 1
 
-	    !!! FUDGES !!!
-	    if (genos(i,j) == 0) then
+	    if (genos(i)%isZero(j)) then
 	      AlleleCount(1) = AlleleCount(1) + 1
 	      found = found + 1
 	    end if
-	    if (genos(i,j) == 2) then
+	    if (genos(i)%isTwo(j)) then
 	      AlleleCount(2) = AlleleCount(2) + 1
 	      found = found + 1
 	    end if
-	    !!! END FUDGES !!!
 
 	    do while ((toVisit(visiting) /= 0) .and.(found < useSurrsN))
 	      current = toVisit(visiting)
@@ -120,9 +109,9 @@ contains
 	      do while ((k <= nSurrList(current)) .and. (found < useSurrsN))
 		next = surrList(current,k)
 		if (goodToVisit(next, depth, side, surrogates, visited,  &
-		  toVisit, visiting, threshold, SurrAveDiff)) then
-		  select case (Genos(next, j))
-		    case (0)
+		  toVisit, visiting, SurrAveDiff)) then
+		  if (Genos(next)%isHomo(j)) then
+		    if (Genos(next)%isZero(j)) then
 		      if (mod(depth(Visiting) + 1, 2) == 0) then
 			AlleleCount(2) = AlleleCount(2) + 1
 		      end if
@@ -130,7 +119,7 @@ contains
 			AlleleCount(1) = AlleleCount(1) + 1
 		      end if
 		      found = found + 1
-		    case (2)
+		    else
 		      if (mod(depth(Visiting) + 1, 2) == 0) then
 			AlleleCount(1) = AlleleCount(1) + 1
 		      end if
@@ -138,11 +127,14 @@ contains
 			AlleleCount(2) = AlleleCount(2) + 1
 		      end if
 		      found = found + 1
-		    case default		      
+		    end if
+		  else
+		    if (.not. Genos(next)%isMissing(j)) then
 		      toVisitPos = toVisitPos + 1
 		      toVisit(toVisitPos) = next
 		      depth(toVisitPos) = depth(visiting) + 1
-		  end select
+		    end if
+		  end if
 		end if
 		visited(next) = .true.
 		k = k + 1
@@ -156,18 +148,20 @@ contains
 	      end if
 	    end do
 
-	    iAllele = MissingPhaseCode
 	    if (sum(AlleleCount(:)) < UseSurrsN) then
-	      if ((AlleleCount(2) <= NumSurrDisagree).and.(AlleleCount(1) > AlleleCount(2))) iAllele = 0
-	      if ((AlleleCount(1) <= NumSurrDisagree).and.(AlleleCount(2) > AlleleCount(1))) iAllele = 1
+	      if ((AlleleCount(2) <= NumSurrDisagree).and.(AlleleCount(1) > AlleleCount(2))) then
+		call hap%setZero(j)
+	      end if
+	      if ((AlleleCount(1) <= NumSurrDisagree).and.(AlleleCount(2) > AlleleCount(1))) then
+		call hap%setOne(j)
+	      end if
 	    else
 	      if ((AlleleCount(1) > 0).and.(AlleleCount(2) <= NumSurrDisagree)) then
-		iAllele = 0
+		call hap%setZero(j)
 	      elseif ((AlleleCount(2) > 0).and.(AlleleCount(1) <= NumSurrDisagree)) then
-		iAllele = 1
+		call hap%setOne(j)
 	      end if
 	    endif
-	    call c%setPhase(i, j, side, iAllele)
 	    ! +1 as we use the genotypes at one depth lower than we're currently visiting (slightly odd but maintains consistency
 	    ! with old version).  See discussion about odd depth first search above (when it's written!)
 	    if (depth(visiting - 1) + 1 > highestErdos) then
@@ -176,15 +170,6 @@ contains
 	  end if
 	end do
       end do
-      if (printProgress) then
-	print*, " "
-	select case (side)
-	  case (1)
-	    print*, " ", highestErdos, " was the highest Erdos used on Paternal Side"
-	  case (2)
-	    print*, " ", highestErdos, " was the highest Erdos used on Maternal Side"
-	end select
-      end if
     end do
     
     deallocate(surrList)
@@ -198,10 +183,10 @@ contains
   end subroutine Erdos
 
   function goodToVisit(next, depths, sideon, surrogates, visited, &
-	tovisit, visiting, threshold, surravediff) result(good)
+	tovisit, visiting, surravediff) result(good)
     use SurrogateDefinition
 
-    integer, intent(in) :: next, sideon, threshold, visiting
+    integer, intent(in) :: next, sideon, visiting
     type(Surrogate), intent(in) :: surrogates
     logical, dimension(:), intent(in) :: visited
     integer, dimension(:), intent(in) :: surravediff
@@ -224,8 +209,9 @@ contains
     if (good) then
       do i = 1, visiting - 1
 	if ( &
-	  (surrogates%numOppose(next, tovisit(i)) > threshold) .and. &
-	  (surrogates%numOppose(next, tovisit(i)) <= SurrAveDiff(next))) then
+	  ((surrogates%numOppose(next, tovisit(i)) > surrogates%threshold) .and. &
+	  (surrogates%numOppose(next, tovisit(i)) <= SurrAveDiff(next))) .or. &
+	  .not. surrogates%enoughIncommon(next,toVisit(i))) then
 	  good = .false.
 	end if
       end do
@@ -252,66 +238,41 @@ contains
       cmp = a1-a2
   end function
 
-  subroutine CheckCompatHapGeno(c, PercGenoHaploDisagree, printProgress)
-    use Constants
+  subroutine CheckCompatHapGeno(c, PercGenoHaploDisagree)
     use CoreSubsetDefinition
+    use GenotypeModule
+    use HaplotypeModule
+    use BitUtilities
     
     class(CoreSubset) :: c
     double precision, intent(in) :: PercGenoHaploDisagree
-    logical, intent(in) :: printProgress
 
-    integer(kind=1), dimension(:,:), pointer :: genos
+    type(Genotype), pointer :: genos
+    type(Haplotype), pointer :: hap1, hap2
 
-    integer :: i, j, CountError, ErrorAllow, counter, counterMissing, nAnisG, nCoreSnp
-    double precision :: value, Yield
-
-    nAnisG  = c%getNAnisG()
-    nCoreSnp = c%getNCoreSnp()
-
-    genos => c%getCoreGenos()
+    integer :: i, CountError, ErrorAllow, counterMissing, nAnisG, nCoreSnp
+    integer(kind=8), dimension(:), pointer :: error
+    
+    nAnisG  = c%getNAnisGCoreSubset()
+    nCoreSnp = c%getNCoreSnpCoreSubset()
 
     ErrorAllow = int(PercGenoHaploDisagree * nCoreSnp)
 
     do i = 1, nAnisG
       CountError = 0
       counterMissing = 0
-      do j = 1, nCoreSnp
-	if ((c%getPhase(i, j, 1) /= MissingPhaseCode).and.(c%getPhase(i, j, 2) /= MissingPhaseCode)) then
-	  counterMissing = counterMissing + 1
-	  if ((Genos(i, j) /= MissingGenotypeCode).and.(c%getPhaseGeno(i,j)  /= Genos(i, j))) CountError = CountError + 1
-	end if
-      end do
+      hap1 => c%getHaplotypeCoreSubset(i,1)
+      hap2 => c%getHaplotypeCoreSubset(i,2)
+      genos => c%getSingleCoreGenos(i)
+      error => genos%getErrors(hap1,hap2)
+      countError = bitCount(error)
+      counterMissing = hap1%numberBothNotMissing(hap2)
       ErrorAllow = int(PercGenoHaploDisagree * counterMissing)
       if (CountError >= ErrorAllow) then
-	do j = 1, nCoreSnp
-	  if (Genos(i, j) /= MissingGenotypeCode) then
-	    if ((c%getPhase(i, j, 1) /= MissingPhaseCode).and.(c%getPhase(i, j, 2) /= MissingPhaseCode).and.(c%getPhaseGeno(i, j) /= Genos(i, j))) then
-	      if (Genos(i, j) == 1) call c%setPhase(i, j, 2, MissingPhaseCode)
-	      if (Genos(i, j) == MissingGenotypeCode) call c%setPhase(i, j, 2, MissingPhaseCode)
-	      if (Genos(i, j) == 0) then
-		call c%setPhase(i, j, 1, 0)
-		call c%setPhase(i, j, 2, 0)
-	      end if
-	      if (Genos(i, j) == 2) then
-		call c%setPhase(i, j, 1, 1)
-		call c%setPhase(i, j, 2, 1)
-	      end if
-	    endif
-	  endif
-	enddo
+	call genos%setHaplotypeFromGenotypeIfError(hap1,error)
+	call genos%setHaplotypeFromGenotypeIfError(hap2,error)
       endif
     end do
-
-    
-    !! THIS REALLY SHOULDN'T BE HERE!!
-    if (printProgress) then
-      print*, " "
-      write (*, '(a3,f6.2,a45)') "  ", c%getYield(1), "% was the Paternal allele yield for this core"
-      write (*, '(a3,f6.2,a45)') "  ", c%getYield(2), "% was the Maternal allele yield for this core"
-    end if
-    
-    deallocate(genos)
-
   end subroutine CheckCompatHapGeno
 
 end module LongRangePhasing
