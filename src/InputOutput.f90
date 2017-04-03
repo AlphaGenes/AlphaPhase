@@ -277,14 +277,6 @@ contains
     else
       p = initPedigreeGenotypeFiles(params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat )
     endif
-
-     if (p%nHd == 0) then
-    ! TODO check if this is wanted behaviour
-      p%nHd = p%nGenotyped
-      p%hdMap = p%genotypeMap
-      p%hdDictionary = p%genotypeDictionary
-    endif
-    
   end function ParsePedigreeAndGenotypeData
 
   function ParsePhaseData(PhaseFile, nAnisG, nSnp) result(Phase)
