@@ -109,8 +109,8 @@ contains
       read(params%endCoreChar, '(i10)') endCore
     end if
 
-    printOldProgress = (params%ItterateType .eq. "Off") .and. (.not. quietInternal)
-    singleSurrogates = (params%ItterateType .eq. "Off") .and. (params%numIter == 1)
+    printOldProgress = (params%iterateType .eq. "Off") .and. (.not. quietInternal)
+    singleSurrogates = (params%iterateType .eq. "Off") .and. (params%numIter == 1)
 
     results = AlphaPhaseResults(endCore-startCore+1,singleSurrogates,present(TruePhase))
 
@@ -133,7 +133,7 @@ contains
       end if
 
       do i = 1, params%NumIter
-	manager = MemberManager(c, params%itterateType, params%itterateNumber)
+	manager = MemberManager(c, params%iterateType, params%iterateNumber)
 
 	subsetCount = 0
 	do while (manager%hasNext())
@@ -147,14 +147,14 @@ contains
 	  call CheckCompatHapGeno(cs, params%percgenohaplodisagree)
 
 	  subsetCount = subsetCount + 1
-	  if ((.not. quietInternal) .and. (params%ItterateType .ne. "Off")) then
+	  if ((.not. quietInternal) .and. (params%iterateType .ne. "Off")) then
 	    print '(6x, i5, a21, f6.2, a7)', subsetCount, " Subsets completed ", c%getTotalYield(), "% Yield"
 	  end if
 	end do
 	
 	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then
-	  if (params%ItterateType .eq. "Off") then
+	  if (params%iterateType .eq. "Off") then
 	    print '(6x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
 	      library%numberPercentPhased(params%percMinToKeep), " Haplotypes"
 	  end if

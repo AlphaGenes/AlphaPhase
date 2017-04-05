@@ -23,23 +23,23 @@ module MemberManagerDefinition
   
 contains
 
-  function newMemberManager(c, itterateType, itterateNumber) result(manager)
+  function newMemberManager(c, iterateType, iterateNumber) result(manager)
     class(Core), intent(in) :: c
     type(MemberManager) :: manager
-    character (len = 300) :: itterateType
-    integer, intent(in) :: itterateNumber
+    character (len = 300) :: iterateType
+    integer, intent(in) :: iterateNumber
     
-    if (itterateType .eq. "Off") then
+    if (iterateType .eq. "Off") then
       call createAll(manager, c)
     end if
-    if (itterateType .eq. "InputOrder") then
-      call createInputOrder(manager, c, itterateNumber)
+    if (iterateType .eq. "InputOrder") then
+      call createInputOrder(manager, c, iterateNumber)
     end if
-    if (itterateType .eq. "RandomOrder") then
-       call createRandomOrder(manager, c, itterateNumber)
+    if (iterateType .eq. "RandomOrder") then
+       call createRandomOrder(manager, c, iterateNumber)
     end if
-    if (itterateType .eq. "Cluster") then
-      call createCluster(manager, c, itterateNumber)
+    if (iterateType .eq. "Cluster") then
+      call createCluster(manager, c, iterateNumber)
     end if
   end function newMemberManager
   

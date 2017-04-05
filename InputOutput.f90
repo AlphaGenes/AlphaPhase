@@ -865,17 +865,17 @@ contains
       params%readCoreAtTime = .false.
     end if
 
-    read (1, *, iostat=status) dumC, params%itterateType
+    read (1, *, iostat=status) dumC, params%iterateType
     if (status == 0) then
-      params%consistent = ((params%itterateType .eq. "Off") .and. (.not. params%readCoreAtTime))
+      params%consistent = ((params%iterateType .eq. "Off") .and. (.not. params%readCoreAtTime))
     else
       params%consistent = .true.
-      params%itterateType = "Off"
+      params%iterateType = "Off"
     end if
 
-!    read (1, *, iostat=status) dumC, itterateNumber
+!    read (1, *, iostat=status) dumC, iterateNumber
 !    if (status /= 0) then
-!      itterateNumber = 200
+!      iterateNumber = 200
 !    end if
 !    read (1, *, iostat=status) dumC, numIter
 !    if (status /= 0) then
@@ -886,12 +886,12 @@ contains
       if (hold(1:1) == "*") then
 	read(hold,"(X,I2)") cl
 	call get_command_argument(cl,hold)
-	read(hold,*) params%itterateNumber
+	read(hold,*) params%iterateNumber
       else
-	read(hold,*) params%itterateNumber
+	read(hold,*) params%iterateNumber
       end if
     else
-      params%itterateNumber = 200
+      params%iterateNumber = 200
     end if
     
     read(1, *, iostat=status) dumC, hold
@@ -906,7 +906,7 @@ contains
     else
       params%numIter = 1
     end if
-    if (params%itterateType .eq. "Off") then
+    if (params%iterateType .eq. "Off") then
       params%numIter = 1
     end if
 
@@ -1156,7 +1156,7 @@ contains
       close(34)
     end if
 
-    if (params%ItterateType .eq. "Off") then
+    if (params%iterateType .eq. "Off") then
       print*, "   ", "Final iteration found ", nHaps, "haplotypes"
     
       print*, ""
