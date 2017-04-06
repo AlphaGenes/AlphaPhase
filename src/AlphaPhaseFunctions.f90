@@ -40,7 +40,7 @@ module AlphaPhaseFunctions
   implicit none
 
 contains
-  function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, quiet) result(results)
+  function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, userCoreIndex, quiet) result(results)
     ! Following use statements needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeLibraryDefinition
     use PedigreeModule
@@ -50,6 +50,7 @@ contains
     type(AlphaPhaseParameters) :: params
     type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
     type(Haplotype), pointer, dimension(:,:), intent(in), optional :: truePhase
+    integer, dimension(:,:), intent(in), optional, target :: userCoreIndex
     logical, optional :: quiet
 
     integer :: h, i, threshold
@@ -88,11 +89,19 @@ contains
     nSnp = p%pedigree(p%hdMap(1))%individualGenotype%getLength()
 
     if (.not. present(existingLibraries)) then
-      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
+      if (.not. present(userCoreIndex)) then
+	CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
+      else
+	CoreIndex => userCoreIndex
+      end if
     else
       CoreIndex => getCoresFromLibraries(existingLibraries)
     end if
-    TailIndex => calculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
+    if (params%tailLength == -1) then
+      TailIndex => oldCalculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
+    else
+      TailIndex => calculateTails(CoreIndex, params%tailLength, nSnp)
+    end if
     nCores = size(CoreIndex,1)
 
     threshold = int(params%GenotypeMissingErrorPercentage*params%CoreAndTailLength)
@@ -191,7 +200,7 @@ contains
     end do
   end function phaseAndCreateLibraries
 
-  function createLibraries(phase, params, existingLibraries) result (results)
+  function createLibraries(phase, params, existingLibraries, userCoreIndex) result (results)
     ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
     use HaplotypeLibraryDefinition
     use HaplotypeModule
@@ -199,6 +208,7 @@ contains
     type(Haplotype), pointer, dimension(:,:), intent(in) :: phase
     type(AlphaPhaseParameters) :: params
     type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
+    integer, dimension(:,:), intent(in), optional, target :: userCoreIndex
 
     type(AlphaPhaseResults) :: results
 
@@ -213,11 +223,19 @@ contains
     nSnp = phase(1,1)%getLength()
 
     if (.not. present(existingLibraries)) then
-      CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
+      if (.not. present(userCoreIndex)) then
+	CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
+      else
+	CoreIndex => userCoreIndex
+      end if
     else
       CoreIndex => getCoresFromLibraries(existingLibraries)
     end if
-    TailIndex => calculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
+    if (params%tailLength == -1) then
+      TailIndex => oldCalculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
+    else
+      TailIndex => calculateTails(CoreIndex, params%tailLength, nSnp)
+    end if
     nCores = size(CoreIndex,1)
 
     if (params%startCoreChar .eq. "Combine") then

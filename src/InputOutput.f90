@@ -368,6 +368,11 @@ contains
 
       case("generalcoreandtaillength")
         read(second(1), *) params%params%CoreAndTailLength
+	write(*,*) "GeneralCoreAndTailLength is likely to be deprecated in a future release."
+	write(*,*) "Please consider using TailLength instead."
+	  
+      case("taillength")
+	read(second(1), *) params%params%TailLength
 
       case("generalcorelength")
 
@@ -457,6 +462,11 @@ contains
       case("outputdirectory")
 	if (allocated(second)) then
 	  read(second(1), *) params%outputParams%outputDirectory
+	end if
+	
+      case("corefile")
+	if (allocated(second)) then
+	  read(second(1), *) params%CoreFile
 	end if
        
       case("graphics")

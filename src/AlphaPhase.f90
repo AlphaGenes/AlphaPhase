@@ -26,6 +26,7 @@ program AlphaPhase
     integer :: nAnisG
     type(AlphaPhaseResults) :: results
     logical :: notPrephased
+    integer, dimension(:,:), pointer :: CoreIndex
 
     !Linux max path length is 4096 which is more than windows or mac (all according to google)
     character(len=4096) :: specfile
@@ -52,27 +53,48 @@ program AlphaPhase
     nAnisG = p%nHd
 
     notPrephased = (params%GenotypeFileFormat /= 2)
+    
+    if (params%CoreFile .ne. "None") then
+      CoreIndex => readInCores(params%CoreFile)
+    end if
 
     if (notPrephased) then
       if (params%Simulation) then
         TruePhase => ParsePhaseData(params%TruePhaseFile,nAnisG,params%nSnp)
         if (params%Library .ne. "None") then
-    existingLibraries => getHaplotypeLibraries(params%library)
-    results = phaseAndCreateLibraries(p, params%params, existingLibraries, TruePhase, quiet = .false.)
+	  existingLibraries => getHaplotypeLibraries(params%library)
+	  results = phaseAndCreateLibraries(p, params%params, existingLibraries, TruePhase, quiet = .false.)
         else
-    results = phaseAndCreateLibraries(p, params%params, truePhase = TruePhase, quiet = .false.)
+	  if (params%CoreFile .ne. "None") then
+	    results = phaseAndCreateLibraries(p, params%params, truePhase = TruePhase, userCoreIndex = coreIndex, quiet = .false.)
+	  else
+	    results = phaseAndCreateLibraries(p, params%params, truePhase = TruePhase, quiet = .false.)
+	  end if
         end if
       else
         if (params%Library .ne. "None") then
-    existingLibraries => getHaplotypeLibraries(params%library)
-    results = phaseAndCreateLibraries(p, params%params, existingLibraries, quiet = .false.)
+	  existingLibraries => getHaplotypeLibraries(params%library)
+	  results = phaseAndCreateLibraries(p, params%params, existingLibraries, quiet = .false.)
         else
-    results = phaseAndCreateLibraries(p, params%params, quiet = .false.)
+	  if (params%CoreFile .ne. "None") then
+	    results = phaseAndCreateLibraries(p, params%params, userCoreIndex = coreIndex, quiet = .false.)
+	  else
+	    results = phaseAndCreateLibraries(p, params%params, quiet = .false.)
+	  end if
         end if
       end if
     else
       Phase => ParsePhaseData(params%GenotypeFile,nAnisG,params%nSnp)
-      results = createLibraries(Phase, params%params)
+      if (params%Library .ne. "None") then
+	existingLibraries => getHaplotypeLibraries(params%library)
+	results = createLibraries(Phase, params%params, existingLibraries)
+      else
+	if (params%CoreFile .ne. "None") then
+	  results = createLibraries(Phase, params%params, userCoreIndex = coreIndex)
+	else
+	  results = createLibraries(Phase, params%params)
+	end if
+      end if
     end if
 
     call writeAlphaPhaseResults(results, p, params%outputParams)    

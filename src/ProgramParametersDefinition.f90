@@ -7,7 +7,7 @@ module ProgramParametersDefinition
     character(len=300) GenotypeFile
     integer :: GenotypeFileFormat
     logical :: Simulation
-    character (len = 300) :: PedigreeFile, TruePhaseFile, Library
+    character (len = 300) :: PedigreeFile, TruePhaseFile, Library, CoreFile
     integer :: nSnp
 
     type(OutputParameters) :: outputParams
@@ -26,6 +26,7 @@ contains
     programParams%params = AlphaPhaseParameters()
     programParams%outputParams = OutputParameters()
     programParams%library = "None"
+    programParams%CoreFile = "None"
   end function newProgramParameters
     
 end module ProgramParametersDefinition

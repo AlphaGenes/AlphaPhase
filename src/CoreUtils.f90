@@ -48,7 +48,7 @@ contains
     end if
   end function CalculateCores
 
-  function CalculateTails(CoreIndex, nSnp, Jump, CoreAndTailLength) result(TailIndex)
+  function OldCalculateTails(CoreIndex, nSnp, Jump, CoreAndTailLength) result(TailIndex)
     implicit none
 
     integer, dimension(:,:), intent(in) :: CoreIndex
@@ -69,7 +69,7 @@ contains
       TailIndex(i,1) = max(1,CoreIndex(i,1) - ltail)
       TailIndex(i,2) = min(nSnp,CoreIndex(i,2) + rtail)
     end do
-  end function CalculateTails
+  end function OldCalculateTails
   
   function getCoresFromLibraries(libraries) result(CoreIndex)
     use HaplotypeLibraryDefinition
@@ -89,5 +89,43 @@ contains
     end do
   end function getCoresFromLibraries
    
+  
+  function readInCores(file) result(CoreIndex)
+    implicit none
+    
+    character(len=300), intent(in) :: file
+    integer, dimension(:,:), pointer :: CoreIndex
+    
+    integer :: nCores, dumI, i
+
+    open (unit = 25, file = trim(file), status = "unknown")
+    read (25, *) nCores
+    read (25, *) dumI
+    read (25, *) dumI
+    allocate(CoreIndex(nCores,2))
+    do i = 1, nCores
+      read (25, *) dumI , CoreIndex(i,1), CoreIndex(i,2)
+    end do
+    close(25)
+  end function readInCores
+  
+  function calculateTails(CoreIndex, tailLength, nSnp) result(TailIndex)
+    implicit none
+
+    integer, dimension(:,:), intent(in) :: CoreIndex
+    integer, intent(in) :: tailLength, nSnp
+    integer, dimension(:,:), pointer :: TailIndex
+
+    integer :: ltail, rtail, nCores
+    integer :: i
+
+    nCores = size(CoreIndex,1)
+    allocate(TailIndex(nCores,2))
+
+    do i = 1, nCores
+      TailIndex(i,1) = max(1,CoreIndex(i,1) - taillength)
+      TailIndex(i,2) = min(nSnp,CoreIndex(i,2) + taillength)
+    end do
+  end function calculateTails
 end module CoreUtils
 
