@@ -38,7 +38,7 @@ contains
     params%minOverlap = 0
     params%percMinPresent = 100
     params%percMinToKeep = 100
-    params%coreAndTailLength = 1
+    params%coreAndTailLength = -1
     params%tailLength = -1
   end function newParameters
     

@@ -503,7 +503,7 @@ contains
     print*, "GeneralCoreLength is too long"
     stop
   endif
-  if (params%params%CoreAndTailLength < params%params%Jump) then
+  if ((params%params%CoreAndTailLength /= -1) .and. (params%params%CoreAndTailLength < params%params%Jump)) then
     print *, "GeneralCoreAndTailLength is shorted than GenralCoreLength"
     stop
   end if
