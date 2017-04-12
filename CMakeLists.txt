@@ -44,7 +44,7 @@ SET(SRCALPHAPHASE ${SRC}/)
 
 # Set some options the user may choose
 # Uncomment the below if you want the user to choose a parallelization library
-OPTION(USE_MPI "Use the MPI library for parallelization" ON)
+OPTION(USE_MPI "Use the MPI library for parallelization" OFF)
 OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
 
  
