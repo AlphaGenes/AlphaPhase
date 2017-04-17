@@ -1088,9 +1088,9 @@ end function ReadInParameterFile
      
       if (params%outputHaplotypeLibraryBinary) then
 	      read (34) hapArray
-      end if
        hap = newHaplotypeInt(hapArray)
-    dumI = library%addHap(hap)
+       dumI = library%addHap(hap)
+      end if
      if (params%outputHaplotypeLibraryText) then	
 	      read (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') dumI, freq,dumC, hapArray
         call library%setHapFreq(i,freq)
