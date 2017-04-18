@@ -78,7 +78,6 @@ contains
     else
       quietInternal = quiet
     end if
-
     if (p%nHd == 0) then
     ! TODO check if this is wanted behaviour
       p%nHd = p%nGenotyped
