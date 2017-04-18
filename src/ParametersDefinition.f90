@@ -29,6 +29,10 @@ contains
   function newParameters result(params)
     type(AlphaPhaseParameters) :: params
     ! DEFAULT VALUES !
+    params%useSurrsN = 10
+    params%numSurrDisagree = 10
+    params%percGenoHaploDisagree = 0
+    params%genotypeMissingErrorPercentage = 0
     params%iterateType = "Off"
     params%iterateNumber = 200
     params%numIter = 1
@@ -36,8 +40,8 @@ contains
     params%endCoreChar = "0"
     params%minHapFreq = 1
     params%minOverlap = 0
-    params%percMinPresent = 100
-    params%percMinToKeep = 100
+    params%percMinPresent = 1
+    params%percMinToKeep = 1
     params%coreAndTailLength = -1
     params%tailLength = -1
   end function newParameters

@@ -200,7 +200,6 @@ contains
     integer :: newStoreSize
     type(Haplotype), dimension(:), pointer :: tempNewStore
     integer, dimension(:), allocatable :: tempHapFreq
-
     if (library % Size == library % storeSize) then
       newStoreSize = library % storeSize + library % stepSize
 
