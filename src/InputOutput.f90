@@ -993,24 +993,25 @@ end function ReadInParameterFile
     if (params%outputHaplotypeLibraryText) then
       write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
       open (unit = 24, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+       write (24,*) nHaps, SizeCore
     endif
     if (params%outputHaplotypeLibraryBinary) then
-      write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
-      open (unit = 34, FILE = trim(params%outputDirectory)//filout, form = "unformatted", status = 'unknown')
-      
-      write (34) nHaps, SizeCore
-    end if
+        write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
+        open (unit = 34, FILE = trim(params%outputDirectory)//filout, form = "unformatted", status = 'unknown')
+        
+        write (34,*) nHaps, SizeCore
+      end if
     
     do i = 1, nHaps
-      hap = library%getHap(i)
-      if (params%outputHaplotypeLibraryText) then	
-	write (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
-	i, library%getHapFreq(i), " ", hap%toIntegerArray()
-      
-      end if
-      if (params%outputHaplotypeLibraryBinary) then
-	write (34) hap%toIntegerArray()
-      end if
+          hap = library%getHap(i)
+          if (params%outputHaplotypeLibraryText) then	
+      write (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
+      i, library%getHapFreq(i), " ", hap%toIntegerArray()
+          
+          end if
+          if (params%outputHaplotypeLibraryBinary) then
+      write (34) hap%toIntegerArray()
+          end if
     end do
 
     if (params%outputHaplotypeLibraryText) then
@@ -1073,14 +1074,15 @@ end function ReadInParameterFile
     if (params%outputHaplotypeLibraryText) then
       write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
       open (unit = 24, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
-    endif
+      read (24,*) nHaps, SizeCore
+   endif
     if (params%outputHaplotypeLibraryBinary) then
       write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
       open (unit = 34, FILE = trim(params%outputDirectory)//filout, form = "unformatted", status = 'unknown')
-      read (34) nHaps, SizeCore
+      read (34,*) nHaps, SizeCore
     endif
       library = HaplotypeLibrary(sizeCore,nHaps,1)
-    
+      ! library%setSize(nHaps) 
 
     allocate(hapArray(SizeCore))
     do i = 1, nHaps
@@ -1094,6 +1096,8 @@ end function ReadInParameterFile
      if (params%outputHaplotypeLibraryText) then	
 	      read (24, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') dumI, freq,dumC, hapArray
         call library%setHapFreq(i,freq)
+        hap = newHaplotypeInt(hapArray)
+        dumI = library%addHap(hap)
       end if
     end do
    
