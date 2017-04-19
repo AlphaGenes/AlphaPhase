@@ -1077,10 +1077,9 @@ end function ReadInParameterFile
     if (params%outputHaplotypeLibraryBinary) then
       write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
       open (unit = 34, FILE = trim(params%outputDirectory)//filout, form = "unformatted", status = 'unknown')
-      
       read (34) nHaps, SizeCore
+    endif
       library = HaplotypeLibrary(sizeCore,nHaps,1)
-    end if
     
 
     allocate(hapArray(SizeCore))
