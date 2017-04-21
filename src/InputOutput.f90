@@ -360,7 +360,10 @@ contains
             case('unorderedformat')
               params%GenotypeFileFormat = 3
             end select
+          else
+            params%GenotypeFileFormat = 1
           endif
+
         endif
 
       case("numberofsnp")
