@@ -15,7 +15,7 @@ OPTION(USE_HDF5 "Use hdf"
        false)
 
 # Add our local modlues to the module path
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../alphacmakefiles/cmake/modules")
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/alphacmakefiles/cmake/modules")
 set(CMAKE_MACOSX_RPATH 0)
 
 INCLUDE(${CMAKE_MODULE_PATH}/setVersion.cmake)
@@ -66,7 +66,7 @@ endif(${USE_HDF5})
 # RELEASE, and TESTING.  You should  review this file and make sure the flags 
 # are to your liking.
 INCLUDE(${CMAKE_MODULE_PATH}/SetFortranFlags.cmake)
-SET(SRCAH ../alphahouse/src/)
+SET(SRCAH ./alphahouse/src/)
 
 # Have the .mod files placed in the lib folder
 SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB})
