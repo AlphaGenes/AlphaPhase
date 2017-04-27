@@ -25,6 +25,7 @@ module CoreDefinition
     procedure :: getPercentFullyPhased
     procedure :: getCoreGenos
     procedure :: flipHaplotypes
+    procedure :: bestDiscriminators
     
     final :: destroyCore
   end type Core
@@ -257,6 +258,120 @@ contains
     end do
 
   end subroutine flipHaplotypes
+  
+  function bestDiscriminators(c, n) result(best)
+    class(Core), intent(in) :: c
+    integer, intent(in) :: n
+    integer, dimension(:), pointer :: best
+    
+    integer, dimension(c%getNAnisG(),2,2**n) :: assign
+    integer, dimension(c%getNAnisG(),2) :: assigned
+    integer, dimension(0:2**n-1) :: counts
+    integer :: i, j, k, l, nAnisG, nSnp, bestSnp, p, b
+    double precision :: bestDiff, ideal, diff
+    logical :: used
+    
+    allocate(best(n))
+    
+    nAnisG = c%getNAnisG()
+    nSnp = c%getNCoreSnp()
+    
+    assign = 0
+    assigned = 1
+    
+    do b = 1, n
+      ideal = float(nAnisG) / float(2**1)
+      bestDiff = 1e30
+      do i = 1, nSnp
+	used = .false.
+	do j = 1, b - 1
+	  if (i == best(j)) then
+	    used = .true.
+	  end if
+	end do
+	
+	if (.not. used) then
+	  do j = 0, 2**n-1
+	    counts(j) = 0
+	  end do
+
+	  do j = 1, nAnisG
+	    do k = 1, 2
+	      p = c%phase(j,k)%getPhaseMod(i)
+	      select case (p)
+		case (0)
+		  do l = 1, assigned(j,k)
+		    counts(assign(j,k,l) * 2) = counts(assign(j,k,l) * 2) + 1
+		  end do
+		case (1)
+		  do l = 1, assigned(j,k)
+		    counts(assign(j,k,l) * 2 + 1) = counts(assign(j,k,l) * 2 + 1) + 1
+		  end do
+		case default
+		  do l = 1, assigned(i,k)
+		    counts(assign(j,k,l) * 2) = counts(assign(j,k,l) * 2) + 1
+		    counts(assign(j,k,l) * 2 + 1) = counts(assign(j,k,l) * 2 + 1) + 1
+		  end do
+	      end select
+	    end do
+	  end do
+
+	  diff = 0.0
+	  do j = 0, 2 ** 1 - 1
+	    diff = diff + (abs(counts(j) - ideal))
+	  end do
+
+	  if (diff < bestDiff) then
+	    bestSnp = i
+	    bestDiff = diff
+	  end if
+	end if
+      end do
+
+      best(b) = bestSnp
+      do j = 1, nAnisG
+	do k = 1, 2
+	  p = c%phase(j,k)%getPhaseMod(bestSnp)
+	  select case (p)
+	    case (0)
+	      do l = 1, assigned(j,k)
+		assign(j,k,l) = assign(j,k,l) * 2
+	      end do
+	    case (1)
+	      do l = 1, assigned(j,k)
+		assign(j,k,l) = assign(j,k,l) * 2 + 1
+	      end do
+	    case default
+	      do l = 1, assigned(j,k)
+		assign(j,k,l) = assign(j,k,l) * 2
+		assign(j,k,l+assigned(j,k)) = assign(j,k,l) + 1 !Already times it by 2
+	      end do
+	      assigned(j,k) = assigned(j,k) * 2
+	  end select
+	end do
+      end do
+            
+    end do
+    
+    counts = 0
+    do j = 1, nAnisG
+      do k = 1, 2
+	do l = 1, assigned(j,k)
+	  counts(assign(j,k,l)) = counts(assign(j,k,l)) + 1
+	end do
+      end do
+    end do
+    print *
+    print *, counts
+    
+    print *
+    print *, best
+    
+
+    
+    call exit(0)
+    
+  end function bestDiscriminators
 
 end module CoreDefinition
 

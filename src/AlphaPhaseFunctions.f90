@@ -72,6 +72,8 @@ contains
     logical :: printOldProgress, singleSurrogates, quietInternal
 
     type(MemberManager) :: manager
+    
+    integer, dimension(:), pointer :: bd
 
     if (.not. present(quiet)) then
       quietInternal = .true.
@@ -159,6 +161,8 @@ contains
 	    print '(6x, i5, a21, f6.2, a7)', subsetCount, " Subsets completed ", c%getTotalYield(), "% Yield"
 	  end if
 	end do
+	
+	bd => c%bestDiscriminators(10)
 	
 	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then
