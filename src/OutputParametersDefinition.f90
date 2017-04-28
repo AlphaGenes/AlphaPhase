@@ -53,4 +53,27 @@ contains
 
 
   end function newOutputParameters
+
+  function newOutputParametersImpute result(outputParams)
+    type(OutputParameters) :: outputParams
+
+    outputParams%outputFinalPhase = .true.
+    outputParams%outputCoreIndex = .true.
+    outputParams%outputSnpPhaseRate = .false.
+    outputParams%outputIndivPhaseRate = .false.
+    outputParams%outputHapIndex = .false.
+    outputParams%outputSwappable = .false.
+    outputParams%outputHapCommonality = .false.
+    outputParams%outputSurrogates = .false.
+    outputParams%outputSurrogatesSummary = .false.
+    outputParams%outputHaplotypeLibraryText = .false.
+    outputParams%outputHaplotypeLibraryBinary = .true.
+    outputParams%outputPhasingYield = .false.
+    outputParams%outputTimer = .false.
+    outputParams%outputIndivMistakes = .false.
+    outputParams%outputIndivMistakesPercent = .false.
+    outputParams%outputCoreMistakesPercent = .false.
+    outputParams%outputMistakes = .false.
+
+  end function newOutputParametersImpute
 end module OutputParametersDefinition

@@ -524,7 +524,7 @@ contains
   endif
 
   if (outputoption .eq. "Impute") then
-    params%outputParams%outputFinalPhase = .false.
+    params%outputParams%outputFinalPhase = .true.
     params%outputParams%outputCoreIndex = .true.
     params%outputParams%outputSnpPhaseRate = .false.
     params%outputParams%outputIndivPhaseRate = .false.
