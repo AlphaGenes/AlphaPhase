@@ -162,7 +162,7 @@ contains
 	  end if
 	end do
 	
-	bd => c%bestDiscriminators(10)
+	bd => c%bestDiscriminators(4)
 	
 	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then

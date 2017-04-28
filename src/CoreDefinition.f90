@@ -264,14 +264,15 @@ contains
     integer, intent(in) :: n
     integer, dimension(:), pointer :: best
     
+    integer, dimension(:), pointer :: workbest
     integer, dimension(c%getNAnisG(),2,2**n) :: assign
     integer, dimension(c%getNAnisG(),2) :: assigned
-    integer, dimension(0:2**n-1) :: counts
+    integer(kind=8), dimension(0:2**n-1) :: counts
     integer :: i, j, k, l, nAnisG, nSnp, bestSnp, p, b
-    double precision :: bestDiff, ideal, diff
+    integer(kind=8) :: bestDiff, lastDiff, diff
     logical :: used
     
-    allocate(best(n))
+    allocate(workbest(n))
     
     nAnisG = c%getNAnisG()
     nSnp = c%getNCoreSnp()
@@ -279,21 +280,20 @@ contains
     assign = 0
     assigned = 1
     
+    lastDiff = (nAnisG*2)**2
+    
     do b = 1, n
-      ideal = float(nAnisG) / float(2**1)
-      bestDiff = 1e30
+      bestDiff = huge(bestDiff)
       do i = 1, nSnp
 	used = .false.
 	do j = 1, b - 1
-	  if (i == best(j)) then
+	  if (i == workbest(j)) then
 	    used = .true.
 	  end if
 	end do
 	
 	if (.not. used) then
-	  do j = 0, 2**n-1
-	    counts(j) = 0
-	  end do
+	  counts = 0
 
 	  do j = 1, nAnisG
 	    do k = 1, 2
@@ -316,9 +316,13 @@ contains
 	    end do
 	  end do
 
-	  diff = 0.0
-	  do j = 0, 2 ** 1 - 1
-	    diff = diff + (abs(counts(j) - ideal))
+	  diff  = 0.0
+	  do j = 0, (2**n) - 1
+	    if (diff + counts(j)**2 < 0) then
+	      print *, diff, diff + counts(j)**2, counts(j) ** 2, counts(j), j
+	      call exit(0)
+	    end if
+	    diff = diff + counts(j)**2
 	  end do
 
 	  if (diff < bestDiff) then
@@ -328,41 +332,43 @@ contains
 	end if
       end do
 
-      best(b) = bestSnp
-      do j = 1, nAnisG
-	do k = 1, 2
-	  p = c%phase(j,k)%getPhaseMod(bestSnp)
-	  select case (p)
-	    case (0)
-	      do l = 1, assigned(j,k)
-		assign(j,k,l) = assign(j,k,l) * 2
-	      end do
-	    case (1)
-	      do l = 1, assigned(j,k)
-		assign(j,k,l) = assign(j,k,l) * 2 + 1
-	      end do
-	    case default
-	      do l = 1, assigned(j,k)
-		assign(j,k,l) = assign(j,k,l) * 2
-		assign(j,k,l+assigned(j,k)) = assign(j,k,l) + 1 !Already times it by 2
-	      end do
-	      assigned(j,k) = assigned(j,k) * 2
-	  end select
-	end do
-      end do
+      if (bestDiff < lastDiff) then
+	workbest(b) = bestSnp
+	do j = 1, nAnisG
+	  do k = 1, 2
+	    p = c%phase(j,k)%getPhaseMod(bestSnp)
+	    select case (p)
+	      case (0)
+		do l = 1, assigned(j,k)
+		  assign(j,k,l) = assign(j,k,l) * 2
+		end do
+	      case (1)
+		do l = 1, assigned(j,k)
+		  assign(j,k,l) = assign(j,k,l) * 2 + 1
+		end do
+	      case default
+		do l = 1, assigned(j,k)
+		  assign(j,k,l) = assign(j,k,l) * 2
+		  assign(j,k,l+assigned(j,k)) = assign(j,k,l) + 1 !Already times it by 2
+		end do
+		assigned(j,k) = assigned(j,k) * 2
+	    end select
+	  end do
+	end do      
+	
+	lastDiff = bestDiff
+      else
+	exit
+      end if
+      
+      if (bestDiff == lastDiff) then
+	best => workbest
+      else
+	allocate(best(b-1))
+	best = workbest(1:b-1)
+      end if
             
     end do
-    
-    counts = 0
-    do j = 1, nAnisG
-      do k = 1, 2
-	do l = 1, assigned(j,k)
-	  counts(assign(j,k,l)) = counts(assign(j,k,l)) + 1
-	end do
-      end do
-    end do
-    print *
-    print *, counts
     
     print *
     print *, best
