@@ -34,6 +34,7 @@
 module HaplotypeLibraryDefinition
   use ConstantModule
   use HaplotypeModule
+  use IntegerLinkedListModule
   implicit none
 
   type :: HaplotypeLibrary
@@ -42,6 +43,8 @@ module HaplotypeLibraryDefinition
     integer :: size
     integer :: nSnps
     integer :: storeSize, stepSize
+    type(IntegerLinkedList), dimension(:), allocatable :: partialMap
+    integer, dimension(:), allocatable :: key
   contains
     procedure :: hasHap
     procedure :: addHap
@@ -74,6 +77,7 @@ module HaplotypeLibraryDefinition
     procedure :: numberPercentPhased
     procedure :: rationalise
     procedure :: removeHap
+    procedure :: setKey
     final :: destroy
   end type HaplotypeLibrary
 
@@ -166,7 +170,17 @@ contains
     end if
 
   end function haplotypeLibraryFromFile
-
+  
+  subroutine setKey(library, key)
+    class(HaplotypeLibrary) :: library
+    integer, dimension(:), intent(in) :: key
+    
+    allocate(library%key(size(key)))
+    library%key = key
+    
+    allocate(library%partialMap(2**size(key)))
+  end subroutine setKey
+  
   subroutine destroy(library)
     type(HaplotypeLibrary) :: library
 
@@ -200,6 +214,9 @@ contains
     integer :: newStoreSize
     type(Haplotype), dimension(:), pointer :: tempNewStore
     integer, dimension(:), allocatable :: tempHapFreq
+    integer, dimension(:), pointer :: keys
+    integer :: i
+    
     if (library % Size == library % storeSize) then
       newStoreSize = library % storeSize + library % stepSize
 
@@ -226,6 +243,13 @@ contains
 
     library%hapfreq(library%size) = 1
     id = library%size
+    
+    print *, "NEWHAP"
+    keys => getKeys(hap,library%key)
+    do i = 1, size(keys)
+      call library%partialMap(keys(i))%list_add(id)
+      print *, size(keys), "-", keys(i), "-", library%partialMap(keys(i))%convertToArray()
+    end do
   end function addHap
   
   function matchWithError(library, hap, allowedError) result(matches)
@@ -813,5 +837,46 @@ contains
       end if
     end do
   end function numberPercentPhased
+  
+  function getKeys(h, keys) result(k)
+    type(Haplotype), intent(in) :: h
+    integer, dimension(:), intent(in) :: keys
+    integer, dimension(:), pointer :: k
+    
+    integer, dimension(2**size(keys)) :: tempk
+    integer :: numk, i, j
+    integer(kind=1) :: p
+    
+    numK = 1
+    tempk = 0
+    
+    do i = 1, size(keys)
+      p = h%getPhaseMod(keys(i))
+      select case (p)
+	case (0)
+	  do j = 1, numk
+	    tempk(j) = tempk(j) * 2
+	  end do
+	case (1)
+	  do j = 1, numk
+	    tempk(j) = tempk(j) * 2 + 1
+	  end do
+	case default
+	  do j = 1, numk
+	    tempk(j) = tempk(j) * 2
+	    tempk(j + numK) = tempk(j) + 1 ! Already multiplied by two
+	  end do
+	  numK = numK * 2
+      end select
+    end do
+    
+    if (numK > 1) then
+      print *, h%toIntegerArray()
+      call exit(1)
+    end if
+    
+    allocate(k(numK))
+    k = tempk(1:numK)    
+  end function getKeys
 
 end module HaplotypeLibraryDefinition

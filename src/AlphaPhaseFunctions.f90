@@ -72,8 +72,6 @@ contains
     logical :: printOldProgress, singleSurrogates, quietInternal
 
     type(MemberManager) :: manager
-    
-    integer, dimension(:), pointer :: bd
 
     if (.not. present(quiet)) then
       quietInternal = .true.
@@ -162,6 +160,8 @@ contains
 	  end if
 	end do
 	
+	! This should probably also take into account any pre-existing haps in the library!
+	call library%setKey(c%bestDiscriminators(10))
 	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then
 	  if (params%iterateType .eq. "Off") then
