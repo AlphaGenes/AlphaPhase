@@ -318,10 +318,6 @@ contains
 
 	  diff  = 0.0
 	  do j = 0, (2**n) - 1
-	    if (diff + counts(j)**2 < 0) then
-	      print *, diff, diff + counts(j)**2, counts(j) ** 2, counts(j), j
-	      call exit(0)
-	    end if
 	    diff = diff + counts(j)**2
 	  end do
 
@@ -349,7 +345,7 @@ contains
 	      case default
 		do l = 1, assigned(j,k)
 		  assign(j,k,l) = assign(j,k,l) * 2
-		  assign(j,k,l+assigned(j,k)) = assign(j,k,l) + 1 !Already times it by 2
+		  assign(j,k,l+assigned(j,k)) = assign(j,k,l) + 1 !Already multiplied it by 2
 		end do
 		assigned(j,k) = assigned(j,k) * 2
 	    end select
@@ -361,22 +357,15 @@ contains
 	exit
       end if
       
-      if (bestDiff == lastDiff) then
-	best => workbest
-      else
-	allocate(best(b-1))
-	best = workbest(1:b-1)
-      end if
-            
     end do
     
-    print *
-    print *, best
-    
-
-    
-    call exit(0)
-    
+    if (bestDiff == lastDiff) then
+      best => workbest
+    else
+      allocate(best(b-1))
+      best = workbest(1:b-1)
+    end if
+   
   end function bestDiscriminators
 
 end module CoreDefinition
