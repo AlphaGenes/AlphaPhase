@@ -390,6 +390,7 @@ contains
 
       case("percentagesurrdisagree")
         read(second(1), *) PercSurrDisagree
+	PercSurrDisagree = PercSurrDisagree/100
 
 
       case("percentagegenohaplodisagree")
@@ -455,11 +456,13 @@ contains
       case("percminpresent")
 	if(allocated(second)) then
 	  read(second(1),*) params%params%percMinPresent
+	  params%params%PercMinPresent = params%params%PercMinPresent / 100
 	end if
 	
       case("percmintokeep")
 	if (allocated(second)) then
 	  read(second(1),*) params%params%percMinToKeep
+	  params%params%PercMinToKeep = params%params%PercMinToKeep / 100
 	end if	
 
       case("outputdirectory")
@@ -618,11 +621,6 @@ contains
   params%outputParams%outputIndivMistakes = params%outputParams%outputIndivMistakes .and. params%Simulation
   params%outputParams%outputIndivMistakesPercent = params%outputParams%outputIndivMistakesPercent .and. params%Simulation
   params%outputParams%outputCoreMistakesPercent = params%outputParams%outputCoreMistakesPercent .and. params%Simulation
-
-  !! These perc need to go above!
-  PercSurrDisagree = PercSurrDisagree/100
-  params%params%PercMinToKeep = params%params%PercMinToKeep / 100
-  params%params%PercMinPresent = params%params%PercMinPresent / 100
   
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
   params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100
