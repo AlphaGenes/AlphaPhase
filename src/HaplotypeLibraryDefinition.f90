@@ -178,7 +178,7 @@ contains
     allocate(library%key(size(key)))
     library%key = key
     
-    allocate(library%partialMap(2**size(key)))
+    allocate(library%partialMap(0:2**size(key) - 1))
   end subroutine setKey
   
   subroutine destroy(library)
@@ -244,11 +244,9 @@ contains
     library%hapfreq(library%size) = 1
     id = library%size
     
-    print *, "NEWHAP"
     keys => getKeys(hap,library%key)
     do i = 1, size(keys)
       call library%partialMap(keys(i))%list_add(id)
-      print *, size(keys), "-", keys(i), "-", library%partialMap(keys(i))%convertToArray()
     end do
   end function addHap
   
@@ -259,24 +257,37 @@ contains
     integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
-    integer :: i, e, num, invalid
+    integer :: i, e, num, invalid, k
+    integer, dimension(:), pointer :: keys, values
 
     allocate(tempMatches(library % size))
 
     num = 0
 
     invalid = hap%numberError()
-
+    
     if (invalid <= allowedError) then
+      if (allowedError == 0) then
+	keys => getKeys(hap, library%key)
+	do k = 1, size(keys)
+	  values = library%partialMap(keys(k))%convertToArray()
+	  do i = 1, size(values)
+	    if (library%newstore(values(i))%mismatchesMod(hap) == 0) then
+	      num = num + 1
+	      tempMatches(num) = values(i)
+	    end if
+	  end do
+	end do
+      else
+	do i = 1, library%size
+	  e = invalid + library%newstore(i)%mismatchesMod(hap)
 
-      do i = 1, library%size
-	e = invalid + library%newstore(i)%mismatchesMod(hap)
-
-	if (e <= allowedError) then
-	  num = num + 1
-	  tempMatches(num) = i
-	end if
-      end do
+	  if (e <= allowedError) then
+	    num = num + 1
+	    tempMatches(num) = i
+	  end if
+	end do
+      end if
     end if
 
     allocate(matches(num))
@@ -292,7 +303,9 @@ contains
     integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
-    integer :: i, e, num, invalid
+    integer :: i, e, num, invalid, k
+    integer, dimension(:), pointer :: keys
+    integer, dimension(:), allocatable :: values
 
     allocate(tempMatches(library % size))
 
@@ -301,17 +314,31 @@ contains
     invalid = hap%numberError()
 
     if (invalid <= allowedError) then
+      if (allowedError == 0) then
+	keys => getKeys(hap, library%key)
+	do k = 1, size(keys)
+	  values = library%partialMap(keys(k))%convertToArray()
+	  do i = 1, size(values)
+	    if (library%newstore(values(i))%mismatchesMod(hap) == 0) then
+	      if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+		num = num + 1
+		tempMatches(num) = values(i)
+	      end if
+	    end if
+	  end do
+	end do
+      else
+	do i = 1, library%size
+	  e = invalid + library%newstore(i)%mismatchesMod(hap)
 
-      do i = 1, library%size
-	e = invalid + library%newstore(i)%mismatchesMod(hap)
-
-	if (e <= allowedError) then
-	  if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
-	    num = num + 1
-	    tempMatches(num) = i
+	  if (e <= allowedError) then
+	    if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	      num = num + 1
+	      tempMatches(num) = i
+	    end if
 	  end if
-	end if
-      end do
+	end do
+      end if
     end if
 
     allocate(matches(num))
@@ -869,11 +896,6 @@ contains
 	  numK = numK * 2
       end select
     end do
-    
-    if (numK > 1) then
-      print *, h%toIntegerArray()
-      call exit(1)
-    end if
     
     allocate(k(numK))
     k = tempk(1:numK)    

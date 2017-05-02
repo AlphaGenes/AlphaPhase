@@ -165,7 +165,7 @@ contains
     type(Haplotype) :: hap1, hap2, comp
     type(Haplotype) :: newHap, libHap
     logical :: hap1changed, hap2changed
-    integer, pointer, dimension(:) :: candHapsPat, candHapsMat, compatHaps
+    integer, pointer, dimension(:) :: candHapsPat, candHapsMat !, compatHaps
     integer, pointer, dimension(:,:) :: candPairs
     
     do i = 1, c%getNAnisG()
@@ -177,11 +177,13 @@ contains
       hap2changed = .false.
       
       if ((.not. hap1%fullyPhased()) .or. (.not. hap2%fullyPhased())) then
-	compatHaps => library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
+!	compatHaps => library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
 
 	!! Can save some time at various points in this function by checking for fully phased
-	candHapsPat => library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 1), ErrorAllow, minOverlap, compatHaps)
-	candHapsMat => library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 2), ErrorAllow, minOverlap, compatHaps)
+!	candHapsPat => library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 1), ErrorAllow, minOverlap, compatHaps)
+!	candHapsMat => library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 2), ErrorAllow, minOverlap, compatHaps)
+	candHapsPat => library % matchWithErrorAndMinOverlap(c % phase(i, 1), ErrorAllow, minOverlap)
+	candHapsMat => library % matchWithErrorAndMinOverlap(c % phase(i, 2), ErrorAllow, minOverlap)
 	
 	if ((size(candHapsPat) > 0) .and. (size(candHapsMat) == 0)) then
 	  libHap = getLibraryHap(library, candHapsPat)
@@ -231,7 +233,8 @@ contains
 
 	hap2 = c%phase(i,2)
 	comp = geno%complement(c%phase(i,1))
-	candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+!	candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+	candHapsPat => library % matchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent)
 	newHap = Haplotype(hap2)
 	if (size(candHapsPat) > 0) then
 	  libHap = getLibraryHap(library, candHapsPat)
@@ -246,7 +249,8 @@ contains
 
 	hap1 = c%phase(i,1)
 	comp = geno%complement(c%phase(i,2))
-	candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+!	candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+	candHapsMat => library % matchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent)
 	newHap = Haplotype(hap1)
 	if (size(candHapsMat) > 0) then
 	  libHap = getLibraryHap(library, candHapsMat)
@@ -283,7 +287,8 @@ contains
       compatHaps => library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
       hap2 = c%phase(i,2)
       comp = geno%complement(c%phase(i,1))
-      candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+!      candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+      candHapsPat => library % matchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent)
       newHap = Haplotype(hap2)
       if (size(candHapsPat) > 0) then
 	libHap = getLibraryHap(library, candHapsPat)
@@ -299,7 +304,8 @@ contains
 
       hap1 = c%phase(i,1)
       comp = geno%complement(c%phase(i,2))
-      candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+!      candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+      candHapsMat => library % matchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent)
       newHap = Haplotype(hap1)
       if (size(candHapsMat) > 0) then
 	libHap = getLibraryHap(library, candHapsMat)
