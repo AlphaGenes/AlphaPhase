@@ -214,7 +214,7 @@ contains
     integer :: newStoreSize
     type(Haplotype), dimension(:), pointer :: tempNewStore
     integer, dimension(:), allocatable :: tempHapFreq
-    integer, dimension(:), pointer :: keys
+    integer, dimension(:), allocatable :: keys
     integer :: i
     
     if (library % Size == library % storeSize) then
@@ -244,7 +244,7 @@ contains
     library%hapfreq(library%size) = 1
     id = library%size
     
-    keys => getKeys(hap,library%key)
+    keys = getKeys(hap,library%key)
     do i = 1, size(keys)
       call library%partialMap(keys(i))%list_add(id)
     end do
@@ -258,7 +258,8 @@ contains
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, e, num, invalid, k
-    integer, dimension(:), pointer :: keys, values
+    integer, dimension(:), allocatable :: keys
+    integer, dimension(:), pointer :: values
 
     allocate(tempMatches(library % size))
 
@@ -268,7 +269,7 @@ contains
     
     if (invalid <= allowedError) then
       if (allowedError == 0) then
-	keys => getKeys(hap, library%key)
+	keys = getKeys(hap, library%key)
 	do k = 1, size(keys)
 	  values = library%partialMap(keys(k))%convertToArray()
 	  do i = 1, size(values)
@@ -300,29 +301,26 @@ contains
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
     integer, intent(in) :: minOverlap
-    integer, dimension(:), pointer :: matches
+    integer, dimension(:), allocatable :: matches
 
-    integer, dimension(:), allocatable :: tempMatches
-    integer :: i, e, num, invalid, k
-    integer, dimension(:), pointer :: keys
+    type(IntegerLinkedList) :: tempMatches
+    integer :: i, e, invalid, k
+    integer, dimension(:), allocatable :: keys
     integer, dimension(:), allocatable :: values
-
-    allocate(tempMatches(library % size))
-
-    num = 0
 
     invalid = hap%numberError()
 
     if (invalid <= allowedError) then
       if (allowedError == 0) then
-	keys => getKeys(hap, library%key)
+	keys = getKeys(hap, library%key)
 	do k = 1, size(keys)
 	  values = library%partialMap(keys(k))%convertToArray()
 	  do i = 1, size(values)
 	    if (library%newstore(values(i))%mismatchesMod(hap) == 0) then
 	      if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
-		num = num + 1
-		tempMatches(num) = values(i)
+		if (.not. tempMatches%contains(i)) then
+		  call tempMatches%list_add(i)
+		end if
 	      end if
 	    end if
 	  end do
@@ -333,17 +331,16 @@ contains
 
 	  if (e <= allowedError) then
 	    if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
-	      num = num + 1
-	      tempMatches(num) = i
+	      if (.not. tempMatches%contains(i)) then
+		call tempMatches%list_add(i)
+	      end if
 	    end if
 	  end if
 	end do
       end if
     end if
 
-    allocate(matches(num))
-    matches(:) = tempMatches(1:num)
-    deallocate(tempMatches)
+    matches = tempMatches%convertToArray()
   end function matchWithErrorAndMinOverlap
 
   function limitedMatchWithError(library, hap, allowedError, limit) result(matches)
@@ -825,11 +822,29 @@ contains
   end function rationalise
   
   subroutine removeHap(library, id)
+    use IntegerLinkedListModule
+    
     class(HaplotypeLibrary) :: library
     integer, intent(in) :: id
     
+    integer :: i
+    type(IntegerLinkedListNode), pointer :: node
+    integer, dimension(:), allocatable :: keys
+
+    keys = getKeys(library%newstore(id), library%key)
+    
     library%newstore(id:library%size-1) = library%newstore(id+1:library%size)
     library%size = library%size - 1
+    
+    do i = 1, size(keys)
+      call library%partialMap(keys(i))%list_remove(id)
+      node => library%partialMap(i)%first
+      do while (associated(node))
+	  if (node%item > id) then
+	    node%item = node%item - 1
+	  end if
+      enddo 
+    end do
   end subroutine removeHap
   
   function numberFullyPhased(library) result(num)
@@ -868,7 +883,7 @@ contains
   function getKeys(h, keys) result(k)
     type(Haplotype), intent(in) :: h
     integer, dimension(:), intent(in) :: keys
-    integer, dimension(:), pointer :: k
+    integer, dimension(:), allocatable :: k
     
     integer, dimension(2**size(keys)) :: tempk
     integer :: numk, i, j

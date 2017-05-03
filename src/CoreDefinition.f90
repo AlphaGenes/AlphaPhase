@@ -308,7 +308,7 @@ contains
 		    counts(assign(j,k,l) * 2 + 1) = counts(assign(j,k,l) * 2 + 1) + 1
 		  end do
 		case default
-		  do l = 1, assigned(i,k)
+		  do l = 1, assigned(j,k)
 		    counts(assign(j,k,l) * 2) = counts(assign(j,k,l) * 2) + 1
 		    counts(assign(j,k,l) * 2 + 1) = counts(assign(j,k,l) * 2 + 1) + 1
 		  end do

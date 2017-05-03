@@ -525,6 +525,12 @@ contains
     print*, "Offset variable is not properly parameterised"
     stop
   endif
+  
+  if ((params%params%percminpresent /= 1) .and. (params%params%percgenohaplodisagree /= 0)) then
+    print *, "Not recommended to run MultiHD options (percminpresent not equal to 100%)"
+    print *, "with PercentageGenoHaploDisagree set to non-zero.  AlphaPhase may be"
+    print *, "VERY SLOW,"
+  end if
 
   if (outputoption .eq. "Impute") then
     params%outputParams%outputFinalPhase = .false.
