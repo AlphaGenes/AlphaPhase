@@ -3,6 +3,8 @@ module HaplotypeLibraryPhasing
   implicit none
 
   integer, parameter, private :: nMaxRounds = 100
+  
+  integer :: count
     
 contains
   subroutine UpdateHapLib(c, library, percminpresent, minoverlap, percGenoHaploDisagree)
@@ -18,7 +20,10 @@ contains
     
     type(Haplotype) :: hap
 
-    integer :: i, errorallow, minpresent
+    integer :: i, errorallow, minpresent, temp
+    
+    count = 0
+    print *, c%getTotalYield()
     
     errorallow = int(percGenoHaploDisagree * c%getNCoreSnp())
     minpresent = int(percminpresent * c%getNCoreSnp())
@@ -29,13 +34,23 @@ contains
       if (hap%numberNotMissing() >= minpresent) then
 	call newHaplotype(c, i, 1, library, minoverlap, errorallow)
       endif
+!      print *, library%getSize()
 
       !Maternal Haps
       hap = c % phase(i, 2)
       if (hap%numberNotMissing() >= minpresent) then
 	call newHaplotype(c, i, 2, library, minoverlap, errorallow)
       endif
+!      print *, library%getSize()
+      temp = library%size
+      print *, "*C", temp
+      print *, "*B", library % size
+      print *, "*A", library%getSize()
     enddo
+    
+    print *, c%getTotalYield()
+    print *, count
+    call exit(1)
   end subroutine UpdateHapLib
 
   subroutine newHaplotype(c, animal, phase, library, minoverlap, errorallow)
@@ -58,6 +73,7 @@ contains
       ids = library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
       if (size(ids) == 0) then
 	id = library%addHap(hap)
+	count = count + 1
       end if
       if (size(ids) == 1) then
 	id = ids(1)

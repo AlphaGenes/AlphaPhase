@@ -78,7 +78,7 @@ module HaplotypeLibraryDefinition
     procedure :: rationalise
     procedure :: removeHap
     procedure :: setKey
-    final :: destroy
+!    final :: destroy
   end type HaplotypeLibrary
 
   interface HaplotypeLibrary
@@ -304,7 +304,7 @@ contains
     integer, dimension(:), allocatable :: matches
 
     type(IntegerLinkedList) :: tempMatches
-    integer :: i, e, invalid, k
+    integer :: i, e, invalid, k, v
     integer, dimension(:), allocatable :: keys
     integer, dimension(:), allocatable :: values
 
@@ -316,10 +316,11 @@ contains
 	do k = 1, size(keys)
 	  values = library%partialMap(keys(k))%convertToArray()
 	  do i = 1, size(values)
-	    if (library%newstore(values(i))%mismatchesMod(hap) == 0) then
-	      if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
-		if (.not. tempMatches%contains(i)) then
-		  call tempMatches%list_add(i)
+	    v = values(i)
+	    if (library%newstore(v)%mismatchesMod(hap) == 0) then
+	      if (library%newstore(v)%overlapMod(hap) >= minOverlap) then
+		if (.not. tempMatches%contains(v)) then
+		  call tempMatches%list_add(v)
 		end if
 	      end if
 	    end if
@@ -843,6 +844,7 @@ contains
 	  if (node%item > id) then
 	    node%item = node%item - 1
 	  end if
+	  node => node%next
       enddo 
     end do
   end subroutine removeHap
