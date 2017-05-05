@@ -29,7 +29,7 @@ contains
       if (hap%numberNotMissing() >= minpresent) then
 	call newHaplotype(c, i, 1, library, minoverlap, errorallow)
       endif
-
+      
       !Maternal Haps
       hap = c % phase(i, 2)
       if (hap%numberNotMissing() >= minpresent) then
@@ -61,10 +61,10 @@ contains
       end if
       if (size(ids) == 1) then
 	id = ids(1)
-	oldkeys = getKeys(library%newstore(id),library%key)
 	if (hap%equalhap(library%newstore(id))) then
 	  library%hapfreq(id) = library%hapfreq(id) + 1
 	else
+	  oldkeys = getKeys(library%newstore(id),library%key)
 	  merged = hap%mergeMod(library%newstore(id))
 	  do i = 1, c%getNAnisG()
 	    do j = 1, 2
@@ -109,8 +109,16 @@ contains
 	    end do
 	  end do
 	  c%phase(animal,phase) = merged
+	  
+	  do i = 1, size(oldkeys)
+	    call library%partialMap(oldkeys(i))%list_remove(id)
+	  end do
+	  newkeys = getKeys(merged,library%key)
+	  do i = 1, size(newkeys)
+	    call library%partialMap(newkeys(i))%list_add(id)
+	  end do
 
-	  do i = size(ids), 2, -1
+	  do i = 2, size(ids)
 	    library%hapfreq(id) = library%hapfreq(id) + library%hapfreq(ids(i))
 	    call library%removehap(ids(i))
 	    do j = 1, c%getNAnisG()
@@ -120,19 +128,14 @@ contains
 		end if
 	      end do
 	    end do
+	    do j = i+1, size(ids)
+		if (ids(j) > ids(i)) then
+		  ids(j) = ids(j) - 1
+		end if
+	    end do
 	  end do	  
 
-	  do i = 1, size(oldkeys)
-	    if (library%partialMap(oldkeys(i))%length == 0) then
-	      print *, "Hmm, how did we get here?"
-	      print *, oldkeys
-	    end if
-	    call library%partialMap(oldkeys(i))%list_remove(id)
-	  end do
-	  newkeys = getKeys(merged,library%key)
-	  do i = 1, size(newkeys)
-	    call library%partialMap(newkeys(i))%list_add(id)
-	  end do
+
 	else
 	  id = library%addHap(hap)
 	end if

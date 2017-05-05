@@ -837,15 +837,18 @@ contains
     library%newstore(id:library%size-1) = library%newstore(id+1:library%size)
     library%size = library%size - 1
     
+    
     do i = 1, size(keys)
-      call library%partialMap(keys(i))%list_remove(id)
+       call library%partialMap(keys(i))%list_remove(id)      
+    end do
+    do i = 0, size(library%partialMap) - 1
       node => library%partialMap(i)%first
       do while (associated(node))
-	  if (node%item > id) then
-	    node%item = node%item - 1
-	  end if
-	  node => node%next
-      enddo 
+	if (node%item > id) then
+	  node%item = node%item - 1
+	end if
+	node => node%next
+      enddo
     end do
   end subroutine removeHap
   
