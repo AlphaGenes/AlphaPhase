@@ -216,7 +216,7 @@ contains
 	
 	if ((size(candHapsPat) > 0) .and. (size(candHapsMat) == 0)) then
 	  libHap = getLibraryHap(library, candHapsPat)
-	  newHap = Haplotype(hap1)
+	  newHap = newHaplotypeInt(hap1)
 	  call newHap%setFromOther(libHap)
 	  hap1changed = .not. newHap%equalHap(hap1)
 	  c%phase(i,1) = newHap
@@ -227,7 +227,7 @@ contains
 	
 	if ((size(candHapsPat) == 0) .and. (size(candHapsMat) > 0)) then
 	  libHap = getLibraryHap(library, candHapsMat)
-	  newHap = Haplotype(hap2)
+	  newHap = newHaplotypeInt(hap2)
 	  call newHap%setFromOther(libHap)
 	  hap2changed = .not. newHap%equalHap(hap2)
 	  c%phase(i,2) = newHap
