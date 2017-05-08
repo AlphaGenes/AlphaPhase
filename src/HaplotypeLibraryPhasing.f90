@@ -359,7 +359,7 @@ contains
     
     type(Haplotype) :: libhap
     
-    libhap = Haplotype(library%nSnps)
+    libhap = newHaplotypeMissing(library%nSnps)
     
     ! Here for speed!
     if (size(CandHaps) == 1) then
