@@ -21,7 +21,7 @@ contains
     integer :: i, errorallow, minpresent
     
     errorallow = int(percGenoHaploDisagree * c%getNCoreSnp())
-    minpresent = int(percminpresent * c%getNCoreSnp())
+    minpresent = max(int(percminpresent * c%getNCoreSnp()),minoverlap)
     
     do i = 1, c % getNAnisG()
       !Paternal Haps
@@ -158,7 +158,7 @@ contains
     integer :: nOldHaps, iterations, errorallow, minpresent
     
     errorallow = int(percGenoHaploDisagree * c%getNCoreSnp())
-    minpresent = int(percminpresent * c%getNCoreSnp())
+    minpresent = max(int(percminpresent * c%getNCoreSnp()), minoverlap)
     
     call complementStart(library, c, errorallow, minpresent, minoverlap, minhapfreq)
     if (.not. quiet) then
