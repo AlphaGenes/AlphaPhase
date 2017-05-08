@@ -103,6 +103,8 @@ contains
   end function newHaplotypeLibrary
 
   function haplotypeLibraryFromFile(filename, stepsize, text) result(library)
+    use HaplotypeModule
+    
     type(HaplotypeLibrary) :: library
     character(*), intent(in) :: filename
     integer, intent(in) :: stepSize
@@ -886,6 +888,8 @@ contains
   end function numberPercentPhased
   
   function getKeys(h, keys) result(k)
+    use HaplotypeModule
+    
     type(Haplotype), intent(in) :: h
     integer, dimension(:), intent(in) :: keys
     integer, dimension(:), allocatable :: k
