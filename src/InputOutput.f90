@@ -1172,12 +1172,12 @@ end function ReadInParameterFile
      do i = 1, nAnisG
        read(15, *) dumC, TempPhase
        do j = 1, nCores
-         hap1 = Haplotype(TempPhase(startIndex(j):endIndex(j)))
+         hap1 = newHaplotypeInt(TempPhase(startIndex(j):endIndex(j)))
          allCores(j)%phase(i,1) = hap1
        end do
        read(15, *) dumC, TempPhase
        do j = 1, nCores
-         hap2 = Haplotype(TempPhase(startIndex(j):endIndex(j)))
+         hap2 = newHaplotypeInt(TempPhase(startIndex(j):endIndex(j)))
          allCores(j)%phase(i,2) = hap2
        end do
      end do
