@@ -318,7 +318,7 @@ contains
       comp = geno%complement(c%phase(i,1))
 !      candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
       candHapsPat = library % matchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent)
-      newHap = Haplotype(hap2)
+      newHap = newHaplotypeHaplotype(hap2)
       if (size(candHapsPat) > 0) then
 	libHap = getLibraryHap(library, candHapsPat)
 	call newHap%setFromOther(libHap)
@@ -335,7 +335,7 @@ contains
       comp = geno%complement(c%phase(i,2))
 !      candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
       candHapsMat = library % matchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent)
-      newHap = Haplotype(hap1)
+      newHap = newHaplotypeHaplotype(hap1)
       if (size(candHapsMat) > 0) then
 	libHap = getLibraryHap(library, candHapsMat)
 	call newHap%setFromOther(libHap)
