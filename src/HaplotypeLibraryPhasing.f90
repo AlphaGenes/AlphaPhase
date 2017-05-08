@@ -330,6 +330,11 @@ contains
     integer, allocatable, dimension(:) :: candHapsPat, candHapsMat!, compatHaps
     
     do i = 1, c%getNAnisG()
+      if (mod(i,2000) == 0) then
+	print *, "Done", i
+      end if
+      
+      
       geno => c%coreGenos(i)
 !      compatHaps => library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
       hap2 = c%phase(i,2)
