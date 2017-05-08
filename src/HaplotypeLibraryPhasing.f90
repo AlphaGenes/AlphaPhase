@@ -24,9 +24,6 @@ contains
     minpresent = max(int(percminpresent * c%getNCoreSnp()),minoverlap)
     
     do i = 1, c % getNAnisG()
-      if (mod(i,2000) == 0) then
-	print *, "Done", i
-      end if
       !Paternal Haps
       hap = c % phase(i, 1)
       if (hap%numberNotMissing() >= minpresent) then
@@ -218,10 +215,14 @@ contains
 	!! Can save some time at various points in this function by checking for fully phased
 !	candHapsPat => library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 1), ErrorAllow, minOverlap, compatHaps)
 !	candHapsMat => library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 2), ErrorAllow, minOverlap, compatHaps)
+	
+	print *, "A", i
 	candHapsPat = library % matchWithErrorAndMinOverlap(c % phase(i, 1), ErrorAllow, minOverlap)
 	candHapsMat = library % matchWithErrorAndMinOverlap(c % phase(i, 2), ErrorAllow, minOverlap)
 	
+	print *, "B", i
 	if ((size(candHapsPat) > 0) .and. (size(candHapsMat) == 0)) then
+	  print *, "CA", i
 	  libHap = getLibraryHap(library, candHapsPat)
 	  newHap = newHaplotypeHaplotype(hap1)
 	  call newHap%setFromOther(libHap)
@@ -230,9 +231,11 @@ contains
 	  if (hap1changed .and. (newHap%numberNotMissing() >= minpresent)) then
 	    call newHaplotype(c, i, 1, library, minoverlap, errorallow)
 	  end if
+	  print *, "CB", i
 	end if
 	
 	if ((size(candHapsPat) == 0) .and. (size(candHapsMat) > 0)) then
+	  print *, "DA", i
 	  libHap = getLibraryHap(library, candHapsMat)
 	  newHap = newHaplotypeHaplotype(hap2)
 	  call newHap%setFromOther(libHap)
@@ -241,9 +244,11 @@ contains
 	  if (hap2changed .and. (newHap%numberNotMissing() >= minpresent)) then
 	    call newHaplotype(c, i, 2, library, minoverlap, errorallow)
 	  end if
+	  print *, "DB", i
 	end if
 	
 	if ((size(candHapsPat) > 0) .and. (size(candHapsMat) > 0)) then
+	  print *, "EA", i
 	  candPairs => getCompatPairsWithError(library, geno, ErrorAllow, CandHapsPat, CandHapsMat, c%getNAnisG())
 	  
 	  if (size(CandPairs,1) > 0) then
@@ -265,8 +270,10 @@ contains
 	      call newHaplotype(c, i, 2, library, minoverlap, errorallow)
 	    end if
 	  end if
+	  print *, "EF", i
 	end if
 
+	print *, "G", i
 	hap2 = c%phase(i,2)
 	comp = geno%complement(c%phase(i,1))
 !	candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
@@ -283,6 +290,8 @@ contains
 	  call newHaplotype(c, i, 2, library, minoverlap, errorallow)
 	end if
 
+	print *, "H", i
+	
 	hap1 = c%phase(i,1)
 	comp = geno%complement(c%phase(i,2))
 !	candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
@@ -298,6 +307,8 @@ contains
 	if (.not. newHap%equalHap(hap1) .and. (newHap%numberNotMissing() >= minpresent)) then
 	  call newHaplotype(c, i, 1, library, minoverlap, errorallow)
 	end if
+	
+	print *, "I", i
       end if
     end do
     
