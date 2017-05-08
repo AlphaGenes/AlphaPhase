@@ -205,6 +205,10 @@ contains
       hap1changed = .false.
       hap2changed = .false.
       
+      if (mod(i,2000) == 0) then
+	print *, "Done", i
+      end if
+      
       if ((.not. hap1%fullyPhased()) .or. (.not. hap2%fullyPhased())) then
 !	compatHaps => library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
 
