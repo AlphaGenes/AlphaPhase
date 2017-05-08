@@ -193,6 +193,8 @@ contains
   end subroutine destroy
 
   function hasHap(library, hap) result(id)
+    use HaplotypeModule
+    
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer :: id
@@ -209,6 +211,7 @@ contains
   end function hasHap
 
   function addHap(library, hap) result(id)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer :: id
@@ -253,6 +256,7 @@ contains
   end function addHap
   
   function matchWithError(library, hap, allowedError) result(matches)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
@@ -299,6 +303,7 @@ contains
   end function matchWithError
 
   function matchWithErrorAndMinOverlap(library, hap, allowedError, minOverlap) result(matches)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
@@ -347,6 +352,7 @@ contains
   end function matchWithErrorAndMinOverlap
 
   function limitedMatchWithError(library, hap, allowedError, limit) result(matches)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
@@ -381,6 +387,7 @@ contains
   end function limitedMatchWithError
 
   function limitedMatchWithErrorAndMinOverlap(library, hap, allowedError, minOverlap, limit) result(matches)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
