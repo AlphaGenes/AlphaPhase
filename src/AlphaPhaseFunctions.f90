@@ -160,14 +160,14 @@ contains
 	  end if
 	end do
 	
+	call earlyComplement(c)
+	
 	! This should probably also take into account any pre-existing haps in the library!
 	call library%setKey(c%bestDiscriminators(10))
 	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then
-	  if (params%iterateType .eq. "Off") then
-	    print '(6x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
-	      library%numberPercentPhased(params%percMinToKeep), " Haplotypes"
-	  end if
+	  print '(6x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
+	    library%numberPercentPhased(params%percMinToKeep), " Haplotypes"
 	  print*, "   Haplotype Library Imputation step"
 	end if
 	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%percMinPresent, params%minoverlap, params%minHapFreq, &
@@ -274,6 +274,21 @@ contains
       results%endIndexes(h-startCore+1) = CoreIndex(h,2)
     end do
   end function createLibraries
-
+  
+  subroutine earlyComplement(c)
+    type(Core) :: c
+    
+    integer :: i
+    type(Haplotype) :: comp
+    
+    do i = 1, c%getNAnisG()
+      comp = c%coreGenos(i)%complement(c%phase(i,1))
+      call c%phase(i,2)%setFromOtherIfMissing(comp)
+      
+      comp = c%coreGenos(i)%complement(c%phase(i,2))
+      call c%phase(i,1)%setFromOtherIfMissing(comp)
+    end do
+  end subroutine earlyComplement
+      
 end module AlphaPhaseFunctions
 
