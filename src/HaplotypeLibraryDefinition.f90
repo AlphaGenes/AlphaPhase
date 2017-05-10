@@ -74,6 +74,7 @@ module HaplotypeLibraryDefinition
     procedure :: numberPercentPhased
     procedure :: rationalise
     procedure :: removeHap
+    procedure :: updateHap
     final :: destroy
   end type HaplotypeLibrary
 
@@ -227,6 +228,14 @@ contains
     library%hapfreq(library%size) = 1
     id = library%size
   end function addHap
+  
+  subroutine updateHap(library, i, hap)
+    class(HaplotypeLibrary) :: library
+    integer, intent(in) :: i
+    type(Haplotype) :: hap
+    
+    library%newstore(i) = hap    
+  end subroutine updateHap
   
   function matchWithError(library, hap, allowedError) result(matches)
     class(HaplotypeLibrary) :: library

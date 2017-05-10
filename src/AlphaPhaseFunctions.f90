@@ -160,6 +160,7 @@ contains
 	  end if
 	end do
 	
+	call earlyComplement(c)
 	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then
 	  if (params%iterateType .eq. "Off") then
@@ -273,5 +274,20 @@ contains
     end do
   end function createLibraries
 
+  
+  subroutine earlyComplement(c)
+    type(Core) :: c
+    
+    integer :: i
+    type(Haplotype) :: comp
+    
+    do i = 1, c%getNAnisG()
+      comp = c%coreGenos(i)%complement(c%phase(i,1))
+      call c%phase(i,2)%setFromOtherIfMissing(comp)
+      
+      comp = c%coreGenos(i)%complement(c%phase(i,2))
+      call c%phase(i,1)%setFromOtherIfMissing(comp)
+    end do
+  end subroutine earlyComplement
 end module AlphaPhaseFunctions
 
