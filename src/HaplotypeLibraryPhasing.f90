@@ -241,6 +241,11 @@ contains
 	if (.not. newhap%equalHap(c%phase(i,oj))) then
 	  if (c%hapAnis(i,oj) /= MissingHaplotypeCode) then
 	    call updateHaplotype(c,library,c%hapAnis(i,oj),newhap,minOverlap,errorallow)
+	  else
+	    c%phase(i,j) = newhap
+	    if (newhap%numberNotMissing() >= minOverlap) then
+	      call newHaplotype(c, i, j, library, minOverlap, errorallow)
+	    end if
 	  end if
 	end if
       end do
