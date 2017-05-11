@@ -24,6 +24,9 @@ contains
     minpresent = int(percminpresent * c%getNCoreSnp())
     
     do i = 1, c % getNAnisG()
+      if (mod(i,2000) == 0) then
+	print *, "Adding individual", i
+      end if
       !Paternal Haps
       hap = c % phase(i, 1)
       if (hap%numberNotMissing() >= minoverlap) then

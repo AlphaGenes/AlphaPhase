@@ -584,7 +584,6 @@ contains
     params%outputParams%outputFinalPhase = .true.
     params%outputParams%outputCoreIndex = .true.
     params%outputParams%outputSnpPhaseRate = .true.
-    params%outputParams%outputIndivPhaseRate = .true.
     params%outputParams%outputHapIndex = .true.
     params%outputParams%outputSwappable = .true.
     params%outputParams%outputHapCommonality = .false.
