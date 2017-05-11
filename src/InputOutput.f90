@@ -390,6 +390,7 @@ contains
 
       case("percentagesurrdisagree")
         read(second(1), *) PercSurrDisagree
+	PercSurrDisagree = PercSurrDisagree/100
 
 
       case("percentagegenohaplodisagree")
@@ -455,11 +456,13 @@ contains
       case("percminpresent")
 	if(allocated(second)) then
 	  read(second(1),*) params%params%percMinPresent
+	  params%params%PercMinPresent = params%params%PercMinPresent / 100
 	end if
 	
       case("percmintokeep")
 	if (allocated(second)) then
 	  read(second(1),*) params%params%percMinToKeep
+	  params%params%PercMinToKeep = params%params%PercMinToKeep / 100
 	end if	
 
       case("outputdirectory")
@@ -522,6 +525,12 @@ contains
     print*, "Offset variable is not properly parameterised"
     stop
   endif
+  
+  if ((params%params%percminpresent /= 1) .and. (params%params%percgenohaplodisagree /= 0)) then
+    print *, "Not recommended to run MultiHD options (percminpresent not equal to 100%)"
+    print *, "with PercentageGenoHaploDisagree set to non-zero.  AlphaPhase may be"
+    print *, "VERY SLOW,"
+  end if
 
   if (outputoption .eq. "Impute") then
     params%outputParams%outputFinalPhase = .false.
@@ -617,11 +626,6 @@ contains
   params%outputParams%outputIndivMistakes = params%outputParams%outputIndivMistakes .and. params%Simulation
   params%outputParams%outputIndivMistakesPercent = params%outputParams%outputIndivMistakesPercent .and. params%Simulation
   params%outputParams%outputCoreMistakesPercent = params%outputParams%outputCoreMistakesPercent .and. params%Simulation
-
-  !! These perc need to go above!
-  PercSurrDisagree = PercSurrDisagree/100
-  params%params%PercMinToKeep = params%params%PercMinToKeep / 100
-  params%params%PercMinPresent = params%params%PercMinPresent / 100
   
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
   params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100
@@ -1167,12 +1171,12 @@ end function ReadInParameterFile
      do i = 1, nAnisG
        read(15, *) dumC, TempPhase
        do j = 1, nCores
-         hap1 = Haplotype(TempPhase(startIndex(j):endIndex(j)))
+         hap1 = newHaplotypeInt(TempPhase(startIndex(j):endIndex(j)))
          allCores(j)%phase(i,1) = hap1
        end do
        read(15, *) dumC, TempPhase
        do j = 1, nCores
-         hap2 = Haplotype(TempPhase(startIndex(j):endIndex(j)))
+         hap2 = newHaplotypeInt(TempPhase(startIndex(j):endIndex(j)))
          allCores(j)%phase(i,2) = hap2
        end do
      end do

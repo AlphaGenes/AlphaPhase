@@ -34,6 +34,7 @@
 module HaplotypeLibraryDefinition
   use ConstantModule
   use HaplotypeModule
+  use IntegerLinkedListModule
   implicit none
 
   type :: HaplotypeLibrary
@@ -42,6 +43,8 @@ module HaplotypeLibraryDefinition
     integer :: size
     integer :: nSnps
     integer :: storeSize, stepSize
+    type(IntegerLinkedList), dimension(:), allocatable :: partialMap
+    integer, dimension(:), allocatable :: key
   contains
     procedure :: hasHap
     procedure :: addHap
@@ -75,7 +78,8 @@ module HaplotypeLibraryDefinition
     procedure :: rationalise
     procedure :: removeHap
     procedure :: updateHap
-    final :: destroy
+    procedure :: setKey
+!    final :: destroy
   end type HaplotypeLibrary
 
   interface HaplotypeLibrary
@@ -100,6 +104,9 @@ contains
   end function newHaplotypeLibrary
 
   function haplotypeLibraryFromFile(filename, stepsize, text) result(library)
+     ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
+    
     type(HaplotypeLibrary) :: library
     character(*), intent(in) :: filename
     integer, intent(in) :: stepSize
@@ -167,7 +174,17 @@ contains
     end if
 
   end function haplotypeLibraryFromFile
-
+  
+  subroutine setKey(library, key)
+    class(HaplotypeLibrary) :: library
+    integer, dimension(:), intent(in) :: key
+    
+    allocate(library%key(size(key)))
+    library%key = key
+    
+    allocate(library%partialMap(0:2**size(key) - 1))
+  end subroutine setKey
+  
   subroutine destroy(library)
     type(HaplotypeLibrary) :: library
 
@@ -178,6 +195,9 @@ contains
   end subroutine destroy
 
   function hasHap(library, hap) result(id)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
+    
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer :: id
@@ -194,6 +214,8 @@ contains
   end function hasHap
 
   function addHap(library, hap) result(id)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer :: id
@@ -201,6 +223,9 @@ contains
     integer :: newStoreSize
     type(Haplotype), dimension(:), pointer :: tempNewStore
     integer, dimension(:), allocatable :: tempHapFreq
+    integer, dimension(:), allocatable :: keys
+    integer :: i
+    
     if (library % Size == library % storeSize) then
       newStoreSize = library % storeSize + library % stepSize
 
@@ -227,6 +252,11 @@ contains
 
     library%hapfreq(library%size) = 1
     id = library%size
+    
+    keys = getKeys(hap,library%key)
+    do i = 1, size(keys)
+      call library%partialMap(keys(i))%list_add(id)
+    end do
   end function addHap
   
   subroutine updateHap(library, i, hap)
@@ -238,30 +268,46 @@ contains
   end subroutine updateHap
   
   function matchWithError(library, hap, allowedError) result(matches)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
     integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
-    integer :: i, e, num, invalid
+    integer :: i, e, num, invalid, k
+    integer, dimension(:), allocatable :: keys
+    integer, dimension(:), pointer :: values
 
     allocate(tempMatches(library % size))
 
     num = 0
 
     invalid = hap%numberError()
-
+    
     if (invalid <= allowedError) then
+      if (allowedError == 0) then
+	keys = getKeys(hap, library%key)
+	do k = 1, size(keys)
+	  values = library%partialMap(keys(k))%convertToArray()
+	  do i = 1, size(values)
+	    if (library%newstore(values(i))%mismatchesMod(hap) == 0) then
+	      num = num + 1
+	      tempMatches(num) = values(i)
+	    end if
+	  end do
+	end do
+      else
+	do i = 1, library%size
+	  e = invalid + library%newstore(i)%mismatchesMod(hap)
 
-      do i = 1, library%size
-	e = invalid + library%newstore(i)%mismatchesMod(hap)
-
-	if (e <= allowedError) then
-	  num = num + 1
-	  tempMatches(num) = i
-	end if
-      end do
+	  if (e <= allowedError) then
+	    num = num + 1
+	    tempMatches(num) = i
+	  end if
+	end do
+      end if
     end if
 
     allocate(matches(num))
@@ -270,41 +316,58 @@ contains
   end function matchWithError
 
   function matchWithErrorAndMinOverlap(library, hap, allowedError, minOverlap) result(matches)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
     integer, intent(in) :: minOverlap
-    integer, dimension(:), pointer :: matches
+    integer, dimension(:), allocatable :: matches
 
-    integer, dimension(:), allocatable :: tempMatches
-    integer :: i, e, num, invalid
-
-    allocate(tempMatches(library % size))
-
-    num = 0
+    type(IntegerLinkedList) :: tempMatches
+    integer :: i, e, invalid, k, v
+    integer, dimension(:), allocatable :: keys
+    integer, dimension(:), allocatable :: values
 
     invalid = hap%numberError()
 
     if (invalid <= allowedError) then
+      if (allowedError == 0) then
+	keys = getKeys(hap, library%key)
+	do k = 1, size(keys)
+	  values = library%partialMap(keys(k))%convertToArray()
+	  do i = 1, size(values)
+	    v = values(i)
+	    if (library%newstore(v)%mismatchesMod(hap) == 0) then
+	      if (library%newstore(v)%overlapMod(hap) >= minOverlap) then
+		if (.not. tempMatches%contains(v)) then
+		  call tempMatches%list_add(v)
+		end if
+	      end if
+	    end if
+	  end do
+	end do
+      else
+	do i = 1, library%size
+	  e = invalid + library%newstore(i)%mismatchesMod(hap)
 
-      do i = 1, library%size
-	e = invalid + library%newstore(i)%mismatchesMod(hap)
-
-	if (e <= allowedError) then
-	  if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
-	    num = num + 1
-	    tempMatches(num) = i
+	  if (e <= allowedError) then
+	    if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	      if (.not. tempMatches%contains(i)) then
+		call tempMatches%list_add(i)
+	      end if
+	    end if
 	  end if
-	end if
-      end do
+	end do
+      end if
     end if
 
-    allocate(matches(num))
-    matches(:) = tempMatches(1:num)
-    deallocate(tempMatches)
+    matches = tempMatches%convertToArray()
   end function matchWithErrorAndMinOverlap
 
   function limitedMatchWithError(library, hap, allowedError, limit) result(matches)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
@@ -339,6 +402,8 @@ contains
   end function limitedMatchWithError
 
   function limitedMatchWithErrorAndMinOverlap(library, hap, allowedError, minOverlap, limit) result(matches)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
@@ -416,6 +481,7 @@ contains
 
 
   function getHap(library, id) result(hap)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
     use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, intent(in) :: id
@@ -426,6 +492,7 @@ contains
   end function getHap
 
   function getHaps(library, ids) result(haps)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
     use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
@@ -783,11 +850,33 @@ contains
   end function rationalise
   
   subroutine removeHap(library, id)
+    use IntegerLinkedListModule
+    
     class(HaplotypeLibrary) :: library
     integer, intent(in) :: id
     
+    integer :: i
+    type(IntegerLinkedListNode), pointer :: node
+    integer, dimension(:), allocatable :: keys
+
+    keys = getKeys(library%newstore(id), library%key)
+    
     library%newstore(id:library%size-1) = library%newstore(id+1:library%size)
     library%size = library%size - 1
+    
+    
+    do i = 1, size(keys)
+       call library%partialMap(keys(i))%list_remove(id)      
+    end do
+    do i = 0, size(library%partialMap) - 1
+      node => library%partialMap(i)%first
+      do while (associated(node))
+	if (node%item > id) then
+	  node%item = node%item - 1
+	end if
+	node => node%next
+      enddo
+    end do
   end subroutine removeHap
   
   function numberFullyPhased(library) result(num)
@@ -822,5 +911,43 @@ contains
       end if
     end do
   end function numberPercentPhased
+  
+  function getKeys(h, keys) result(k)
+    use HaplotypeModule
+    
+    type(Haplotype), intent(in) :: h
+    integer, dimension(:), intent(in) :: keys
+    integer, dimension(:), allocatable :: k
+    
+    integer, dimension(2**size(keys)) :: tempk
+    integer :: numk, i, j
+    integer(kind=1) :: p
+    
+    numK = 1
+    tempk = 0
+    
+    do i = 1, size(keys)
+      p = h%getPhaseMod(keys(i))
+      select case (p)
+	case (0)
+	  do j = 1, numk
+	    tempk(j) = tempk(j) * 2
+	  end do
+	case (1)
+	  do j = 1, numk
+	    tempk(j) = tempk(j) * 2 + 1
+	  end do
+	case default
+	  do j = 1, numk
+	    tempk(j) = tempk(j) * 2
+	    tempk(j + numK) = tempk(j) + 1 ! Already multiplied by two
+	  end do
+	  numK = numK * 2
+      end select
+    end do
+    
+    allocate(k(numK))
+    k = tempk(1:numK)    
+  end function getKeys
 
 end module HaplotypeLibraryDefinition
