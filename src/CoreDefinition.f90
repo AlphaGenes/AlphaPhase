@@ -25,7 +25,8 @@ module CoreDefinition
     procedure :: getPercentFullyPhased
     procedure :: getCoreGenos
     procedure :: flipHaplotypes
-    procedure :: bestDiscriminators
+!    procedure :: bestDiscriminators
+    procedure :: consensusHap
     
     final :: destroyCore
   end type Core
@@ -365,8 +366,50 @@ contains
       allocate(best(b-1))
       best = workbest(1:b-1)
     end if
-   
+    
   end function bestDiscriminators
+  
+  function consensusHap(c) result(hap)
+    class(Core) :: c
+    
+    type(Haplotype) :: hap
+    
+    integer :: i, j, k
+    integer, dimension(c%nCoreSnps) :: count0, count1
+    integer(kind=1), dimension(c%nCoreSnps) :: a
+    
+    count0 = 0
+    count1 = 0
+    
+    do i = 1, c%getNAnisG()
+      do j = 1, 2
+        a = c%phase(i,j)%toIntegerArray()
+	do k = 1, c%nCoreSnps
+	  if (a(k) == 0) then
+	    count0(k) = count0(k) + 1
+	  end if
+	  if (a(k) == 1) then
+	    count1(k) = count1(k) + 1
+	  end if
+	end do
+      end do
+    end do
+    
+    hap = newHaplotypeMissing(c%nCoreSnps)
+    do i = 1, c%nCoreSnps
+      if (count0(i) >= count1(i)) then
+	call hap%setZero(i)
+      else
+	call hap%setOne(i)
+      end if
+      print *, count0(i), count1(i)
+    end do
+    
+    call exit(1)
+    
+!    print '(2000i2)', hap%toIntegerArray() 
+    
+  end function consensusHap
 
 end module CoreDefinition
 

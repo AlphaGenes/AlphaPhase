@@ -15,6 +15,7 @@ contains
     type(HaplotypeLibrary), intent(in) :: library
     integer, intent(in) :: minoverlap
     double precision, intent(in) :: PercGenoHaploDisagree, percminpresent
+    character(len=10) :: time
     
     type(Haplotype) :: hap
 
@@ -25,7 +26,8 @@ contains
     
     do i = 1, c % getNAnisG()
       if (mod(i,2000) == 0) then
-	print *, "Adding individual", i
+	call date_and_time(time=time)
+	print *, "Adding individual", i, time
       end if
       !Paternal Haps
       hap = c % phase(i, 1)
@@ -53,7 +55,7 @@ contains
     integer :: id
     integer, dimension(:), allocatable :: ids
     integer, dimension(:), allocatable :: newkeys, oldkeys
-    type(Haplotype) :: hap, merged
+    type(Haplotype) :: hap, merged, libhap
     
     integer :: i, j, k, n
     
@@ -67,7 +69,8 @@ contains
 	if (hap%equalhap(library%newstore(id))) then
 	  library%hapfreq(id) = library%hapfreq(id) + 1
 	else
-	  oldkeys = getKeys(library%newstore(id),library%key)
+!	  oldkeys = getKeys(library%newstore(id),library%key)
+	  oldkeys = getKeys(library%newstore(id),library%ref)
 	  merged = hap%mergeMod(library%newstore(id))
 	  do i = 1, c%getNAnisG()
 	    do j = 1, 2
@@ -82,7 +85,8 @@ contains
 	  do i = 1, size(oldkeys)
 	    call library%partialMap(oldkeys(i))%list_remove(id)
 	  end do
-	  newkeys = getKeys(merged,library%key)
+!	  newkeys = getKeys(merged,library%key)
+	  newkeys = getKeys(merged,library%ref)
 	  do i = 1, size(newkeys)
 	    call library%partialMap(newkeys(i))%list_add(id)
 	  end do
@@ -99,7 +103,8 @@ contains
 	end do
 	
 	if (merged%numberError() <= ErrorAllow) then
-	  oldkeys = getKeys(library%newstore(id),library%key)
+!	  oldkeys = getKeys(library%newstore(id),library%key)
+	  oldkeys = getKeys(library%newstore(id),library%ref)
 	  library%newstore(id) = merged
 	  do n = 1, size(ids)
 	    do i = 1, c%getNAnisG()
@@ -116,7 +121,8 @@ contains
 	  do i = 1, size(oldkeys)
 	    call library%partialMap(oldkeys(i))%list_remove(id)
 	  end do
-	  newkeys = getKeys(merged,library%key)
+!	  newkeys = getKeys(merged,library%key)
+	  newkeys = getKeys(merged,library%ref)
 	  do i = 1, size(newkeys)
 	    call library%partialMap(newkeys(i))%list_add(id)
 	  end do
@@ -164,7 +170,7 @@ contains
     integer, dimension(:), pointer :: ids
 
       library%newstore(id) = hap
-      ids => library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
+      ids = library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
       if (size(ids) > 1) then
 	merged = newHaplotypeMissing(hap%length)
 	do i = 1, size(ids)
@@ -269,7 +275,7 @@ contains
     class(Core) :: c
     integer, intent(in) :: errorAllow, minPresent, minOverlap, minHapFreq
     
-    integer :: i
+    integer :: i, j, oj
     type(Genotype), pointer :: geno
     type(Haplotype) :: hap1, hap2, comp
     type(Haplotype) :: newHap, libHap
@@ -292,7 +298,6 @@ contains
 	      call newHaplotype(c, i, j, library, minOverlap, errorallow)
 	    end if
 	  end if
-!	  print *, "EB", i
 	end if
       end do
     end do

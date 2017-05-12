@@ -164,7 +164,8 @@ contains
 	print *, "Complementing done"
 	
 	! This should probably also take into account any pre-existing haps in the library!
-	call library%setKey(c%bestDiscriminators(10))
+!	call library%setKey(c%bestDiscriminators(12))
+	call library%setReference(c%consensusHap())
 
 	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then

@@ -44,7 +44,8 @@ module HaplotypeLibraryDefinition
     integer :: nSnps
     integer :: storeSize, stepSize
     type(IntegerLinkedList), dimension(:), allocatable :: partialMap
-    integer, dimension(:), allocatable :: key
+!    integer, dimension(:), allocatable :: key
+    type(Haplotype) :: ref
   contains
     procedure :: hasHap
     procedure :: addHap
@@ -78,7 +79,8 @@ module HaplotypeLibraryDefinition
     procedure :: rationalise
     procedure :: removeHap
     procedure :: updateHap
-    procedure :: setKey
+!    procedure :: setKey
+    procedure :: setReference
 !    final :: destroy
   end type HaplotypeLibrary
 
@@ -175,15 +177,23 @@ contains
 
   end function haplotypeLibraryFromFile
   
-  subroutine setKey(library, key)
+!  subroutine setKey(library, key)
+!    class(HaplotypeLibrary) :: library
+!    integer, dimension(:), intent(in) :: key
+!    
+!    allocate(library%key(size(key)))
+!    library%key = key
+!    
+!    allocate(library%partialMap(0:2**size(key) - 1))
+!  end subroutine setKey
+  
+  subroutine setReference(library, ref)
     class(HaplotypeLibrary) :: library
-    integer, dimension(:), intent(in) :: key
+    type(Haplotype) :: ref
     
-    allocate(library%key(size(key)))
-    library%key = key
-    
-    allocate(library%partialMap(0:2**size(key) - 1))
-  end subroutine setKey
+    library%ref = ref
+    allocate(library%partialMap(0:ref%length))
+  end subroutine setReference
   
   subroutine destroy(library)
     type(HaplotypeLibrary) :: library
@@ -253,7 +263,8 @@ contains
     library%hapfreq(library%size) = 1
     id = library%size
     
-    keys = getKeys(hap,library%key)
+!    keys = getKeys(hap,library%key)
+    keys = getKeys(hap,library%ref)
     do i = 1, size(keys)
       call library%partialMap(keys(i))%list_add(id)
     end do
@@ -288,7 +299,8 @@ contains
     
     if (invalid <= allowedError) then
       if (allowedError == 0) then
-	keys = getKeys(hap, library%key)
+!	keys = getKeys(hap, library%key)
+	keys = getKeys(hap, library%ref)
 	do k = 1, size(keys)
 	  values = library%partialMap(keys(k))%convertToArray()
 	  do i = 1, size(values)
@@ -325,7 +337,7 @@ contains
     integer, dimension(:), allocatable :: matches
 
     type(IntegerLinkedList) :: tempMatches
-    integer :: i, e, invalid, k, v
+    integer :: i, e, invalid, k, v, s
     integer, dimension(:), allocatable :: keys
     integer, dimension(:), allocatable :: values
 
@@ -333,7 +345,9 @@ contains
 
     if (invalid <= allowedError) then
       if (allowedError == 0) then
-	keys = getKeys(hap, library%key)
+!	keys = getKeys(hap, library%key)
+	keys = getKeys(hap, library%ref)
+	s = 0
 	do k = 1, size(keys)
 	  values = library%partialMap(keys(k))%convertToArray()
 	  do i = 1, size(values)
@@ -346,7 +360,9 @@ contains
 	      end if
 	    end if
 	  end do
+	  s = s + size(values)
 	end do
+	print *, s, library%size
       else
 	do i = 1, library%size
 	  e = invalid + library%newstore(i)%mismatchesMod(hap)
@@ -859,7 +875,8 @@ contains
     type(IntegerLinkedListNode), pointer :: node
     integer, dimension(:), allocatable :: keys
 
-    keys = getKeys(library%newstore(id), library%key)
+!    keys = getKeys(library%newstore(id), library%key)
+    keys = getKeys(library%newstore(id), library%ref)
     
     library%newstore(id:library%size-1) = library%newstore(id+1:library%size)
     library%size = library%size - 1
@@ -912,42 +929,80 @@ contains
     end do
   end function numberPercentPhased
   
-  function getKeys(h, keys) result(k)
+!  function getKeys(h, keys) result(k)
+  function getKeys(h, ref) result(k)
+    use ConstantModule    
     use HaplotypeModule
     
     type(Haplotype), intent(in) :: h
-    integer, dimension(:), intent(in) :: keys
+!    integer, dimension(:), intent(in) :: keys
+    type(Haplotype), intent(in) :: ref
     integer, dimension(:), allocatable :: k
     
-    integer, dimension(2**size(keys)) :: tempk
-    integer :: numk, i, j
-    integer(kind=1) :: p
+    integer, dimension(ref%length) :: tempk
+    integer(kind=1), dimension(ref%length) :: refA, hapA
+    integer :: numk, i
     
-    numK = 1
-    tempk = 0
+    refA = ref%toIntegerArray()
+    hapA = h%toIntegerArray()
+    numk = 0
     
-    do i = 1, size(keys)
-      p = h%getPhaseMod(keys(i))
-      select case (p)
-	case (0)
-	  do j = 1, numk
-	    tempk(j) = tempk(j) * 2
-	  end do
-	case (1)
-	  do j = 1, numk
-	    tempk(j) = tempk(j) * 2 + 1
-	  end do
-	case default
-	  do j = 1, numk
-	    tempk(j) = tempk(j) * 2
-	    tempk(j + numK) = tempk(j) + 1 ! Already multiplied by two
-	  end do
-	  numK = numK * 2
-      end select
+    do i = 1, ref%length
+!      if (refA(i) /= MissingPhaseCode) then
+	if (hapA(i) == MissingPhaseCode) then
+	  numk = numk+ 1
+	  tempk(numk) = i
+	else 
+	  if (hapA(i) /= refA(i)) then
+	    numk = numk + 1
+	    tempk(numk) = i
+	    exit
+	  end if
+	end if
+!      end if
     end do
     
-    allocate(k(numK))
-    k = tempk(1:numK)    
+    if (numk > 0) then
+      allocate(k(numK))
+      k = tempk(1:numK)
+    else
+      allocate(k(1))
+      k(1) = 0
+    end if
+
+!    print *, k
+!    call exit(0)
+      
+    
+!    integer, dimension(2**size(keys)) :: tempk
+!    integer :: numk, i, j
+!    integer(kind=1) :: p
+!    
+!    numK = 1
+!    tempk = 0
+!    
+!    do i = 1, size(keys)
+!      p = h%getPhaseMod(keys(i))
+!      select case (p)
+!	case (0)
+!	  do j = 1, numk
+!	    tempk(j) = tempk(j) * 2
+!	  end do
+!	case (1)
+!	  do j = 1, numk
+!	    tempk(j) = tempk(j) * 2 + 1
+!	  end do
+!	case default
+!	  do j = 1, numk
+!	    tempk(j) = tempk(j) * 2
+!	    tempk(j + numK) = tempk(j) + 1 ! Already multiplied by two
+!	  end do
+!	  numK = numK * 2
+!      end select
+!    end do
+!    
+!    allocate(k(numK))
+!    k = tempk(1:numK)    
   end function getKeys
 
 end module HaplotypeLibraryDefinition
