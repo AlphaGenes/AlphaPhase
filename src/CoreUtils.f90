@@ -10,8 +10,10 @@ contains
 
     double precision :: corelength
     integer :: i, nCores, left
+    real :: tmp
 
-    nCores = nSnp / Jump
+    tmp = nSnp / Jump
+    nCores = ceiling(tmp)
     corelength = nSnp / nCores
     left = nSnp - nCores * corelength
 
