@@ -525,11 +525,11 @@ contains
     print*, "Offset variable is not properly parameterised"
     stop
   endif
-  
+
   if ((params%params%percminpresent /= 1) .and. (params%params%percgenohaplodisagree /= 0)) then
     print *, "Not recommended to run MultiHD options (percminpresent not equal to 100%)"
     print *, "with PercentageGenoHaploDisagree set to non-zero.  AlphaPhase may be"
-    print *, "VERY SLOW,"
+    print *, "SLOW."
   end if
 
   if (outputoption .eq. "Impute") then
@@ -626,7 +626,7 @@ contains
   params%outputParams%outputIndivMistakes = params%outputParams%outputIndivMistakes .and. params%Simulation
   params%outputParams%outputIndivMistakesPercent = params%outputParams%outputIndivMistakesPercent .and. params%Simulation
   params%outputParams%outputCoreMistakesPercent = params%outputParams%outputCoreMistakesPercent .and. params%Simulation
-  
+
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
   params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100
   params%params%GenotypeMissingErrorPercentage = params%params%GenotypeMissingErrorPercentage/100
@@ -1171,12 +1171,12 @@ end function ReadInParameterFile
      do i = 1, nAnisG
        read(15, *) dumC, TempPhase
        do j = 1, nCores
-         hap1 = newHaplotypeInt(TempPhase(startIndex(j):endIndex(j)))
+         hap1 = Haplotype(TempPhase(startIndex(j):endIndex(j)))
          allCores(j)%phase(i,1) = hap1
        end do
        read(15, *) dumC, TempPhase
        do j = 1, nCores
-         hap2 = newHaplotypeInt(TempPhase(startIndex(j):endIndex(j)))
+         hap2 = Haplotype(TempPhase(startIndex(j):endIndex(j)))
          allCores(j)%phase(i,2) = hap2
        end do
      end do
