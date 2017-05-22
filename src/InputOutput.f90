@@ -319,7 +319,7 @@ contains
     character(len=:), allocatable::tag
     character(len=300),dimension(:),allocatable :: second
     
-    logical :: singleRun, singleSurrogates
+    logical :: singleRun, singleSurrogates, minOverlapSet
 
     params = ProgramParameters()
 
@@ -451,6 +451,7 @@ contains
       case("minoverlap")
 	if(allocated(second)) then
 	  read(second(1), *) params%params%minoverlap
+	  minOverLapSet = .true.
 	end if
 	
       case("percminpresent")
@@ -631,6 +632,11 @@ contains
   params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100
   params%params%GenotypeMissingErrorPercentage = params%params%GenotypeMissingErrorPercentage/100
 
+    
+  if (.not. minOverlapSet) then 
+    params%params%minOverlap = int(params%params%Jump * 0.4)
+  end if
+  
 end function ReadInParameterFile
 
 
