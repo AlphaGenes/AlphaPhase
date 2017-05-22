@@ -297,17 +297,27 @@ contains
     invalid = hap%numberError()
 
     if (invalid <= allowedError) then
-
-      do i = 1, library%size
-	e = invalid + library%newstore(i)%mismatchesMod(hap)
-
-	if (e <= allowedError) then
-	  if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
-	    num = num + 1
-	    tempMatches(num) = i
+      if (allowedError == 0) then
+	do i = 1, library%size
+	  if (library%newstore(i)%noMismatches(hap)) then
+	    if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	      num = num + 1
+	      tempMatches(num) = i
+	    end if
 	  end if
-	end if
-      end do
+	end do
+      else
+	do i = 1, library%size
+	  e = invalid + library%newstore(i)%mismatchesMod(hap)
+
+	  if (e <= allowedError) then
+	    if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	      num = num + 1
+	      tempMatches(num) = i
+	    end if
+	  end if
+	end do
+      end if
     end if
 
     allocate(matches(num))

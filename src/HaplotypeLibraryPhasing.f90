@@ -24,6 +24,9 @@ contains
     minpresent = max(int(percminpresent * c%getNCoreSnp()),minoverlap)
     
     do i = 1, c % getNAnisG()
+      if (mod(i,2000) == 0) then
+	print *, "Done animal", i
+      end if
       !Paternal Haps
       hap = c % phase(i, 1)
       if (hap%numberNotMissing() >= minoverlap) then
