@@ -285,7 +285,7 @@ contains
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
     integer, intent(in) :: minOverlap
-    integer, dimension(:), allocatable :: matches
+    integer, dimension(:), pointer :: matches
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, e, num, invalid

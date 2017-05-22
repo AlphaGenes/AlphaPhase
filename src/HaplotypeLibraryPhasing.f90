@@ -54,7 +54,7 @@ contains
     integer :: i, j, k, n
     
       hap = c % phase(animal, phase)
-      ids = library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
+      ids => library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
       if (size(ids) == 0) then
 	id = library%addHap(hap)
       end if
@@ -132,7 +132,7 @@ contains
     integer, dimension(:), pointer :: ids
 
       library%newstore(id) = hap
-      ids = library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
+      ids => library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
       if (size(ids) > 1) then
 	merged = newHaplotypeMissing(hap%length)
 	do i = 1, size(ids)
