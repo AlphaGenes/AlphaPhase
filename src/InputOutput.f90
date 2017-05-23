@@ -68,14 +68,7 @@ contains
     end if
 
     if (params%outputCoreIndex) then
-      open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
-      write (25, *) nCores
-      write (25, *) nAnisG
-      write (25, *) nSnp
-      do i = 1, nCores
-        write (25, *) i, startIndex(i), endIndex(i)
-      end do
-      close(25)
+      call writeCoreIndex(params, nCores, nAnisG, nSnp, startIndex, endIndex)
     end if
 
     if (params%outputSnpPhaseRate) then
@@ -157,6 +150,25 @@ contains
     end if
 
   end subroutine WriteOutResults
+  
+  subroutine WriteCoreIndex(params, nCores, nAnisG, nSnp, startIndex, endIndex)
+    use OutputParametersDefinition
+    
+    type(OutputParameters) :: params
+    integer, intent(in) :: nCores, nAnisG, nSnp
+    integer, dimension(:), intent(in) :: startIndex, endIndex
+    
+    integer :: i
+    
+    open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
+    write (25, *) nCores
+    write (25, *) nAnisG
+    write (25, *) nSnp
+    do i = 1, nCores
+      write (25, *) i, startIndex(i), endIndex(i)
+    end do
+    close(25)
+  end subroutine WriteCoreIndex
 
   subroutine writeOutCore(c, coreID, coreStart, p, params)
     use PedigreeModule
@@ -1227,6 +1239,98 @@ end function ReadInParameterFile
 
    results%cores = allCores
  end subroutine readInResults
+ 
+ subroutine readInPerCoreResults(results, params, p)
+   use PedigreeModule
+   use CoreDefinition
+   use OutputParametersDefinition
+   use AlphaPhaseResultsDefinition
+   use HaplotypeModule
+
+   type(Core), dimension(:),allocatable :: allCores
+   integer, dimension(:), allocatable :: startIndex, endIndex
+   type(AlphaPhaseResults), intent(out) :: results
+   type(OutputParameters), intent(in) :: params
+   type(pedigreeHolder), intent(in) :: p
+   integer(kind=1), dimension(:), allocatable :: tempPhase
+
+   integer :: i, j, k, nAnisG, nSnp, nCores,dumI
+   integer, allocatable, dimension(:) :: WorkOut
+   integer(kind=1), allocatable, dimension(:) :: TempSwap
+   character(len=100) :: fmt
+   character(len=IDLENGTH) :: dumC
+
+   type(Haplotype) :: hap1, hap2
+
+   nSnp = 0
+
+ 
+
+   if (params%outputCoreIndex) then
+     open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
+     read (25, *) nCores
+     read (25, *) nAnisG
+     read (25, *) nSnp
+     results = AlphaPhaseResults(nCores, .true., .true.)
+     allocate(startIndex(nCores))
+     allocate(endIndex(nCores))
+     allocate(allCores(nCores))
+     do i = 1, nCores
+       read (25, *) dumI , startIndex(i), endIndex(i)
+       allcores(i) = newCore(p,startIndex(i),startIndex(i),endIndex(i),endIndex(i))
+     end do
+     close(25)
+   end if
+   results%startIndexes = startIndex
+   results%endIndexes = endIndex
+
+   
+   do j = 1, nCores
+    if (params%outputFinalPhase) then
+      open (unit = 15, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalPhase" // itoa(j) // ".txt", status = "unknown")
+      
+      write(fmt, '(a,i10,a)') '(a20,', endIndex(j) - startIndex(j) + 1, 'i2)'
+
+      allocate(TempPhase(endIndex(j) - startIndex(j) + 1))
+      do i = 1, nAnisG
+	read(15, *) dumC, TempPhase
+	hap1 = newHaplotypeInt(TempPhase)
+	allCores(j)%phase(i,1) = hap1
+	read(15, *) dumC, TempPhase
+	hap2 = newHaplotypeInt(TempPhase)
+	allCores(j)%phase(i,2) = hap2
+      end do
+      deallocate(tempPhase)
+      close(15)
+    end if
+
+    if (params%outputHapIndex) then
+      open (unit = 33, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // itoa(j) // ".txt", status = "unknown")
+      allocate(WorkOut(2))
+      write(fmt, '(a,i10,a)') '(a20,', 2, 'i8)'
+      do i = 1, nAnisG
+	read (33, *) dumC, WorkOut
+	AllCores(j)%hapAnis(i,1) = WorkOut(1)
+	AllCores(j)%hapAnis(i,2) = WorkOut(2)
+      end do
+      deallocate(WorkOut)
+      close(33)
+    end if
+
+    if (params%outputSwappable) then
+      open (unit = 44, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SwapPatMat" // itoa(j) // ".txt", status = "unknown")
+      allocate(TempSwap(nCores))
+      write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
+      do i = 1, nAnisG
+	read (44, fmt) dumC, AllCores(j)%swappable(i)
+      end do
+      deallocate(TempSwap)
+      close(44)
+    end if
+   end do
+
+   results%cores = allCores
+ end subroutine readInPerCoreResults
 
   subroutine readAlphaPhaseResults(results,params,p)
    use AlphaPhaseResultsDefinition
