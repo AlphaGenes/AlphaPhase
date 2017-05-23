@@ -1059,7 +1059,9 @@ end function ReadInParameterFile
       if (params%outputSurrogates .or. params%outputSurrogatesSummary) then
 	call writeSurrogates(results%surrogates(i), id, p, params)
       end if
-      call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
+      if (params%outputCombined) then
+	call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
+      end if
     enddo
   end subroutine writeAlphaPhaseResults  
 

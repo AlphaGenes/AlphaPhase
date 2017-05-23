@@ -84,6 +84,8 @@ program AlphaPhase
 	  params%params%startCoreChar = limit
 	  params%params%endCoreChar = limit
 	end if
+	params%outputParams%outputCombined = .false.
+	params%outputParams%outputPerCore = .true.
       end if
     end if
     
