@@ -1246,7 +1246,20 @@ end function ReadInParameterFile
 
  end subroutine readAlphaPhaseResults
 
-
+  subroutine printCoreInfo(coreIndex)
+    integer, dimension(:,:), pointer, intent(in) :: CoreIndex
+    
+    integer :: i
+    
+    print *, "Number of cores:", size(CoreIndex,1)
+    print *
+    print '(3a10)', "ID", "Start", "End"
+    do i = 1, size(CoreIndex,1)
+      print '(3i10)', i, CoreIndex(i,1), CoreIndex(i,2)
+    end do
+  end subroutine printCoreInfo
+ 
+ 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 

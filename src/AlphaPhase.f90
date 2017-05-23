@@ -38,6 +38,18 @@ program AlphaPhase
         call PrintVersion
         call exit(0)
       end if
+      if (cmd(1:2) .eq. "-t") then
+	call Titles
+	if (Command_Argument_Count() > 1) then
+	  call Get_Command_Argument(2,specfile)
+	else
+	  specfile="AlphaPhaseSpec.txt"
+	end if
+	params = ReadInParameterFile(specfile)
+	CoreIndex => calculateCores(params%nSnp,params%params%Jump,params%params%offset)
+	call printCoreInfo(CoreIndex)
+	call exit(0)
+      end if
     end if
 
     call Titles
