@@ -27,10 +27,12 @@ program AlphaPhase
     type(AlphaPhaseResults) :: results
     logical :: notPrephased
     integer, dimension(:,:), pointer :: CoreIndex
+    integer :: specloc
 
     !Linux max path length is 4096 which is more than windows or mac (all according to google)
     character(len=4096) :: specfile
     character(len=4096) :: cmd
+    character(len=4096) :: limit
 
     if (Command_Argument_Count() > 0) then
       call get_command_argument(1,cmd)
@@ -55,13 +57,36 @@ program AlphaPhase
     call Titles
 
     if (Command_Argument_Count() > 0) then
-      call Get_Command_Argument(1,specfile)
+      if (cmd(1:2) .eq. "-l") then 
+	specloc = 3
+      else
+	specloc = 1
+      end if
+      if (specloc <= Command_Argument_Count()) then
+	call Get_Command_Argument(specloc,specfile)
+      else
+	specfile="AlphaPhaseSpec.txt"
+      end if
     else
       specfile="AlphaPhaseSpec.txt"
     end if
     params = ReadInParameterFile(specfile)
 
     p = ParsePedigreeAndGenotypeData(params)
+    
+    if (Command_Argument_Count() > 0) then
+      if (cmd(1:2) .eq. "-l") then
+	call get_command_argument(2,limit)
+	if (index(limit,"-") > 0) then
+	  params%params%startCoreChar = limit(1:index(limit,"-")-1)
+	  params%params%endCoreChar = trim(limit(index(limit,"-")+1:4096))
+	else
+	  params%params%startCoreChar = limit
+	  params%params%endCoreChar = limit
+	end if
+      end if
+    end if
+    
     nAnisG = p%nHd
 
     notPrephased = (params%GenotypeFileFormat /= 2)
