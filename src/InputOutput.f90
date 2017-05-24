@@ -1075,6 +1075,10 @@ end function ReadInParameterFile
       if (params%outputCombined) then
 	call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
       end if
+      if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent .or. &
+	  params%outputMistakes) then
+	  call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
+      end if
     enddo
   end subroutine writeAlphaPhaseResults  
 
