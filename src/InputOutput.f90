@@ -545,7 +545,7 @@ contains
     print *, "SLOW."
   end if
   
-  if ((params%params%percminpresent /= 1) .and. (params%params%minHapFreq > 0)) then
+  if ((params%params%percminpresent /= 1) .and. (params%params%minHapFreq > 1)) then
     print *, "Running MultiHD options (percminpresent not equal to 100%) with"
     print *, "with MinHapFreq greater than one is not tested or supported."
     print *, "Use at own risk!"

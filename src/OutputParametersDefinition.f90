@@ -73,7 +73,6 @@ contains
     outputParams%outputIndivMistakes = .false.
     outputParams%outputIndivMistakesPercent = .false.
     outputParams%outputCoreMistakesPercent = .false.
-    outputParams%outputMistakes = .false.
 
   end function newOutputParametersImpute
 end module OutputParametersDefinition
