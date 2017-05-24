@@ -74,7 +74,7 @@ module HaplotypeLibraryDefinition
     procedure :: numberPercentPhased
     procedure :: rationalise
     procedure :: removeHap
-    final :: destroy
+    procedure :: updateHap
   end type HaplotypeLibrary
 
   interface HaplotypeLibrary
@@ -99,6 +99,9 @@ contains
   end function newHaplotypeLibrary
 
   function haplotypeLibraryFromFile(filename, stepsize, text) result(library)
+     ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
+    
     type(HaplotypeLibrary) :: library
     character(*), intent(in) :: filename
     integer, intent(in) :: stepSize
@@ -177,6 +180,9 @@ contains
   end subroutine destroy
 
   function hasHap(library, hap) result(id)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
+    
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer :: id
@@ -193,6 +199,8 @@ contains
   end function hasHap
 
   function addHap(library, hap) result(id)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer :: id
@@ -228,7 +236,17 @@ contains
     id = library%size
   end function addHap
   
+  subroutine updateHap(library, i, hap)
+    class(HaplotypeLibrary) :: library
+    integer, intent(in) :: i
+    type(Haplotype) :: hap
+    
+    library%newstore(i) = hap    
+  end subroutine updateHap
+  
   function matchWithError(library, hap, allowedError) result(matches)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
@@ -261,6 +279,8 @@ contains
   end function matchWithError
 
   function matchWithErrorAndMinOverlap(library, hap, allowedError, minOverlap) result(matches)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
@@ -277,17 +297,27 @@ contains
     invalid = hap%numberError()
 
     if (invalid <= allowedError) then
-
-      do i = 1, library%size
-	e = invalid + library%newstore(i)%mismatchesMod(hap)
-
-	if (e <= allowedError) then
-	  if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
-	    num = num + 1
-	    tempMatches(num) = i
+      if (allowedError == 0) then
+	do i = 1, library%size
+	  if (library%newstore(i)%noMismatches(hap)) then
+	    if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	      num = num + 1
+	      tempMatches(num) = i
+	    end if
 	  end if
-	end if
-      end do
+	end do
+      else
+	do i = 1, library%size
+	  e = invalid + library%newstore(i)%mismatchesMod(hap)
+
+	  if (e <= allowedError) then
+	    if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	      num = num + 1
+	      tempMatches(num) = i
+	    end if
+	  end if
+	end do
+      end if
     end if
 
     allocate(matches(num))
@@ -296,6 +326,8 @@ contains
   end function matchWithErrorAndMinOverlap
 
   function limitedMatchWithError(library, hap, allowedError, limit) result(matches)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
@@ -330,6 +362,8 @@ contains
   end function limitedMatchWithError
 
   function limitedMatchWithErrorAndMinOverlap(library, hap, allowedError, minOverlap, limit) result(matches)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
+    use HaplotypeModule
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
@@ -407,6 +441,7 @@ contains
 
 
   function getHap(library, id) result(hap)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
     use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, intent(in) :: id
@@ -417,6 +452,7 @@ contains
   end function getHap
 
   function getHaps(library, ids) result(haps)
+    ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
     use HaplotypeModule
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids

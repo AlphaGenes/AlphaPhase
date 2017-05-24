@@ -160,12 +160,11 @@ contains
 	  end if
 	end do
 	
+	print *, "Complementing done"
 	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then
-	  if (params%iterateType .eq. "Off") then
 	    print '(6x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
 	      library%numberPercentPhased(params%percMinToKeep), " Haplotypes"
-	  end if
 	  print*, "   Haplotype Library Imputation step"
 	end if
 	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%percMinPresent, params%minoverlap, params%minHapFreq, &
@@ -173,6 +172,8 @@ contains
       end do
       
       library = library%rationalise(params%percMinToKeep,c)
+      
+      call cleanErrors(c, library)
 
       if (.not. quietInternal) then
 	print *, "   Core complete"
@@ -272,6 +273,23 @@ contains
       results%endIndexes(h-startCore+1) = CoreIndex(h,2)
     end do
   end function createLibraries
-
+  
+  subroutine cleanErrors(c, library)
+    type(Core) :: c
+    type(HaplotypeLibrary) :: library
+    
+    integer :: i
+    
+    do i = 1, c%getNAnisG()
+      call c%phase(i,1)%setErrorToMissing()
+      call c%phase(i,2)%setErrorToMissing()
+    end do
+    
+    do i = 1, library%size
+      call library%newstore(i)%setErrorToMissing()
+    end do
+    
+  end subroutine cleanErrors
+    
 end module AlphaPhaseFunctions
 

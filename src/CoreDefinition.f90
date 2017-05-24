@@ -153,7 +153,7 @@ contains
     counter = 0
     
     do i = 1, size(c%phase,1)
-      counter = counter + c%phase(i,phase)%numberNotMissing()
+      counter = counter + c%phase(i,phase)%numberNotMissingOrError()
     end do
     
     yield = (float(counter)/(size(c%phase,1) * c%getNCoreSnp())) * 100
@@ -166,8 +166,8 @@ contains
 
     counter = 0
     do i = 1, size(c%phase,1)
-      counter = counter + c%phase(i,1)%numberNotMissing()
-      counter = counter + c%phase(i,2)%numberNotMissing()
+      counter = counter + c%phase(i,1)%numberNotMissingOrError()
+      counter = counter + c%phase(i,2)%numberNotMissingOrError()
     end do
     yield = (float(counter)/(size(c%phase,1) * c%nCoreSnps * 2)) * 100
   end function getTotalYield

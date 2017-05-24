@@ -27,10 +27,12 @@ program AlphaPhase
     type(AlphaPhaseResults) :: results
     logical :: notPrephased
     integer, dimension(:,:), pointer :: CoreIndex
+    integer :: specloc
 
     !Linux max path length is 4096 which is more than windows or mac (all according to google)
     character(len=4096) :: specfile
     character(len=4096) :: cmd
+    character(len=4096) :: limit
 
     if (Command_Argument_Count() > 0) then
       call get_command_argument(1,cmd)
@@ -38,18 +40,89 @@ program AlphaPhase
         call PrintVersion
         call exit(0)
       end if
+      if ((cmd(1:2) .eq. "-s") .or. (cmd(1:2) .eq. "-c")) then
+	call Titles
+	if (Command_Argument_Count() > 1) then
+	  call Get_Command_Argument(2,specfile)
+	else
+	  specfile="AlphaPhaseSpec.txt"
+	end if
+	params = ReadInParameterFile(specfile)
+	if (cmd(1:2) .eq. "-s") then
+	  CoreIndex => calculateCores(params%nSnp,params%params%Jump,params%params%offset)
+	  p = ParsePedigreeAndGenotypeData(params)
+	  
+	  print *
+	  call printCoreInfo(CoreIndex)
+	  
+	  call makeDirectories(params%outputParams)
+	  
+	  call writeCoreIndex(params%outputParams, size(CoreIndex,1), p%nGenotyped, params%nSnp, CoreIndex(:,1), CoreIndex(:,2))
+	  print *
+	  print *, "Setup complete"
+	  call exit(0)
+	end if
+	if (cmd(1:2) .eq. "-c") then
+	  params%outputParams%outputPerCore = .false.
+	  params%outputParams%outputCombined = .true.
+	  
+	  ! The following are already done on a per core basis so will already have been created and aren't created right anyway.
+	  ! Bit hacky and should probably change in future but works for now.
+	  params%outputParams%outputHaplotypeLibraryText = .false.
+	  params%outputParams%outputHaplotypeLibraryBinary = .false.
+	  params%outputParams%outputSurrogatesSummary = .false.
+	  params%outputParams%outputSurrogates = .false.
+	  params%outputParams%outputHapCommonality = .false.
+	  params%outputParams%outputIndivMistakes = .false.
+	  params%outputParams%outputIndivMistakesPercent = .false.
+	  params%outputParams%outputCoreMistakesPercent = .false.
+	  
+	  p = ParsePedigreeAndGenotypeData(params)
+	  call readInPerCoreResults(results, params%outputParams, p)
+	  call writeAlphaPhaseResults(results, p, params%outputParams)
+	  print *, "Results combined"
+	  call exit(0)
+	end if
+      end if
     end if
 
     call Titles
 
     if (Command_Argument_Count() > 0) then
-      call Get_Command_Argument(1,specfile)
+      if (cmd(1:2) .eq. "-r") then 
+	specloc = 3
+      else
+	specloc = 1
+      end if
+      if (specloc <= Command_Argument_Count()) then
+	call Get_Command_Argument(specloc,specfile)
+      else
+	specfile="AlphaPhaseSpec.txt"
+      end if
     else
       specfile="AlphaPhaseSpec.txt"
     end if
     params = ReadInParameterFile(specfile)
 
     p = ParsePedigreeAndGenotypeData(params)
+    
+    if (Command_Argument_Count() > 0) then
+      if (cmd(1:2) .eq. "-r") then
+	call get_command_argument(2,limit)
+	if (index(limit,"-") > 0) then
+	  params%params%startCoreChar = limit(1:index(limit,"-")-1)
+	  params%params%endCoreChar = trim(limit(index(limit,"-")+1:4096))
+	else
+	  params%params%startCoreChar = limit
+	  params%params%endCoreChar = limit
+	end if
+	params%outputParams%outputCombined = .false.
+	params%outputParams%outputPerCore = .true.
+	params%outputParams%outputTimer = .false.
+	params%outputParams%outputGlobalCoreMistakesPercent = .false.
+      end if
+    end if
+    
     nAnisG = p%nHd
 
     notPrephased = (params%GenotypeFileFormat /= 2)

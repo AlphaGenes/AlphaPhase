@@ -19,9 +19,9 @@ module OutputParametersDefinition
     logical :: outputIndivMistakes
     logical :: outputIndivMistakesPercent
     logical :: outputCoreMistakesPercent
-    logical :: outputMistakes  
     logical :: outputPerCore
     logical :: outputCombined
+    logical :: outputGlobalCoreMistakesPercent
     
     character(len=300) :: outputDirectory
     
@@ -48,8 +48,8 @@ contains
     outputParams%outputHaplotypeLibraryText = .true.
     outputParams%outputPhasingYield = .true.
     outputParams%outputIndivMistakes = .true.
-    outputParams%outputMistakes = .true.
     outputParams%outputCombined = .true.
+    outputParams%outputGlobalCoreMistakesPercent = .true.
 
 
   end function newOutputParameters

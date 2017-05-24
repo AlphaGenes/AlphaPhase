@@ -116,8 +116,7 @@ contains
     integer, intent(in) :: tailLength, nSnp
     integer, dimension(:,:), pointer :: TailIndex
 
-    integer :: ltail, rtail, nCores
-    integer :: i
+    integer :: i, nCores
 
     nCores = size(CoreIndex,1)
     allocate(TailIndex(nCores,2))

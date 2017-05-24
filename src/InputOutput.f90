@@ -1,7 +1,7 @@
 #ifndef _WIN32
 
 #DEFINE DASH "/"
-#DEFINE MD "mkdir "
+#DEFINE MD "mkdir -p "
 
 #else
 
@@ -68,14 +68,7 @@ contains
     end if
 
     if (params%outputCoreIndex) then
-      open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
-      write (25, *) nCores
-      write (25, *) nAnisG
-      write (25, *) nSnp
-      do i = 1, nCores
-        write (25, *) i, startIndex(i), endIndex(i)
-      end do
-      close(25)
+      call writeCoreIndex(params, nCores, nAnisG, nSnp, startIndex, endIndex)
     end if
 
     if (params%outputSnpPhaseRate) then
@@ -157,6 +150,25 @@ contains
     end if
 
   end subroutine WriteOutResults
+  
+  subroutine WriteCoreIndex(params, nCores, nAnisG, nSnp, startIndex, endIndex)
+    use OutputParametersDefinition
+    
+    type(OutputParameters) :: params
+    integer, intent(in) :: nCores, nAnisG, nSnp
+    integer, dimension(:), intent(in) :: startIndex, endIndex
+    
+    integer :: i
+    
+    open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
+    write (25, *) nCores
+    write (25, *) nAnisG
+    write (25, *) nSnp
+    do i = 1, nCores
+      write (25, *) i, startIndex(i), endIndex(i)
+    end do
+    close(25)
+  end subroutine WriteCoreIndex
 
   subroutine writeOutCore(c, coreID, coreStart, p, params)
     use PedigreeModule
@@ -319,7 +331,7 @@ contains
     character(len=:), allocatable::tag
     character(len=300),dimension(:),allocatable :: second
     
-    logical :: singleRun, singleSurrogates
+    logical :: singleRun, singleSurrogates, minOverlapSet
 
     params = ProgramParameters()
 
@@ -451,6 +463,7 @@ contains
       case("minoverlap")
 	if(allocated(second)) then
 	  read(second(1), *) params%params%minoverlap
+	  minOverLapSet = .true.
 	end if
 	
       case("percminpresent")
@@ -526,6 +539,18 @@ contains
     stop
   endif
 
+  if ((params%params%percminpresent /= 1) .and. (params%params%percgenohaplodisagree /= 0)) then
+    print *, "Not recommended to run MultiHD options (percminpresent not equal to 100%)"
+    print *, "with PercentageGenoHaploDisagree set to non-zero.  AlphaPhase may be"
+    print *, "SLOW."
+  end if
+  
+  if ((params%params%percminpresent /= 1) .and. (params%params%minHapFreq > 0)) then
+    print *, "Running MultiHD options (percminpresent not equal to 100%) with"
+    print *, "with MinHapFreq greater than one is not tested or supported."
+    print *, "Use at own risk!"
+  end if
+
   if (outputoption .eq. "Impute") then
     params%outputParams%outputFinalPhase = .true.
     params%outputParams%outputCoreIndex = .true.
@@ -543,7 +568,7 @@ contains
     params%outputParams%outputIndivMistakes = .false.
     params%outputParams%outputIndivMistakesPercent = .false.
     params%outputParams%outputCoreMistakesPercent = .false.
-    params%outputParams%outputMistakes = .false.
+    params%outputParams%outputGlobalCoreMistakesPercent = .false.
   end if
   if (outputoption .eq. "SeqOpt") then
     params%outputParams%outputFinalPhase = .false. 
@@ -562,7 +587,7 @@ contains
     params%outputParams%outputIndivMistakes = .false. 
     params%outputParams%outputIndivMistakesPercent = .false. 
     params%outputParams%outputCoreMistakesPercent = .false. 
-    params%outputParams%outputMistakes = .false.
+    params%outputParams%outputGlobalCoreMistakesPercent = .false.
   end if
   if ((outputoption .eq. "Full") .or. (outputoption .eq. "1")) then
     params%outputParams%outputFinalPhase = .true.
@@ -581,7 +606,7 @@ contains
     params%outputParams%outputIndivMistakes = .true.
     params%outputParams%outputIndivMistakesPercent = .true.
     params%outputParams%outputCoreMistakesPercent = .true.
-    params%outputParams%outputMistakes = .true.
+    params%outputParams%outputGlobalCoreMistakesPercent = .true.
   end if
   if ((outputoption .eq. "Standard") .or. (outputoption .eq. "0")) then
     params%outputParams%outputFinalPhase = .true.
@@ -600,7 +625,7 @@ contains
     params%outputParams%outputIndivMistakes = .false.
     params%outputParams%outputIndivMistakesPercent = .false.
     params%outputParams%outputCoreMistakesPercent = .false.
-    params%outputParams%outputMistakes = .false.
+    params%outputParams%outputGlobalCoreMistakesPercent = .false.
   end if
   
   singleRun = (params%params%StartCoreChar .eq. "0")
@@ -621,11 +646,17 @@ contains
   params%outputParams%outputIndivMistakes = params%outputParams%outputIndivMistakes .and. params%Simulation
   params%outputParams%outputIndivMistakesPercent = params%outputParams%outputIndivMistakesPercent .and. params%Simulation
   params%outputParams%outputCoreMistakesPercent = params%outputParams%outputCoreMistakesPercent .and. params%Simulation
-  
+  params%outputParams%outputGlobalCoreMistakesPercent = params%outputParams%outputGlobalCoreMistakesPercent .and. params%Simulation
+
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
   params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100
   params%params%GenotypeMissingErrorPercentage = params%params%GenotypeMissingErrorPercentage/100
 
+    
+  if (.not. minOverlapSet) then 
+    params%params%minOverlap = int(params%params%Jump * 0.4)
+  end if
+  
 end function ReadInParameterFile
 
 
@@ -763,8 +794,7 @@ end function ReadInParameterFile
     if (params%outputHapCommonality) call system(MD // trim(params%outputDirectory) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
     call system(MD // trim(params%outputDirectory) // DASH //"Miscellaneous")
     
-    if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent .or. &
-	  params%outputMistakes) then
+    if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
       call system(MD // trim(params%outputDirectory) // DASH //"Simulation")
     endif
 
@@ -849,8 +879,8 @@ end function ReadInParameterFile
     end if
     
     if (params%outputCoreMistakesPercent) then
-      write (filout, '(a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
-      open (unit = 31, FILE = trim(params%outputDirectory)//filout, status = 'unknown', position = 'append')
+      write (filout, '(a1,"Simulation",a1,"CoreMistakesPercent",i0,".txt")') DASH, DASH, OutputPoint
+      open (unit = 31, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
       write (31, '(6f9.4)') &
       (results%percentAll(1,ALL_,CORRECT_) + results%percentAll(2,ALL_,CORRECT_)) / 2, &
       (results%percentAll(1,HET_,CORRECT_) + results%percentAll(2,HET_,CORRECT_)) / 2, &
@@ -1048,13 +1078,47 @@ end function ReadInParameterFile
       if (params%outputSurrogates .or. params%outputSurrogatesSummary) then
 	call writeSurrogates(results%surrogates(i), id, p, params)
       end if
-      call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
+      if (params%outputCombined) then
+	call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
+      end if
+      if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
+	  call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
+      end if
     enddo
+    if (params%outputGlobalCoreMistakesPercent) then
+      call makeCoreMistakes(params, results%nCores)
+    end if
   end subroutine writeAlphaPhaseResults  
 
+  subroutine makeCoreMistakes(params, nCores)
+    use OutputParametersDefinition
+    
+    type(OutputParameters), intent(in) :: params
+    integer, intent(in) :: nCores
+    
+    integer :: i
+    double precision, dimension(6) :: single, sums
+    character(len = 4096) :: filin, filout
+    
+    write (filout, '(a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
+    open (unit = 31, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
 
-
-
+    do i = 1, nCores
+      write (filin, '(a1,"Simulation",a1,"CoreMistakesPercent",i0,".txt")') DASH, DASH, i
+      open (unit = 32, FILE = trim(params%outputDirectory)//filin, status = 'unknown') 
+      read(32,'(6f9.4)') single
+      close(32)
+      
+      sums = sums + single
+      
+      write (31, '(6f9.4)') single
+    end do
+    
+    write(31,*)    
+    write (31, '(6f9.4)') sums / nCores
+    
+    close(31)
+  end subroutine makeCoreMistakes
     
   subroutine readHapLib(library, currentcore, params)
     use OutputParametersDefinition
@@ -1214,6 +1278,98 @@ end function ReadInParameterFile
 
    results%cores = allCores
  end subroutine readInResults
+ 
+ subroutine readInPerCoreResults(results, params, p)
+   use PedigreeModule
+   use CoreDefinition
+   use OutputParametersDefinition
+   use AlphaPhaseResultsDefinition
+   use HaplotypeModule
+
+   type(Core), dimension(:),allocatable :: allCores
+   integer, dimension(:), allocatable :: startIndex, endIndex
+   type(AlphaPhaseResults), intent(out) :: results
+   type(OutputParameters), intent(in) :: params
+   type(pedigreeHolder), intent(in) :: p
+   integer(kind=1), dimension(:), allocatable :: tempPhase
+
+   integer :: i, j, k, nAnisG, nSnp, nCores,dumI
+   integer, allocatable, dimension(:) :: WorkOut
+   integer(kind=1), allocatable, dimension(:) :: TempSwap
+   character(len=100) :: fmt
+   character(len=IDLENGTH) :: dumC
+
+   type(Haplotype) :: hap1, hap2
+
+   nSnp = 0
+
+ 
+
+   if (params%outputCoreIndex) then
+     open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
+     read (25, *) nCores
+     read (25, *) nAnisG
+     read (25, *) nSnp
+     results = AlphaPhaseResults(nCores, .true., .true.)
+     allocate(startIndex(nCores))
+     allocate(endIndex(nCores))
+     allocate(allCores(nCores))
+     do i = 1, nCores
+       read (25, *) dumI , startIndex(i), endIndex(i)
+       allcores(i) = newCore(p,startIndex(i),startIndex(i),endIndex(i),endIndex(i))
+     end do
+     close(25)
+   end if
+   results%startIndexes = startIndex
+   results%endIndexes = endIndex
+
+   
+   do j = 1, nCores
+    if (params%outputFinalPhase) then
+      open (unit = 15, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalPhase" // itoa(j) // ".txt", status = "unknown")
+      
+      write(fmt, '(a,i10,a)') '(a20,', endIndex(j) - startIndex(j) + 1, 'i2)'
+
+      allocate(TempPhase(endIndex(j) - startIndex(j) + 1))
+      do i = 1, nAnisG
+	read(15, *) dumC, TempPhase
+	hap1 = newHaplotypeInt(TempPhase)
+	allCores(j)%phase(i,1) = hap1
+	read(15, *) dumC, TempPhase
+	hap2 = newHaplotypeInt(TempPhase)
+	allCores(j)%phase(i,2) = hap2
+      end do
+      deallocate(tempPhase)
+      close(15)
+    end if
+
+    if (params%outputHapIndex) then
+      open (unit = 33, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // itoa(j) // ".txt", status = "unknown")
+      allocate(WorkOut(2))
+      write(fmt, '(a,i10,a)') '(a20,', 2, 'i8)'
+      do i = 1, nAnisG
+	read (33, *) dumC, WorkOut
+	AllCores(j)%hapAnis(i,1) = WorkOut(1)
+	AllCores(j)%hapAnis(i,2) = WorkOut(2)
+      end do
+      deallocate(WorkOut)
+      close(33)
+    end if
+
+    if (params%outputSwappable) then
+      open (unit = 44, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SwapPatMat" // itoa(j) // ".txt", status = "unknown")
+      allocate(TempSwap(nCores))
+      write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
+      do i = 1, nAnisG
+	read (44, fmt) dumC, AllCores(j)%swappable(i)
+      end do
+      deallocate(TempSwap)
+      close(44)
+    end if
+   end do
+
+   results%cores = allCores
+ end subroutine readInPerCoreResults
 
   subroutine readAlphaPhaseResults(results,params,p)
    use AlphaPhaseResultsDefinition
@@ -1235,7 +1391,20 @@ end function ReadInParameterFile
 
  end subroutine readAlphaPhaseResults
 
-
+  subroutine printCoreInfo(coreIndex)
+    integer, dimension(:,:), pointer, intent(in) :: CoreIndex
+    
+    integer :: i
+    
+    print *, "Number of cores:", size(CoreIndex,1)
+    print *
+    print '(3a10)', "ID", "Start", "End"
+    do i = 1, size(CoreIndex,1)
+      print '(3i10)', i, CoreIndex(i,1), CoreIndex(i,2)
+    end do
+  end subroutine printCoreInfo
+ 
+ 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
