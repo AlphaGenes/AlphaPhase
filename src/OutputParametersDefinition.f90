@@ -22,6 +22,7 @@ module OutputParametersDefinition
     logical :: outputMistakes  
     logical :: outputPerCore
     logical :: outputCombined
+    logical :: outputGlobalCoreMistakesPercent
     
     character(len=300) :: outputDirectory
     
@@ -50,6 +51,7 @@ contains
     outputParams%outputIndivMistakes = .true.
     outputParams%outputMistakes = .true.
     outputParams%outputCombined = .true.
+    outputParams%outputGlobalCoreMistakesPercent = .true.
 
 
   end function newOutputParameters

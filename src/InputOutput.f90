@@ -562,6 +562,7 @@ contains
     params%outputParams%outputIndivMistakes = .false.
     params%outputParams%outputIndivMistakesPercent = .false.
     params%outputParams%outputCoreMistakesPercent = .false.
+    params%outputParams%outputGlobalCoreMistakesPercent = .false.
     params%outputParams%outputMistakes = .false.
   end if
   if (outputoption .eq. "SeqOpt") then
@@ -581,6 +582,7 @@ contains
     params%outputParams%outputIndivMistakes = .false. 
     params%outputParams%outputIndivMistakesPercent = .false. 
     params%outputParams%outputCoreMistakesPercent = .false. 
+    params%outputParams%outputGlobalCoreMistakesPercent = .false.
     params%outputParams%outputMistakes = .false.
   end if
   if ((outputoption .eq. "Full") .or. (outputoption .eq. "1")) then
@@ -600,6 +602,7 @@ contains
     params%outputParams%outputIndivMistakes = .true.
     params%outputParams%outputIndivMistakesPercent = .true.
     params%outputParams%outputCoreMistakesPercent = .true.
+    params%outputParams%outputGlobalCoreMistakesPercent = .true.
     params%outputParams%outputMistakes = .true.
   end if
   if ((outputoption .eq. "Standard") .or. (outputoption .eq. "0")) then
@@ -618,6 +621,7 @@ contains
     params%outputParams%outputIndivMistakes = .false.
     params%outputParams%outputIndivMistakesPercent = .false.
     params%outputParams%outputCoreMistakesPercent = .false.
+    params%outputParams%outputGlobalCoreMistakesPercent = .false.
     params%outputParams%outputMistakes = .false.
   end if
   
@@ -639,6 +643,7 @@ contains
   params%outputParams%outputIndivMistakes = params%outputParams%outputIndivMistakes .and. params%Simulation
   params%outputParams%outputIndivMistakesPercent = params%outputParams%outputIndivMistakesPercent .and. params%Simulation
   params%outputParams%outputCoreMistakesPercent = params%outputParams%outputCoreMistakesPercent .and. params%Simulation
+  params%outputParams%outputGlobalCoreMistakesPercent = params%outputParams%outputGlobalCoreMistakesPercent .and. params%Simulation
   params%outputParams%outputMistakes = params%outputParams%outputMistakes .and. params%Simulation
 
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
@@ -873,8 +878,8 @@ end function ReadInParameterFile
     end if
     
     if (params%outputCoreMistakesPercent) then
-      write (filout, '(a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
-      open (unit = 31, FILE = trim(params%outputDirectory)//filout, status = 'unknown', position = 'append')
+      write (filout, '(a1,"Simulation",a1,"CoreMistakesPercent",i0,".txt")') DASH, DASH, OutputPoint
+      open (unit = 31, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
       write (31, '(6f9.4)') &
       (results%percentAll(1,ALL_,CORRECT_) + results%percentAll(2,ALL_,CORRECT_)) / 2, &
       (results%percentAll(1,HET_,CORRECT_) + results%percentAll(2,HET_,CORRECT_)) / 2, &
@@ -1080,11 +1085,40 @@ end function ReadInParameterFile
 	  call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
       end if
     enddo
+    if (params%outputGlobalCoreMistakesPercent) then
+      call makeCoreMistakes(params, results%nCores)
+    end if
   end subroutine writeAlphaPhaseResults  
 
+  subroutine makeCoreMistakes(params, nCores)
+    use OutputParametersDefinition
+    
+    type(OutputParameters), intent(in) :: params
+    integer, intent(in) :: nCores
+    
+    integer :: i
+    double precision, dimension(6) :: single, sums
+    character(len = 4096) :: filin, filout
+    
+    write (filout, '(a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
+    open (unit = 31, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
 
-
-
+    do i = 1, nCores
+      write (filin, '(a1,"Simulation",a1,"CoreMistakesPercent",i0,".txt")') DASH, DASH, i
+      open (unit = 32, FILE = trim(params%outputDirectory)//filin, status = 'unknown') 
+      read(32,'(6f9.4)') single
+      close(32)
+      
+      sums = sums + single
+      
+      write (31, '(6f9.4)') single
+    end do
+    
+    write(31,*)    
+    write (31, '(6f9.4)') sums / nCores
+    
+    close(31)
+  end subroutine makeCoreMistakes
     
   subroutine readHapLib(library, currentcore, params)
     use OutputParametersDefinition

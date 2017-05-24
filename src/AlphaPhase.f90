@@ -73,6 +73,9 @@ program AlphaPhase
 	  params%outputParams%outputSurrogatesSummary = .false.
 	  params%outputParams%outputSurrogates = .false.
 	  params%outputParams%outputHapCommonality = .false.
+	  params%outputParams%outputIndivMistakes = .false.
+	  params%outputParams%outputIndivMistakesPercent = .false.
+	  params%outputParams%outputCoreMistakesPercent = .false.
 	  
 	  p = ParsePedigreeAndGenotypeData(params)
 	  call readInPerCoreResults(results, params%outputParams, p)
@@ -116,6 +119,7 @@ program AlphaPhase
 	params%outputParams%outputCombined = .false.
 	params%outputParams%outputPerCore = .true.
 	params%outputParams%outputTimer = .false.
+	params%outputParams%outputGlobalCoreMistakesPercent = .false.
       end if
     end if
     
