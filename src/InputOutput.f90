@@ -1,7 +1,7 @@
 #ifndef _WIN32
 
 #DEFINE DASH "/"
-#DEFINE MD "mkdir "
+#DEFINE MD "mkdir -p "
 
 #else
 
