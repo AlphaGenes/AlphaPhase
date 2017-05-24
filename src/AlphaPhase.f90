@@ -63,6 +63,15 @@ program AlphaPhase
 	if (cmd(1:2) .eq. "-c") then
 	  params%outputParams%outputPerCore = .false.
 	  params%outputParams%outputCombined = .true.
+	  
+	  ! The following are already done on a per core basis so will already have been created and aren't created right anyway.
+	  ! Bit hacky and should probably change in future but works for now.
+	  params%outputParams%outputHaplotypeLibraryText = .false.
+	  params%outputParams%outputHaplotypeLibraryBinary = .false.
+	  params%outputParams%outputSurrogatesSummary = .false.
+	  params%outputParams%outputSurrogates = .false.
+	  params%outputParams%outputHapCommonality = .false.
+	  
 	  p = ParsePedigreeAndGenotypeData(params)
 	  call readInPerCoreResults(results, params%outputParams, p)
 	  call writeAlphaPhaseResults(results, p, params%outputParams)
