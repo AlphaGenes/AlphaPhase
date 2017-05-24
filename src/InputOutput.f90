@@ -563,7 +563,6 @@ contains
     params%outputParams%outputIndivMistakesPercent = .false.
     params%outputParams%outputCoreMistakesPercent = .false.
     params%outputParams%outputGlobalCoreMistakesPercent = .false.
-    params%outputParams%outputMistakes = .false.
   end if
   if (outputoption .eq. "SeqOpt") then
     params%outputParams%outputFinalPhase = .false. 
@@ -583,7 +582,6 @@ contains
     params%outputParams%outputIndivMistakesPercent = .false. 
     params%outputParams%outputCoreMistakesPercent = .false. 
     params%outputParams%outputGlobalCoreMistakesPercent = .false.
-    params%outputParams%outputMistakes = .false.
   end if
   if ((outputoption .eq. "Full") .or. (outputoption .eq. "1")) then
     params%outputParams%outputFinalPhase = .true.
@@ -603,7 +601,6 @@ contains
     params%outputParams%outputIndivMistakesPercent = .true.
     params%outputParams%outputCoreMistakesPercent = .true.
     params%outputParams%outputGlobalCoreMistakesPercent = .true.
-    params%outputParams%outputMistakes = .true.
   end if
   if ((outputoption .eq. "Standard") .or. (outputoption .eq. "0")) then
     params%outputParams%outputFinalPhase = .true.
@@ -622,7 +619,6 @@ contains
     params%outputParams%outputIndivMistakesPercent = .false.
     params%outputParams%outputCoreMistakesPercent = .false.
     params%outputParams%outputGlobalCoreMistakesPercent = .false.
-    params%outputParams%outputMistakes = .false.
   end if
   
   singleRun = (params%params%StartCoreChar .eq. "0")
@@ -644,7 +640,6 @@ contains
   params%outputParams%outputIndivMistakesPercent = params%outputParams%outputIndivMistakesPercent .and. params%Simulation
   params%outputParams%outputCoreMistakesPercent = params%outputParams%outputCoreMistakesPercent .and. params%Simulation
   params%outputParams%outputGlobalCoreMistakesPercent = params%outputParams%outputGlobalCoreMistakesPercent .and. params%Simulation
-  params%outputParams%outputMistakes = params%outputParams%outputMistakes .and. params%Simulation
 
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
   params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100
@@ -792,8 +787,7 @@ end function ReadInParameterFile
     if (params%outputHapCommonality) call system(MD // trim(params%outputDirectory) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
     call system(MD // trim(params%outputDirectory) // DASH //"Miscellaneous")
     
-    if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent .or. &
-	  params%outputMistakes) then
+    if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
       call system(MD // trim(params%outputDirectory) // DASH //"Simulation")
     endif
 
@@ -1080,8 +1074,7 @@ end function ReadInParameterFile
       if (params%outputCombined) then
 	call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
       end if
-      if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent .or. &
-	  params%outputMistakes) then
+      if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
 	  call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
       end if
     enddo

@@ -19,7 +19,6 @@ module OutputParametersDefinition
     logical :: outputIndivMistakes
     logical :: outputIndivMistakesPercent
     logical :: outputCoreMistakesPercent
-    logical :: outputMistakes  
     logical :: outputPerCore
     logical :: outputCombined
     logical :: outputGlobalCoreMistakesPercent
@@ -49,7 +48,6 @@ contains
     outputParams%outputHaplotypeLibraryText = .true.
     outputParams%outputPhasingYield = .true.
     outputParams%outputIndivMistakes = .true.
-    outputParams%outputMistakes = .true.
     outputParams%outputCombined = .true.
     outputParams%outputGlobalCoreMistakesPercent = .true.
 
