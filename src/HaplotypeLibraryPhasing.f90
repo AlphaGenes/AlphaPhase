@@ -5,6 +5,23 @@ module HaplotypeLibraryPhasing
   integer, parameter, private :: nMaxRounds = 100
     
 contains
+  subroutine earlyComplement(c)
+    use CoreDefinition
+    
+    type(Core) :: c
+    
+    integer :: i
+    type(Haplotype) :: comp
+    
+    do i = 1, c%getNAnisG()
+      comp = c%coreGenos(i)%complement(c%phase(i,1))
+      call c%phase(i,2)%setFromOtherIfMissing(comp)
+      
+      comp = c%coreGenos(i)%complement(c%phase(i,2))
+      call c%phase(i,1)%setFromOtherIfMissing(comp)
+    end do
+  end subroutine earlyComplement
+
   subroutine UpdateHapLib(c, library, percminpresent, minoverlap, percGenoHaploDisagree)
     use HaplotypeLibraryDefinition
     use HaplotypeModule

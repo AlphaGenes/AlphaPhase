@@ -173,6 +173,8 @@ contains
       end do
       
       library = library%rationalise(params%percMinToKeep,c)
+      
+      call cleanErrors(c, library)
 
       if (.not. quietInternal) then
 	print *, "   Core complete"
@@ -272,21 +274,23 @@ contains
       results%endIndexes(h-startCore+1) = CoreIndex(h,2)
     end do
   end function createLibraries
-
   
-  subroutine earlyComplement(c)
+  subroutine cleanErrors(c, library)
     type(Core) :: c
+    type(HaplotypeLibrary) :: library
     
     integer :: i
-    type(Haplotype) :: comp
     
     do i = 1, c%getNAnisG()
-      comp = c%coreGenos(i)%complement(c%phase(i,1))
-      call c%phase(i,2)%setFromOtherIfMissing(comp)
-      
-      comp = c%coreGenos(i)%complement(c%phase(i,2))
-      call c%phase(i,1)%setFromOtherIfMissing(comp)
+      call c%phase(i,1)%setErrorToMissing()
+      call c%phase(i,2)%setErrorToMissing()
     end do
-  end subroutine earlyComplement
+    
+    do i = 1, library%size
+      call library%newstore(i)%setErrorToMissing()
+    end do
+    
+  end subroutine cleanErrors
+    
 end module AlphaPhaseFunctions
 
