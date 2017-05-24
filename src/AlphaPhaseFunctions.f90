@@ -160,7 +160,6 @@ contains
 	  end if
 	end do
 	
-	call earlyComplement(c)
 	print *, "Complementing done"
 	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then
