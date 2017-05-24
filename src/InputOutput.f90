@@ -639,6 +639,7 @@ contains
   params%outputParams%outputIndivMistakes = params%outputParams%outputIndivMistakes .and. params%Simulation
   params%outputParams%outputIndivMistakesPercent = params%outputParams%outputIndivMistakesPercent .and. params%Simulation
   params%outputParams%outputCoreMistakesPercent = params%outputParams%outputCoreMistakesPercent .and. params%Simulation
+  params%outputParams%outputMistakes = params%outputParams%outputMistakes .and. params%Simulation
 
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
   params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100
