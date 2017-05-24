@@ -544,6 +544,12 @@ contains
     print *, "with PercentageGenoHaploDisagree set to non-zero.  AlphaPhase may be"
     print *, "SLOW."
   end if
+  
+  if ((params%params%percminpresent /= 1) .and. (params%params%minHapFreq > 0)) then
+    print *, "Running MultiHD options (percminpresent not equal to 100%) with"
+    print *, "with MinHapFreq greater than one is not tested or supported."
+    print *, "Use at own risk!"
+  end if
 
   if (outputoption .eq. "Impute") then
     params%outputParams%outputFinalPhase = .false.
