@@ -40,7 +40,7 @@ program AlphaPhase
         call PrintVersion
         call exit(0)
       end if
-      if ((cmd(1:2) .eq. "-t") .or. (cmd(1:2) .eq. "-c")) then
+      if ((cmd(1:2) .eq. "-s") .or. (cmd(1:2) .eq. "-c")) then
 	call Titles
 	if (Command_Argument_Count() > 1) then
 	  call Get_Command_Argument(2,specfile)
@@ -48,7 +48,7 @@ program AlphaPhase
 	  specfile="AlphaPhaseSpec.txt"
 	end if
 	params = ReadInParameterFile(specfile)
-	if (cmd(1:2) .eq. "-t") then
+	if (cmd(1:2) .eq. "-s") then
 	  CoreIndex => calculateCores(params%nSnp,params%params%Jump,params%params%offset)
 	  p = ParsePedigreeAndGenotypeData(params)
 	  
@@ -58,6 +58,8 @@ program AlphaPhase
 	  call makeDirectories(params%outputParams)
 	  
 	  call writeCoreIndex(params%outputParams, size(CoreIndex,1), p%nGenotyped, params%nSnp, CoreIndex(:,1), CoreIndex(:,2))
+	  print *
+	  print *, "Setup complete"
 	  call exit(0)
 	end if
 	if (cmd(1:2) .eq. "-c") then
@@ -75,6 +77,7 @@ program AlphaPhase
 	  p = ParsePedigreeAndGenotypeData(params)
 	  call readInPerCoreResults(results, params%outputParams, p)
 	  call writeAlphaPhaseResults(results, p, params%outputParams)
+	  print *, "Results combined"
 	  call exit(0)
 	end if
       end if
@@ -83,7 +86,7 @@ program AlphaPhase
     call Titles
 
     if (Command_Argument_Count() > 0) then
-      if (cmd(1:2) .eq. "-l") then 
+      if (cmd(1:2) .eq. "-r") then 
 	specloc = 3
       else
 	specloc = 1
@@ -101,7 +104,7 @@ program AlphaPhase
     p = ParsePedigreeAndGenotypeData(params)
     
     if (Command_Argument_Count() > 0) then
-      if (cmd(1:2) .eq. "-l") then
+      if (cmd(1:2) .eq. "-r") then
 	call get_command_argument(2,limit)
 	if (index(limit,"-") > 0) then
 	  params%params%startCoreChar = limit(1:index(limit,"-")-1)
