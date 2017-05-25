@@ -79,8 +79,8 @@ contains
           do k = 1, nAnisG
 	    hap1 => allCores(i)%phase(k,1)
 	    hap2 => allCores(i)%phase(k,2)
-            if ((hap1%getPhaseMod(j) == 0).or.(hap1%getPhaseMod(j) == 1)) counter = counter + 1
-            if ((hap2%getPhaseMod(j) == 0).or.(hap2%getPhaseMod(j) == 1)) counter = counter + 1
+            if ((hap1%getPhase(j) == 0).or.(hap1%getPhase(j) == 1)) counter = counter + 1
+            if ((hap2%getPhase(j) == 0).or.(hap2%getPhase(j) == 1)) counter = counter + 1
           end do
           write (28, '(i10,f7.2)') startIndex(i) + j - 1, (100 * (float(counter)/(2 * nAnisG)))
         end do
@@ -220,8 +220,8 @@ contains
         do j = 1, nAnisG
           hap1 => c%phase(j, 1)
           hap2 => c%phase(j, 2)
-          if ((hap1%getPhaseMod(i) == 0).or.(hap1%getPhaseMod(i) == 1)) counter = counter + 1
-          if ((hap2%getPhaseMod(i) == 0).or.(hap2%getPhaseMod(i) == 1)) counter = counter + 1
+          if ((hap1%getPhase(i) == 0).or.(hap1%getPhase(i) == 1)) counter = counter + 1
+          if ((hap2%getPhase(i) == 0).or.(hap2%getPhase(i) == 1)) counter = counter + 1
         end do
         write (28, '(i10,f7.2)') i + CoreStart - 1, (100 * (float(counter)/(2 * nAnisG)))
       end do

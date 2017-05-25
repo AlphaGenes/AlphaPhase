@@ -236,10 +236,10 @@ contains
       truehap2 = TruePhase(i,2)
       !! This could be done with bit ops but is not a priority given it's only used when comparing to known phase
       do j = 1, nSnp
-	if (truehap1.getPhaseMod(j) == hap1%getPhaseMod(j)) CountAgreeStay1 = CountAgreeStay1 + 1
-	if (truehap2.getPhaseMod(j) == hap1%getPhaseMod(j)) CountAgreeSwitch1 = CountAgreeSwitch1 + 1
-	if (truehap1.getPhaseMod(j) == hap2%getPhaseMod(j)) CountAgreeSwitch2 = CountAgreeSwitch2 + 1
-	if (truehap2.getPhaseMod(j) == hap2%getPhaseMod(j)) CountAgreeStay2 = CountAgreeStay2 + 1
+	if (truehap1%getPhase(j) == hap1%getPhase(j)) CountAgreeStay1 = CountAgreeStay1 + 1
+	if (truehap2%getPhase(j) == hap1%getPhase(j)) CountAgreeSwitch1 = CountAgreeSwitch1 + 1
+	if (truehap1%getPhase(j) == hap2%getPhase(j)) CountAgreeSwitch2 = CountAgreeSwitch2 + 1
+	if (truehap2%getPhase(j) == hap2%getPhase(j)) CountAgreeStay2 = CountAgreeStay2 + 1
       end do
       if ((CountAgreeSwitch2 > CountAgreeStay2).and.(CountAgreeStay1 <= CountAgreeSwitch1)) truth = 1
       if ((CountAgreeSwitch1 > CountAgreeStay1).and.(CountAgreeStay2 <= CountAgreeSwitch2)) truth = 1

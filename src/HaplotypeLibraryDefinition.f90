@@ -241,7 +241,7 @@ contains
     if (invalid <= allowedError) then
 
       do i = 1, library%size
-	e = invalid + library%newstore(i)%mismatchesMod(hap)
+	e = invalid + library%newstore(i)%mismatches(hap)
 
 	if (e <= allowedError) then
 	  num = num + 1
@@ -277,7 +277,7 @@ contains
       if (allowedError == 0) then
 	do i = 1, library%size
 	  if (library%newstore(i)%noMismatches(hap)) then
-	    if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	    if (library%newstore(i)%overlap(hap) >= minOverlap) then
 	      num = num + 1
 	      tempMatches(num) = i
 	    end if
@@ -285,10 +285,10 @@ contains
 	end do
       else
 	do i = 1, library%size
-	  e = invalid + library%newstore(i)%mismatchesMod(hap)
+	  e = invalid + library%newstore(i)%mismatches(hap)
 
 	  if (e <= allowedError) then
-	    if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	    if (library%newstore(i)%overlap(hap) >= minOverlap) then
 	      num = num + 1
 	      tempMatches(num) = i
 	    end if
@@ -324,7 +324,7 @@ contains
 
       do k = 1, size(limit)
 	i = limit(k)
-	e = invalid + library%newstore(i)%mismatchesMod(hap)
+	e = invalid + library%newstore(i)%mismatches(hap)
 
 	if (e <= allowedError) then
 	  num = num + 1
@@ -361,10 +361,10 @@ contains
 
       do k = 1, size(limit)
 	i = limit(k)
-	e = invalid + library%newstore(i)%mismatchesMod(hap)
+	e = invalid + library%newstore(i)%mismatches(hap)
 
 	if (e <= allowedError) then
-	  if (library%newstore(i)%overlapMod(hap) >= minOverlap) then
+	  if (library%newstore(i)%overlap(hap) >= minOverlap) then
 	    num = num + 1
 	    tempMatches(num) = i
 	  end if

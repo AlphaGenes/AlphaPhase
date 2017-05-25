@@ -49,12 +49,12 @@ contains
 	g = geno%getGenotype(j)
 	het = (g == 1)
 	miss = (g == MissingGenotypeCode)
-	error = ((.not. miss) .and. ( (trueHap1%getPhaseMod(j) + trueHap2%getPhaseMod(j)) /= g))
+	error = ((.not. miss) .and. ( (trueHap1%getPhase(j) + trueHap2%getPhase(j)) /= g))
 	do k = 1, 2
 	  if (k == 1) then
-	    p = hap1%getPhaseMod(j)
+	    p = hap1%getPhase(j)
 	  else
-	    p = hap2%getPhaseMod(j)
+	    p = hap2%getPhase(j)
 	  end if
 	  if (p == MissingPhaseCode) then
 	    results%countA(i,k,ALL_,NOTPHASED_) = results%countA(i,k,ALL_,NOTPHASED_) + 1
@@ -69,9 +69,9 @@ contains
 	    end if
 	  else
 	    if (k == 1) then
-	      t = truehap1%getPhaseMod(j)
+	      t = truehap1%getPhase(j)
 	    else
-	      t = truehap2%getPhaseMod(j)
+	      t = truehap2%getPhase(j)
 	    end if
 	    if (p == t) then
 	      results%countA(i,k,ALL_,CORRECT_) = results%countA(i,k,ALL_,CORRECT_) + 1

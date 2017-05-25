@@ -63,7 +63,7 @@ contains
 	if (hap%equalhap(library%newstore(id))) then
 	  library%hapfreq(id) = library%hapfreq(id) + 1
 	else
-	  merged = hap%mergeMod(library%newstore(id))
+	  merged = hap%merge(library%newstore(id))
 	  do i = 1, c%getNAnisG()
 	    do j = 1, 2
 	      if (c%hapanis(i,j) == id) then
@@ -79,7 +79,7 @@ contains
 	id = ids(1) 
 	merged = hap
 	do i = 1, size(ids)
-	  merged = merged%mergeMod(library%newstore(ids(i)))
+	  merged = merged%merge(library%newstore(ids(i)))
 	end do
 	
 	if (merged%numberError() <= ErrorAllow) then
