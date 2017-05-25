@@ -959,7 +959,7 @@ end function ReadInParameterFile
     print*, ""
     print*, "                              ************************                         "
     print*, "                              *                      *                         "
-    print*, "                              *   AlphaPhase 1.3.0   *                         "
+    print*, "                              *   AlphaPhase 1.3.1   *                         "
     print*, "                              *                      *                         "
     print*, "                              ************************                         "
     print*, "                                                                              "
