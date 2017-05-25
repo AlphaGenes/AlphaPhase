@@ -24,7 +24,7 @@ contains
     minpresent = max(int(percminpresent * c%getNCoreSnp()),minoverlap)
     
     do i = 1, c % getNAnisG()
-      !Paternal Haps
+!      !Paternal Haps
       hap = c % phase(i, 1)
       if (hap%numberNotMissing() >= minpresent) then
 	call newHaplotype(c, i, 1, library, minoverlap, errorallow)
@@ -48,13 +48,13 @@ contains
     class(HaplotypeLibrary) :: library
 
     integer :: id
-    integer, dimension(:), pointer :: ids
+    integer, dimension(:), allocatable :: ids
     type(Haplotype) :: hap, merged
     
     integer :: i, j, k, n
     
     hap = c % phase(animal, phase)
-      ids => library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
+      ids = library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
       if (size(ids) == 0) then
 	id = library%addHap(hap)
       end if
@@ -113,6 +113,7 @@ contains
       end if
 
        c%hapAnis(animal, phase) = id
+       deallocate(ids)
   end subroutine newHaplotype
   
   subroutine imputeFromLib(library, c, PercGenoHaploDisagree, percminpresent, minoverlap, minHapFreq, percMinToKeep, quiet)
@@ -165,8 +166,8 @@ contains
     type(Haplotype) :: hap1, hap2, comp
     type(Haplotype) :: newHap, libHap
     logical :: hap1changed, hap2changed
-    integer, pointer, dimension(:) :: candHapsPat, candHapsMat, compatHaps
-    integer, pointer, dimension(:,:) :: candPairs
+    integer, allocatable, dimension(:) :: candHapsPat, candHapsMat, compatHaps
+    integer, allocatable, dimension(:,:) :: candPairs
     
     do i = 1, c%getNAnisG()
       geno => c%coreGenos(i)
@@ -177,11 +178,11 @@ contains
       hap2changed = .false.
       
       if ((.not. hap1%fullyPhased()) .or. (.not. hap2%fullyPhased())) then
-	compatHaps => library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
+	compatHaps = library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
 
 	!! Can save some time at various points in this function by checking for fully phased
-	candHapsPat => library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 1), ErrorAllow, minOverlap, compatHaps)
-	candHapsMat => library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 2), ErrorAllow, minOverlap, compatHaps)
+	candHapsPat = library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 1), ErrorAllow, minOverlap, compatHaps)
+	candHapsMat = library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 2), ErrorAllow, minOverlap, compatHaps)
 	
 	if ((size(candHapsPat) > 0) .and. (size(candHapsMat) == 0)) then
 	  libHap = getLibraryHap(library, candHapsPat)
@@ -206,7 +207,7 @@ contains
 	end if
 	
 	if ((size(candHapsPat) > 0) .and. (size(candHapsMat) > 0)) then
-	  candPairs => getCompatPairsWithError(library, geno, ErrorAllow, CandHapsPat, CandHapsMat, c%getNAnisG())
+	  candPairs = getCompatPairsWithError(library, geno, ErrorAllow, CandHapsPat, CandHapsMat, c%getNAnisG())
 	  
 	  if (size(CandPairs,1) > 0) then
 	    libHap = getLibraryHap(library, candPairs(:,1))
@@ -231,7 +232,7 @@ contains
 
 	hap2 = c%phase(i,2)
 	comp = geno%complement(c%phase(i,1))
-	candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+	candHapsPat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
 	newHap = newHaplotypeHaplotype(hap2)
 	if (size(candHapsPat) > 0) then
 	  libHap = getLibraryHap(library, candHapsPat)
@@ -246,7 +247,7 @@ contains
 
 	hap1 = c%phase(i,1)
 	comp = geno%complement(c%phase(i,2))
-	candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+	candHapsMat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
 	newHap = newHaplotypeHaplotype(hap1)
 	if (size(candHapsMat) > 0) then
 	  libHap = getLibraryHap(library, candHapsMat)
@@ -276,14 +277,14 @@ contains
     type(Haplotype) :: hap1, hap2, comp, libHap, newHap
     type(Genotype), pointer :: geno
     integer :: i
-    integer, pointer, dimension(:) :: candHapsPat, candHapsMat, compatHaps
+    integer, allocatable, dimension(:) :: candHapsPat, candHapsMat, compatHaps
     
     do i = 1, c%getNAnisG()
       geno => c%coreGenos(i)
-      compatHaps => library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
+      compatHaps = library % getCompatHapsFreq(geno,minHapFreq,errorAllow)
       hap2 = c%phase(i,2)
       comp = geno%complement(c%phase(i,1))
-      candHapsPat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+      candHapsPat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
       newHap = newHaplotypeHaplotype(hap2)
       if (size(candHapsPat) > 0) then
 	libHap = getLibraryHap(library, candHapsPat)
@@ -299,7 +300,7 @@ contains
 
       hap1 = c%phase(i,1)
       comp = geno%complement(c%phase(i,2))
-      candHapsMat => library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
+      candHapsMat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
       newHap = newHaplotypeHaplotype(hap1)
       if (size(candHapsMat) > 0) then
 	libHap = getLibraryHap(library, candHapsMat)
@@ -347,9 +348,9 @@ contains
     integer, intent(in) :: ErrorAllow
     integer, dimension(:), intent(in) :: patLimit, matLimit
     integer, intent(in) :: nAnisG
-    integer, dimension(:,:), pointer :: pairs
+    integer, dimension(:,:), allocatable :: pairs
     
-    integer, dimension(:,:), pointer :: tempPairs
+    integer, dimension(:,:), allocatable :: tempPairs
     integer :: i, j, p, ii, jj
 
     allocate(tempPairs(nAnisG*2,2))

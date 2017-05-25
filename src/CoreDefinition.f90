@@ -213,11 +213,11 @@ contains
     use HaplotypeModule
 
     class(Core) :: c
-    type(Haplotype), dimension(:,:), pointer, intent(in) :: TruePhase
+    type(Haplotype), dimension(:,:), intent(in) :: TruePhase
 
     integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth
     type(Haplotype) :: W1, W2
-    type(Haplotype), pointer :: hap1, hap2, truehap1, truehap2
+    type(Haplotype) :: hap1, hap2, truehap1, truehap2
     integer :: HA1, HA2
     integer :: nAnisG, nSnp
 
@@ -230,10 +230,10 @@ contains
       CountAgreeSwitch1 = 0
       CountAgreeSwitch2 = 0
       truth = 0
-      hap1 => c%phase(i,1)
-      hap2 => c%phase(i,2)
-      truehap1 => TruePhase(i,1)
-      truehap2 => TruePhase(i,2)
+      hap1 = c%phase(i,1)
+      hap2 = c%phase(i,2)
+      truehap1 = TruePhase(i,1)
+      truehap2 = TruePhase(i,2)
       !! This could be done with bit ops but is not a priority given it's only used when comparing to known phase
       do j = 1, nSnp
 	if (truehap1.getPhaseMod(j) == hap1%getPhaseMod(j)) CountAgreeStay1 = CountAgreeStay1 + 1

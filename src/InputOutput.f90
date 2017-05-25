@@ -1293,7 +1293,7 @@ end function ReadInParameterFile
    type(pedigreeHolder), intent(in) :: p
    integer(kind=1), dimension(:), allocatable :: tempPhase
 
-   integer :: i, j, k, nAnisG, nSnp, nCores,dumI
+   integer :: i, j, nAnisG, nSnp, nCores,dumI
    integer, allocatable, dimension(:) :: WorkOut
    integer(kind=1), allocatable, dimension(:) :: TempSwap
    character(len=100) :: fmt

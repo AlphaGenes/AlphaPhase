@@ -251,7 +251,7 @@ contains
     type(Haplotype), pointer :: hap1, hap2
 
     integer :: i, CountError, ErrorAllow, counterMissing, nAnisG, nCoreSnp
-    integer(kind=8), dimension(:), pointer :: error
+    integer(kind=8), dimension(:), allocatable :: error
     
     nAnisG  = c%getNAnisGCoreSubset()
     nCoreSnp = c%getNCoreSnpCoreSubset()
@@ -264,7 +264,7 @@ contains
       hap1 => c%getHaplotypeCoreSubset(i,1)
       hap2 => c%getHaplotypeCoreSubset(i,2)
       genos => c%getSingleCoreGenos(i)
-      error => genos%getErrors(hap1,hap2)
+      error = genos%getErrors(hap1,hap2)
       countError = bitCount(error)
       counterMissing = hap1%numberBothNotMissing(hap2)
       ErrorAllow = int(PercGenoHaploDisagree * counterMissing)

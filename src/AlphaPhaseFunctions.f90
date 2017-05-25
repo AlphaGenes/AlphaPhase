@@ -48,9 +48,9 @@ contains
 
     type(PedigreeHolder), intent(inout) :: p
     type(AlphaPhaseParameters) :: params
-    type(HaplotypeLibrary), pointer, dimension(:), intent(in), optional :: existingLibraries
-    type(Haplotype), pointer, dimension(:,:), intent(in), optional :: truePhase
-    integer, dimension(:,:), intent(in), optional, target :: userCoreIndex
+    type(HaplotypeLibrary), dimension(:), intent(in), optional :: existingLibraries
+    type(Haplotype), dimension(:,:), intent(in), optional :: truePhase
+    integer, dimension(:,:), intent(in), optional :: userCoreIndex
     logical, optional :: quiet
 
     integer :: h, i, threshold
@@ -59,13 +59,13 @@ contains
     type(Surrogate) :: surrogates
     type(Core) :: c
     type(CoreSubset) :: cs
-    type(Haplotype), pointer, dimension(:,:) :: CoreTruePhase
+    type(Haplotype), allocatable, dimension(:,:) :: CoreTruePhase
     integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
-    integer, dimension (:,:), pointer :: CoreIndex, TailIndex
+    integer, dimension (:,:), allocatable :: CoreIndex, TailIndex
     integer :: nCores
     integer :: nAnisG, nSnp
     integer :: subsetCount
-    type(Haplotype), pointer :: hap
+    type(Haplotype) :: hap
     type(AlphaPhaseResults) :: results
 
     integer :: startCore, endCore
@@ -89,17 +89,17 @@ contains
 
     if (.not. present(existingLibraries)) then
       if (.not. present(userCoreIndex)) then
-	CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
+	CoreIndex = CalculateCores(nSnp, params%Jump, params%offset)
       else
-	CoreIndex => userCoreIndex
+	CoreIndex = userCoreIndex
       end if
     else
-      CoreIndex => getCoresFromLibraries(existingLibraries)
+      CoreIndex = getCoresFromLibraries(existingLibraries)
     end if
     if (params%tailLength == -1) then
-      TailIndex => oldCalculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
+      TailIndex = oldCalculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
     else
-      TailIndex => calculateTails(CoreIndex, params%tailLength, nSnp)
+      TailIndex = calculateTails(CoreIndex, params%tailLength, nSnp)
     end if
     nCores = size(CoreIndex,1)
 
@@ -182,9 +182,9 @@ contains
       if (present(TruePhase)) then
 	allocate(CoreTruePhase(nAnisG,2))
 	do i = 1, nAnisG
-	  hap => TruePhase(i,1)
+	  hap = TruePhase(i,1)
 	  CoreTruePhase(i,1) = hap%subset(startCoreSnp,endCoreSnp)
-	  hap => TruePhase(i,2)
+	  hap = TruePhase(i,2)
 	  CoreTruePhase(i,2) = hap%subset(startCoreSnp,endCoreSnp)
 	end do
 	call c%flipHaplotypes(CoreTruePhase)

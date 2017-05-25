@@ -1,36 +1,3 @@
-#ifndef _WIN32
-
-#define STRINGIFY(x)#x
-#define TOSTRING(x) STRINGIFY(x)
-
-#DEFINE DASH "/"
-#DEFINE COPY "cp"
-#DEFINE MD "mkdir"
-#DEFINE RMDIR "rm -r"
-#DEFINE RM "rm"
-#DEFINE RENAME "mv"
-#DEFINE SH "sh"
-#DEFINE EXE ""
-#DEFINE NULL ""
-
-#else
-
-#define STRINGIFY(x)#x
-#define TOSTRING(x) STRINGIFY(x)
-
-#DEFINE DASH "\"
-#DEFINE COPY "copy"
-#DEFINE MD "md"
-#DEFINE RMDIR "RMDIR /S /Q"
-#DEFINE RM "del"
-#DEFINE RENAME "MOVE /Y"
-#DEFINE SH "BAT"
-#DEFINE EXE ".exe"
-#DEFINE NULL " >NUL"
-#endif
-
-
-
 module HaplotypeLibraryDefinition
   use ConstantModule
   use HaplotypeModule
@@ -75,6 +42,7 @@ module HaplotypeLibraryDefinition
     procedure :: rationalise
     procedure :: removeHap
     procedure :: updateHap
+    final :: destroyHaplotypeLibrary
   end type HaplotypeLibrary
 
   interface HaplotypeLibrary
@@ -83,12 +51,23 @@ module HaplotypeLibraryDefinition
   end interface HaplotypeLibrary
 
 contains
+  subroutine destroyHaplotypeLibrary(library)
+    type(HaplotypeLibrary) :: library
+    
+    if (allocated(library%newstore)) then
+      deallocate(library%newstore)
+      deallocate(library%hapfreq)
+    end if
+  end subroutine destroyHaplotypeLibrary
+
   function newHaplotypeLibrary(nSnps, storeSize, stepSize) result(library)
     type(HaplotypeLibrary) :: library
     integer, intent(in) :: nSnps
     integer, intent(in) :: storeSize
     integer, intent(in) :: stepSize
 
+    integer :: i
+    
     library % nSnps = nSnps
     library % size = 0
     library % storeSize = storeSize
@@ -96,6 +75,10 @@ contains
     allocate(library % hapFreq(storeSize))
     library % hapFreq = 0
     allocate(library%newstore(library%storeSize))
+    
+    do i = 1, storeSize
+      library%newstore(i) = newHaplotypeMissing(nSnps)
+    end do
   end function newHaplotypeLibrary
 
   function haplotypeLibraryFromFile(filename, stepsize, text) result(library)
@@ -170,15 +153,6 @@ contains
 
   end function haplotypeLibraryFromFile
 
-  subroutine destroy(library)
-    type(HaplotypeLibrary) :: library
-
-    if (allocated(library%newstore)) then
-      deallocate(library%newstore)
-      deallocate(library%hapFreq)
-    end if
-  end subroutine destroy
-
   function hasHap(library, hap) result(id)
     ! Following use statements needed here due to compiler issues (Daniel / 16.0.0)
     use HaplotypeModule
@@ -206,8 +180,9 @@ contains
     integer :: id
 
     integer :: newStoreSize
-    type(Haplotype), dimension(:), pointer :: tempNewStore
+    type(Haplotype), dimension(:), allocatable :: tempNewStore
     integer, dimension(:), allocatable :: tempHapFreq
+    
     if (library % Size == library % storeSize) then
       newStoreSize = library % storeSize + library % stepSize
 
@@ -227,6 +202,8 @@ contains
       allocate(library%newStore(newStoreSize))
       library % newStore(1:library % Size) = tempNewStore
       library % StoreSize = newStoreSize
+      deallocate(tempNewStore)
+      deallocate(tempHapFreq)
     end if
 
     library % Size = library % Size + 1
@@ -285,7 +262,7 @@ contains
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
     integer, intent(in) :: minOverlap
-    integer, dimension(:), pointer :: matches
+    integer, dimension(:), allocatable :: matches
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, e, num, invalid
@@ -369,7 +346,7 @@ contains
     integer, intent(in) :: allowedError
     integer, dimension(:), intent(in) :: limit
     integer, intent(in) :: minOverlap
-    integer, dimension(:), pointer :: matches
+    integer, dimension(:), allocatable :: matches
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, k, e, num, invalid
@@ -561,7 +538,7 @@ contains
     class(HaplotypeLibrary) :: library
     type(Genotype), intent(in), pointer :: g
     integer, intent(in) :: freq, errorallow
-    integer, dimension(:), pointer :: compatHaps
+    integer, dimension(:), allocatable :: compatHaps
 
     integer, dimension(:), allocatable :: tempCompatHaps
     integer :: i, numCompatHaps 

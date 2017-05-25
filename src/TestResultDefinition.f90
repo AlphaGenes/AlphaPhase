@@ -25,26 +25,26 @@ contains
     use CoreDefinition
     
     type(Core) :: c
-    type(Haplotype), dimension(:,:), pointer, intent(in) :: TruePhase    
+    type(Haplotype), dimension(:,:), intent(in) :: TruePhase    
     type(TestResults) :: results
     
     integer :: i, j, k
     integer(kind=1) :: p, t, g
     logical :: het, miss, error
     
-    type(Genotype), pointer :: geno
-    type(Haplotype), pointer:: hap1, hap2, trueHap1, trueHap2
+    type(Genotype) :: geno
+    type(Haplotype) :: hap1, hap2, trueHap1, trueHap2
     
     
     allocate(results%countA(C%getNAnisG(),2,4,3))
     results%countA = 0
     
     do i = 1, c%getNAnisG()
-      geno => c%getCoreGenos(i)
-      hap1 => c%phase(i,1)
-      hap2 => c%phase(i,2)
-      trueHap1 => TruePhase(i,1)
-      trueHap2 => TruePhase(i,2)
+      geno = c%getCoreGenos(i)
+      hap1 = c%phase(i,1)
+      hap2 = c%phase(i,2)
+      trueHap1 = TruePhase(i,1)
+      trueHap2 = TruePhase(i,2)
       do j = 1, c%getNCoreSnp()
 	g = geno%getGenotype(j)
 	het = (g == 1)
