@@ -1,6 +1,6 @@
-module ProgramParametersDefinition
-  use AlphaPhaseParametersDefinition
-  use OutputParametersDefinition
+module ProgramParametersModule
+  use AlphaPhaseParametersModule
+  use OutputParametersModule
   implicit none
   
   type:: ProgramParameters
@@ -29,4 +29,4 @@ contains
     programParams%CoreFile = "None"
   end function newProgramParameters
     
-end module ProgramParametersDefinition
+end module ProgramParametersModule

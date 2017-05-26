@@ -1,4 +1,4 @@
-module HaplotypeLibraryDefinition
+module HaplotypeLibraryModule
   use ConstantModule
   use HaplotypeModule
   implicit none
@@ -750,7 +750,7 @@ contains
   end function
   
   function rationalise(library, percThreshold, c) result(newlib)
-    use CoreDefinition
+    use CoreModule
     
     class(HaplotypeLibrary), intent(in) :: library
     double precision, intent(in) :: percThreshold
@@ -827,4 +827,4 @@ contains
     end do
   end function numberPercentPhased
 
-end module HaplotypeLibraryDefinition
+end module HaplotypeLibraryModule

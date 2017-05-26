@@ -1,21 +1,21 @@
 
 # Alphaphase library
 SET(ALPHAPHASE_src
-            CoreDefinition.f90
+            CoreModule.f90
             CoreUtils.f90
-            CoreSubsetDefinition.f90
-            HaplotypeLibraryDefinition.f90
+            CoreSubsetModule.f90
+            HaplotypeLibraryModule.f90
             HaplotypeLibraryPhasing.f90
             InputOutput.f90
             LongRangePhasing.f90
-            MemberManagerDefinition.f90
-	    OutputParametersDefinition.f90
-            ParametersDefinition.f90
-	    ProgramParametersDefinition.f90
-            SurrogateDefinition.f90
-            TestResultDefinition.f90        
+            MemberManagerModule.f90
+	    OutputParametersModule.f90
+            AlphaPhaseParametersModule.f90
+	    ProgramParametersModule.f90
+            SurrogateModule.f90
+            TestResultModule.f90        
 	    AlphaPhaseFunctions.f90
-	    AlphaPhaseResultsDefinition.f90
+	    AlphaPhaseResultsModule.f90
             AlphaPhase.f90 
             
 )

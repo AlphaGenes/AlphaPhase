@@ -1,5 +1,5 @@
-module MemberManagerDefinition
-  use CoreDefinition
+module MemberManagerModule
+  use CoreModule
   
   implicit none
 
@@ -234,4 +234,4 @@ contains
     
   end function getNext
   
-end module MemberManagerDefinition
+    end module MemberManagerModule

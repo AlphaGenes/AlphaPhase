@@ -19,8 +19,8 @@ contains
 
   subroutine WriteOutResults(allCores, startIndex, endIndex, p, params)
     use PedigreeModule
-    use CoreDefinition
-    use OutputParametersDefinition
+    use CoreModule
+    use OutputParametersModule
     use HaplotypeModule
 
     type(Core), dimension(:), intent(in) :: allCores
@@ -152,7 +152,7 @@ contains
   end subroutine WriteOutResults
   
   subroutine WriteCoreIndex(params, nCores, nAnisG, nSnp, startIndex, endIndex)
-    use OutputParametersDefinition
+    use OutputParametersModule
     
     type(OutputParameters) :: params
     integer, intent(in) :: nCores, nAnisG, nSnp
@@ -172,8 +172,8 @@ contains
 
   subroutine writeOutCore(c, coreID, coreStart, p, params)
     use PedigreeModule
-    use CoreDefinition
-    use OutputParametersDefinition
+    use CoreModule
+    use OutputParametersModule
     use HaplotypeModule
 
     type(Core), intent(in) :: c
@@ -270,7 +270,7 @@ contains
   end function
 
   function ParsePedigreeAndGenotypeData(params) result(p)
-    use ProgramParametersDefinition
+    use ProgramParametersModule
     use PedigreeModule
     use SortingModule
     use PedigreeModule
@@ -318,7 +318,7 @@ contains
   end function ParsePhaseData
 
   function ReadInParameterFile(filename) result (params)
-    use ProgramParametersDefinition
+    use ProgramParametersModule
     use AlphaHouseMod, only: parseToFirstWhitespace,splitLineIntoTwoParts,toLower
     character(*), intent(in) :: filename
     type(ProgramParameters) :: params
@@ -661,8 +661,8 @@ end function ReadInParameterFile
 
 
   subroutine HapCommonality(library, OutputPoint, params)
-    use HaplotypeLibraryDefinition
-    use OutputParametersDefinition
+    use HaplotypeLibraryModule
+    use OutputParametersModule
     
     type(HaplotypeLibrary), intent(in) :: library
     integer, intent(in) :: OutputPoint
@@ -690,9 +690,9 @@ end function ReadInParameterFile
   end subroutine HapCommonality
 
   subroutine WriteSurrogates(definition, OutputPoint, p, params)
-    use SurrogateDefinition
+    use SurrogateModule
     use PedigreeModule
-    use OutputParametersDefinition
+    use OutputParametersModule
 
     character(len = 300) :: filout
     integer :: i, j, nSurrogates
@@ -739,7 +739,7 @@ end function ReadInParameterFile
   end subroutine WriteSurrogates
 
   subroutine CountInData(nAnisRawPedigree, nAnisG, params)
-    use ProgramParametersDefinition
+    use ProgramParametersModule
     
     type(ProgramParameters), intent(in) :: params
     integer, intent(out) :: nAnisRawPedigree, nAnisG
@@ -783,7 +783,7 @@ end function ReadInParameterFile
   end subroutine CountInData
 
   subroutine MakeDirectories(params)
-    use OutputParametersDefinition
+    use OutputParametersModule
     
     type(OutputParameters), intent(in) :: params
     
@@ -803,7 +803,7 @@ end function ReadInParameterFile
 
   
   subroutine writeTimer(hours, minutes, seconds, params)
-    use OutputParametersDefinition
+    use OutputParametersModule
     integer, intent(in) :: hours, minutes
     real, intent(in) :: seconds
     type(OutputParameters), intent(in) :: params
@@ -816,11 +816,11 @@ end function ReadInParameterFile
   end subroutine writeTimer
   
   subroutine WriteTestResults(results, c, p, OutputPoint, params)
-    use SurrogateDefinition
+    use SurrogateModule
     use PedigreeModule
-    use CoreDefinition
-    use TestResultDefinition
-    use OutputParametersDefinition
+    use CoreModule
+    use TestResultModule
+    use OutputParametersModule
 
     type(TestResults), intent(in) :: results
     type(Core), intent(in) :: c
@@ -893,7 +893,7 @@ end function ReadInParameterFile
   end subroutine WriteTestResults
   
   function getHaplotypeLibraries(directory) result (libraries)
-    use HaplotypeLibraryDefinition
+    use HaplotypeLibraryModule
     
     character(*), intent(in) :: directory
     type(HaplotypeLibrary), dimension(:), pointer :: libraries
@@ -975,7 +975,7 @@ end function ReadInParameterFile
   end subroutine Titles
 
   subroutine PrintTimerTitles(params)
-    use OutputParametersDefinition
+    use OutputParametersModule
 
     implicit none
 
@@ -1004,10 +1004,10 @@ end function ReadInParameterFile
   end subroutine PrintTimerTitles
   
   subroutine WriteHapLib(library, currentcore, params)
-    use OutputParametersDefinition
-    use CoreDefinition
+    use OutputParametersModule
+    use CoreModule
     use HaplotypeModule
-    use HaplotypeLibraryDefinition
+    use HaplotypeLibraryModule
     
     class(HaplotypeLibrary), intent(in) :: library
     integer, intent(in) :: currentcore
@@ -1054,9 +1054,9 @@ end function ReadInParameterFile
   end subroutine WriteHapLib
   
   subroutine writeAlphaPhaseResults(results,p,params)
-    use AlphaPhaseResultsDefinition
+    use AlphaPhaseResultsModule
     use PedigreeModule
-    use OutputParametersDefinition
+    use OutputParametersModule
     
     class(AlphaPhaseResults), intent(in) :: results
     class(PedigreeHolder), intent(in) :: p
@@ -1091,7 +1091,7 @@ end function ReadInParameterFile
   end subroutine writeAlphaPhaseResults  
 
   subroutine makeCoreMistakes(params, nCores)
-    use OutputParametersDefinition
+    use OutputParametersModule
     
     type(OutputParameters), intent(in) :: params
     integer, intent(in) :: nCores
@@ -1121,10 +1121,10 @@ end function ReadInParameterFile
   end subroutine makeCoreMistakes
     
   subroutine readHapLib(library, currentcore, params)
-    use OutputParametersDefinition
-    use CoreDefinition
+    use OutputParametersModule
+    use CoreModule
     use HaplotypeModule
-    use HaplotypeLibraryDefinition
+    use HaplotypeLibraryModule
     
     type(HaplotypeLibrary), intent(out) :: library
     integer, intent(in) :: currentcore
@@ -1179,9 +1179,9 @@ end function ReadInParameterFile
 
  subroutine readInResults(results, params, p)
    use PedigreeModule
-   use CoreDefinition
-   use OutputParametersDefinition
-   use AlphaPhaseResultsDefinition
+   use CoreModule
+   use OutputParametersModule
+   use AlphaPhaseResultsModule
    use HaplotypeModule
 
    type(Core), dimension(:),allocatable :: allCores
@@ -1281,9 +1281,9 @@ end function ReadInParameterFile
  
  subroutine readInPerCoreResults(results, params, p)
    use PedigreeModule
-   use CoreDefinition
-   use OutputParametersDefinition
-   use AlphaPhaseResultsDefinition
+   use CoreModule
+   use OutputParametersModule
+   use AlphaPhaseResultsModule
    use HaplotypeModule
 
    type(Core), dimension(:),allocatable :: allCores
@@ -1372,9 +1372,9 @@ end function ReadInParameterFile
  end subroutine readInPerCoreResults
 
   subroutine readAlphaPhaseResults(results,params,p)
-   use AlphaPhaseResultsDefinition
+   use AlphaPhaseResultsModule
    use PedigreeModule
-   use OutputParametersDefinition
+   use OutputParametersModule
    
    class(AlphaPhaseResults), intent(out) :: results
    class(OutputParameters), intent(in) :: params

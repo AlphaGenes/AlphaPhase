@@ -72,7 +72,7 @@ contains
   end function OldCalculateTails
   
   function getCoresFromLibraries(libraries) result(CoreIndex)
-    use HaplotypeLibraryDefinition
+    use HaplotypeLibraryModule
     
     type(HaplotypeLibrary), dimension(:), intent(in) :: libraries
     integer, dimension(:,:), pointer :: CoreIndex

@@ -9,10 +9,10 @@ program AlphaPhase
   contains
 
   subroutine main
-    use HaplotypeLibraryDefinition
-    use ProgramParametersDefinition
+    use HaplotypeLibraryModule
+    use ProgramParametersModule
     use InputOutput
-    use AlphaPhaseResultsDefinition
+    use AlphaPhaseResultsModule
     use AlphaPhaseFunctions
     use InputOutput
     use PedigreeModule

@@ -1,5 +1,5 @@
-module CoreSubsetDefinition
-  use CoreDefinition
+module CoreSubsetModule
+  use CoreModule
   use GenotypeModule
   use PedigreeModule
   
@@ -205,4 +205,4 @@ contains
   end function getHaplotypeCoreSubset
     
     
-end module CoreSubsetDefinition
+end module CoreSubsetModule

@@ -19,17 +19,17 @@
 !-------------------------------------------------------------------------------
 
 module AlphaPhaseFunctions
-  use HaplotypeLibraryDefinition
-  use SurrogateDefinition
-  use CoreSubsetDefinition
+  use HaplotypeLibraryModule
+  use SurrogateModule
+  use CoreSubsetModule
   use PedigreeModule
-  use CoreDefinition
-  use MemberManagerDefinition
-  use AlphaPhaseParametersDefinition
-  use TestResultDefinition
+  use CoreModule
+  use MemberManagerModule
+  use AlphaPhaseParametersModule
+  use TestResultModule
   use CoreUtils
   use InputOutput
-  use AlphaPhaseResultsDefinition
+  use AlphaPhaseResultsModule
 
   use LongRangePhasing
   use HaplotypeLibraryPhasing
@@ -42,7 +42,7 @@ module AlphaPhaseFunctions
 contains
   function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, userCoreIndex, quiet) result(results)
     ! Following use statements needed here due to compiler issues (Roberto / 16.0.3)
-    use HaplotypeLibraryDefinition
+    use HaplotypeLibraryModule
     use PedigreeModule
     use HaplotypeModule
 
@@ -202,7 +202,7 @@ contains
 
   function createLibraries(phase, params, existingLibraries, userCoreIndex) result (results)
     ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
-    use HaplotypeLibraryDefinition
+    use HaplotypeLibraryModule
     use HaplotypeModule
 
     type(Haplotype), pointer, dimension(:,:), intent(in) :: phase

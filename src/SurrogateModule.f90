@@ -1,4 +1,4 @@
-module SurrogateDefinition
+module SurrogateModule
   use GenotypeMOdule
   implicit none
 
@@ -22,7 +22,7 @@ module SurrogateDefinition
 contains
   function newSurrogate(cs, threshold, incommonThreshold) result(definition)
     use ClusteringModule
-    use CoreSubSetDefinition
+    use CoreSubSetModule
     
     class(CoreSubSet), intent(in) :: cs    
     integer, intent(in) :: threshold
@@ -323,4 +323,4 @@ contains
     
   end subroutine destroySurrogate
     
-end module SurrogateDefinition
+end module SurrogateModule

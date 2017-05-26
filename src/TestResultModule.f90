@@ -1,4 +1,4 @@
-module TestResultDefinition
+module TestResultModule
   use ConstantModule
   use GenotypeModule
   use HaplotypeModule
@@ -22,7 +22,7 @@ module TestResultDefinition
 contains
 
   function newResults(c, TruePhase) result (results)
-    use CoreDefinition
+    use CoreModule
     
     type(Core) :: c
     type(Haplotype), dimension(:,:), intent(in) :: TruePhase    
@@ -152,4 +152,4 @@ contains
     c = results%countA(animal,phase,group,state)
   end function counts 
 
-end module TestResultDefinition
+end module TestResultModule

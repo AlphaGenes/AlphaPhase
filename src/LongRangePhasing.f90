@@ -5,8 +5,8 @@ module LongRangePhasing
 contains
   
   subroutine Erdos(surrogates, c, numsurrdisagree, useSurrsN)
-    use SurrogateDefinition
-    use CoreSubsetDefinition
+    use SurrogateModule
+    use CoreSubsetModule
     use GenotypeModule
     use HaplotypeModule
     
@@ -184,7 +184,7 @@ contains
 
   function goodToVisit(next, depths, sideon, surrogates, visited, &
 	tovisit, visiting, surravediff) result(good)
-    use SurrogateDefinition
+    use SurrogateModule
 
     integer, intent(in) :: next, sideon, visiting
     type(Surrogate), intent(in) :: surrogates
@@ -239,7 +239,7 @@ contains
   end function
 
   subroutine CheckCompatHapGeno(c, PercGenoHaploDisagree)
-    use CoreSubsetDefinition
+    use CoreSubsetModule
     use GenotypeModule
     use HaplotypeModule
     use BitUtilities

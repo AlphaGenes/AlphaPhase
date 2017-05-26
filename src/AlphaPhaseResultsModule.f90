@@ -5,7 +5,7 @@
 ! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
 !-------------------------------------------------------------------------------
 !
-!> @file     AlphaPhaseResultsDefinition.f90
+!> @file     AlphaPhaseResultsModule.f90
 !
 ! DESCRIPTION:
 !> @brief    Module containing return type for alphaphase program
@@ -20,11 +20,11 @@
 !-------------------------------------------------------------------------------
 
 
-module AlphaPhaseResultsDefinition
-  use CoreDefinition
-  use HaplotypeLibraryDefinition
-  use SurrogateDefinition
-  use TestResultDefinition
+module AlphaPhaseResultsModule
+  use CoreModule
+  use HaplotypeLibraryModule
+  use SurrogateModule
+  use TestResultModule
   use PedigreeModule
   implicit none
 
@@ -158,4 +158,4 @@ contains
 
 
   ! end subroutine writeToFiles
-end module AlphaPhaseResultsDefinition
+end module AlphaPhaseResultsModule

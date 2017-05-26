@@ -1,4 +1,4 @@
-module CoreDefinition
+module CoreModule
   use ConstantModule
   use GenotypeModule
   use HaplotypeModule
@@ -258,5 +258,5 @@ contains
 
   end subroutine flipHaplotypes
 
-end module CoreDefinition
+end module CoreModule
 

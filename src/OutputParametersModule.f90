@@ -1,4 +1,4 @@
-module OutputParametersDefinition
+module OutputParametersModule
   implicit none
 
   type :: OutputParameters
@@ -75,4 +75,4 @@ contains
     outputParams%outputCoreMistakesPercent = .false.
 
   end function newOutputParametersImpute
-end module OutputParametersDefinition
+end module OutputParametersModule

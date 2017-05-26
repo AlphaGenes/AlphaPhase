@@ -6,9 +6,9 @@ module HaplotypeLibraryPhasing
     
 contains
   subroutine UpdateHapLib(c, library, percminpresent, minoverlap, percGenoHaploDisagree)
-    use HaplotypeLibraryDefinition
+    use HaplotypeLibraryModule
     use HaplotypeModule
-    use CoreDefinition
+    use CoreModule
     use Random
     
     type(Core), intent(in) :: c
@@ -40,8 +40,8 @@ contains
 
   subroutine newHaplotype(c, animal, phase, library, minoverlap, errorallow)
     use HaplotypeModule
-    use CoreDefinition
-    use HaplotypeLibraryDefinition
+    use CoreModule
+    use HaplotypeLibraryModule
 
     class(Core) :: c
     integer, intent(in) :: animal, phase, minoverlap, errorallow
@@ -117,8 +117,8 @@ contains
   end subroutine newHaplotype
   
   subroutine imputeFromLib(library, c, PercGenoHaploDisagree, percminpresent, minoverlap, minHapFreq, percMinToKeep, quiet)
-    use HaplotypeLibraryDefinition
-    use CoreDefinition
+    use HaplotypeLibraryModule
+    use CoreModule
     
     type(HaplotypeLibrary), intent(in) :: library
     class(Core) :: c
@@ -152,8 +152,8 @@ contains
   end subroutine imputeFromLib
   
   subroutine singleImputationRound(library, c, errorAllow, minPresent, minOverlap, minHapFreq)
-    use HaplotypeLibraryDefinition
-    use CoreDefinition
+    use HaplotypeLibraryModule
+    use CoreModule
     use GenotypeModule
     use HaplotypeModule
     
@@ -265,8 +265,8 @@ contains
   end subroutine singleImputationRound
   
   subroutine complementStart(library, c, errorAllow, minPresent, minOverlap, minHapFreq)
-    use HaplotypeLibraryDefinition
-    use CoreDefinition
+    use HaplotypeLibraryModule
+    use CoreModule
     use GenotypeModule
     use HaplotypeModule
     
@@ -317,7 +317,7 @@ contains
   end subroutine complementStart
     
   function getLibraryHap(library, candHaps) result (libhap)
-    use HaplotypeLibraryDefinition
+    use HaplotypeLibraryModule
     use HaplotypeModule
     
     type(HaplotypeLibrary), intent(in) :: library
@@ -341,7 +341,7 @@ contains
   
   function getCompatPairsWithError(library, geno, ErrorAllow, patLimit, matLimit, nAnisG) result(pairs)
     use GenotypeModule
-    use HaplotypeLibraryDefinition
+    use HaplotypeLibraryModule
     
     class(HaplotypeLibrary) :: library
     type(Genotype), intent(in) :: geno

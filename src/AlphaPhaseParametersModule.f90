@@ -1,4 +1,4 @@
-module AlphaPhaseParametersDefinition
+module AlphaPhaseParametersModule
   implicit none
   
   type:: AlphaPhaseParameters
@@ -46,4 +46,4 @@ contains
     params%tailLength = -1
   end function newParameters
     
-end module AlphaPhaseParametersDefinition
+end module AlphaPhaseParametersModule
