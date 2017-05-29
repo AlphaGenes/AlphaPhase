@@ -275,7 +275,8 @@ contains
   end function createLibraries
   
   subroutine cleanErrors(c, library)
-    type(Core) :: c
+      use HaplotypeLibraryModule
+      type(Core) :: c
     type(HaplotypeLibrary) :: library
     
     integer :: i

@@ -214,7 +214,8 @@ contains
   end function addHap
   
   subroutine updateHap(library, i, hap)
-    class(HaplotypeLibrary) :: library
+      use haplotypemodule
+      class(HaplotypeLibrary) :: library
     integer, intent(in) :: i
     type(Haplotype) :: hap
     
