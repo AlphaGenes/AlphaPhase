@@ -70,6 +70,7 @@ contains
     outputParams%outputHaplotypeLibraryBinary = .true.
     outputParams%outputPhasingYield = .false.
     outputParams%outputTimer = .false.
+    outputParams%outputCombined = .true.
     outputParams%outputIndivMistakes = .false.
     outputParams%outputIndivMistakesPercent = .false.
     outputParams%outputCoreMistakesPercent = .false.
