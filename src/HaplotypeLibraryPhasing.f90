@@ -9,7 +9,6 @@ contains
     use HaplotypeLibraryModule
     use HaplotypeModule
     use CoreModule
-    use Random
     
     type(Core), intent(in) :: c
     type(HaplotypeLibrary), intent(in) :: library
