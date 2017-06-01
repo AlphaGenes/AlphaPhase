@@ -67,7 +67,7 @@ contains
       close(15)
     end if
 
-    if (params%outputCoreIndex) then
+    if (params%outputCoreIndex) then      
       call writeCoreIndex(params, nCores, nAnisG, nSnp, startIndex, endIndex)
     end if
 

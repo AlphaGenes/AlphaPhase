@@ -160,7 +160,6 @@ contains
 	  end if
 	end do
 	
-	print *, "Complementing done"
 	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
 	if (.not. quietInternal) then
 	    print '(6x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
