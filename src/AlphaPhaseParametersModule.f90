@@ -44,6 +44,7 @@ contains
     params%percMinToKeep = 1
     params%coreAndTailLength = -1
     params%tailLength = -1
+    params%Offset = .false.
   end function newParameters
     
 end module AlphaPhaseParametersModule
