@@ -163,9 +163,11 @@ contains
   function getDamCoreSubset(set,animal) result(dam)
     class(CoreSubSet) :: set
     integer, intent(in) :: animal
-    integer :: dam
+    integer :: dam,s, p
     
-    dam = set%full2sub(set%parentPedigree%getSireDamHDIDByIndex(set%parentPedigree%pedigree(set%parentPedigree%hdMap(set%sub2full(animal))),2))
+    s = set%sub2full(animal)
+    p =set%parentPedigree%getSireDamHDIDByIndex(set%parentPedigree%pedigree(set%parentPedigree%hdMap(s)),3)
+    dam = set%full2sub(p)
   end function getDamCoreSubset
   
   function getYieldCoreSubset(set,phase) result (yield)
