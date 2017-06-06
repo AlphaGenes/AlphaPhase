@@ -649,9 +649,6 @@ contains
   params%outputParams%outputGlobalCoreMistakesPercent = params%outputParams%outputGlobalCoreMistakesPercent .and. params%Simulation
 
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
-  params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree/100
-  params%params%GenotypeMissingErrorPercentage = params%params%GenotypeMissingErrorPercentage/100
-
     
   if (.not. minOverlapSet) then 
     params%params%minOverlap = int(params%params%Jump * 0.4)
