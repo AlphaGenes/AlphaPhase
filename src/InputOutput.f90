@@ -650,9 +650,9 @@ contains
 
   params%params%NumSurrDisagree = int(params%params%UseSurrsN * PercSurrDisagree)
     
-  if (.not. minOverlapSet) then 
-    params%params%minOverlap = int(params%params%Jump * 0.4)
-  end if
+!  if (.not. minOverlapSet) then 
+!    params%params%minOverlap = int(params%params%Jump * 0.4)
+!  end if
   
 end function ReadInParameterFile
 

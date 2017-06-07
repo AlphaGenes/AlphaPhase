@@ -151,7 +151,11 @@ contains
 	  if (singleSurrogates) then
 	    results%surrogates(h-startCore+1) = surrogates
 	  end if
-	  call Erdos(surrogates, cs, params%numsurrdisagree, params%useSurrsN)
+	  if (params%minOverlap > 0) then
+	    call ErdosWithOverlap(surrogates, cs, params%numsurrdisagree, params%useSurrsN)
+	  else
+	    call ErdosWithoutOverlap(surrogates, cs, params%numsurrdisagree, params%useSurrsN)
+	  end if
 	  call CheckCompatHapGeno(cs, params%percgenohaplodisagree)
 
 	  subsetCount = subsetCount + 1
