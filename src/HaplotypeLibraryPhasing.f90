@@ -184,7 +184,7 @@ contains
 	candHapsMat = library % limitedMatchWithErrorAndMinOverlap(c % phase(i, 2), ErrorAllow, minOverlap, compatHaps)
 	
 	if ((size(candHapsPat) > 0) .and. (size(candHapsMat) == 0)) then
-	  libHap = getLibraryHap(library, candHapsPat)
+	  libHap = library%getConsensusHap(candHapsPat)
 	  newHap = newHaplotypeHaplotype(hap1)
 	  call newHap%setFromOther(libHap)
 	  hap1changed = .not. newHap%equalHap(hap1)
@@ -195,7 +195,7 @@ contains
 	end if
 	
 	if ((size(candHapsPat) == 0) .and. (size(candHapsMat) > 0)) then
-	  libHap = getLibraryHap(library, candHapsMat)
+	  libHap = library%getConsensusHap(candHapsMat)
 	  newHap = newHaplotypeHaplotype(hap2)
 	  call newHap%setFromOther(libHap)
 	  hap2changed = .not. newHap%equalHap(hap2)
@@ -209,7 +209,7 @@ contains
 	  candPairs = getCompatPairsWithError(library, geno, ErrorAllow, CandHapsPat, CandHapsMat, c%getNAnisG())
 	  
 	  if (size(CandPairs,1) > 0) then
-	    libHap = getLibraryHap(library, candPairs(:,1))
+	    libHap = library%getConsensusHap(candPairs(:,1))
 	    newHap = newHaplotypeHaplotype(hap1)
 	    call newHap%setFromOther(libHap)
 	    hap1changed = .not. newHap%equalHap(hap1)
@@ -218,7 +218,7 @@ contains
 	      call newHaplotype(c, i, 1, library, minoverlap, errorallow)
 	    end if
 
-	    libHap = getLibraryHap(library, candPairs(:,2))
+	    libHap = library%getConsensusHap(candPairs(:,2))
 	    newHap = newHaplotypeHaplotype(hap2)
 	    call newHap%setFromOther(libHap)
 	    hap2changed = .not. newHap%equalHap(hap2)
@@ -234,7 +234,7 @@ contains
 	candHapsPat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
 	newHap = newHaplotypeHaplotype(hap2)
 	if (size(candHapsPat) > 0) then
-	  libHap = getLibraryHap(library, candHapsPat)
+	  libHap = library%getConsensusHap(candHapsPat)
 	  call newHap%setFromOther(libHap)
 	else
 	  call newHap%setFromOther(comp)
@@ -249,7 +249,7 @@ contains
 	candHapsMat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
 	newHap = newHaplotypeHaplotype(hap1)
 	if (size(candHapsMat) > 0) then
-	  libHap = getLibraryHap(library, candHapsMat)
+	  libHap = library%getConsensusHap(candHapsMat)
 	  call newHap%setFromOther(libHap)
 	else
 	  call newHap%setFromOther(comp)
@@ -286,7 +286,7 @@ contains
       candHapsPat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
       newHap = newHaplotypeHaplotype(hap2)
       if (size(candHapsPat) > 0) then
-	libHap = getLibraryHap(library, candHapsPat)
+	libHap = library%getConsensusHap(candHapsPat)
 	call newHap%setFromOther(libHap)
       else
 	call newHap%setFromOther(comp)
@@ -302,7 +302,7 @@ contains
       candHapsMat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
       newHap = newHaplotypeHaplotype(hap1)
       if (size(candHapsMat) > 0) then
-	libHap = getLibraryHap(library, candHapsMat)
+	     libHap = library%getConsensusHap(candHapsMat)
 	call newHap%setFromOther(libHap)
       else
 	call newHap%setFromOther(comp)
@@ -314,29 +314,6 @@ contains
     end do
     
   end subroutine complementStart
-    
-  function getLibraryHap(library, candHaps) result (libhap)
-    use HaplotypeLibraryModule
-    use HaplotypeModule
-    
-    type(HaplotypeLibrary), intent(in) :: library
-    integer, dimension(:), intent(in) :: candHaps
-    
-    type(Haplotype) :: libhap
-    
-    libhap = newHaplotypeMissing(library%nSnps)
-    
-    ! Here for speed!
-    if (size(CandHaps) == 1) then
-      libhap = library%newstore(CandHaps(1))
-    end if
-    
-    if (size(CandHaps) > 1) then
-      call libhap%setZeroBits(library%oneZeroNoOnes(candHaps))
-      call libhap%setOneBits(library%oneOneNoZeros(candHaps))
-    end if
-    
-  end function getLibraryHap    
   
   function getCompatPairsWithError(library, geno, ErrorAllow, patLimit, matLimit, nAnisG) result(pairs)
     use GenotypeModule
@@ -374,6 +351,29 @@ contains
     allocate(pairs(p,2))
     pairs = tempPairs(1:p,:)
     deallocate(tempPairs)
-  end function getCompatPairsWithError    
+  end function getCompatPairsWithError
+
+  subroutine rationaliseLibrary(library, c, percMinToKeep)
+    use HaplotypeLibraryModule
+    use CoreModule
+
+    type(HaplotypeLibrary) :: library
+    type(Core) :: c
+    double precision :: percMinToKeep
+
+    integer, dimension(:), allocatable :: newIDs
+    integer :: i
+
+    newIDs = library%rationalise(percMinToKeep)
+
+    do i = 1, size(c%hapAnis,1)
+      if (c%hapAnis(i,1) /= MissingHaplotypeCode) then
+        c%hapAnis(i,1) = newIDs(c%hapAnis(i,1))
+      end if
+      if (c%hapAnis(i,2) /= MissingHaplotypeCode) then
+        c%hapAnis(i,2) = newIDs(c%hapAnis(i,2))
+      end if
+    end do
+  end subroutine rationaliseLibrary
 
 end module HaplotypeLibraryPhasing

@@ -2,6 +2,7 @@
 # Alphaphase library
 SET(ALPHAPHASE_src
             CoreUtils.f90
+            CoreModule.f90
             CoreSubsetModule.f90
             HaplotypeLibraryPhasing.f90
             InputOutput.f90

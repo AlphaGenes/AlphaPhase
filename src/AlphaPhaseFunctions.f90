@@ -173,8 +173,8 @@ contains
 	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%percMinPresent, params%minoverlap, params%minHapFreq, &
 	  params%percMinToKeep, quietInternal)
       end do
-      
-      library = library%rationalise(params%percMinToKeep,c)
+
+      call rationaliseLibrary(library,c,params%percMinToKeep)
       
       call cleanErrors(c, library)
 
