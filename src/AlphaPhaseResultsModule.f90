@@ -137,7 +137,6 @@ contains
     do i = 1, size(results%cores)
       nSnp = nSnp + results%cores(i)%getNCoreSnp()
     end do
-
     allocate(res(nAnisG,nSnp,2))
 
     do i = 1, nAnisG
