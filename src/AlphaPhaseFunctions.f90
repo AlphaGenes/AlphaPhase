@@ -79,7 +79,7 @@ contains
       quietInternal = quiet
     end if
     if (p%nHd == 0) then
-    ! TODO check if this is wanted behaviour
+      ! TODO check if this is wanted behaviour
       p%nHd = p%nGenotyped
       p%hdMap = p%genotypeMap
       p%hdDictionary = p%genotypeDictionary
@@ -89,9 +89,9 @@ contains
 
     if (.not. present(existingLibraries)) then
       if (.not. present(userCoreIndex)) then
-	CoreIndex = CalculateCores(nSnp, params%Jump, params%offset)
+        CoreIndex = CalculateCores(nSnp, params%Jump, params%offset)
       else
-	CoreIndex = userCoreIndex
+        CoreIndex = userCoreIndex
       end if
     else
       CoreIndex = getCoresFromLibraries(existingLibraries)
@@ -129,70 +129,70 @@ contains
       EndSurrSnp = TailIndex(h, 2)
 
       if (.not. quietInternal) then
-	print*, " "
-	print*, "Starting Core", h, "/", nCores
+        print*, " "
+        print*, "Starting Core", h, "/", nCores
       end if
 
       c = Core(p, startSurrSnp, startCoreSnp, endCoreSnp, endSurrSnp)
       if (.not. present(existingLibraries)) then
-	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+        library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
       else
-	library = existingLibraries(h)
+        library = existingLibraries(h)
       end if
 
       do i = 1, params%NumIter
-	manager = MemberManager(c, params%iterateType, params%iterateNumber)
+        manager = MemberManager(c, params%iterateType, params%iterateNumber)
 
-	subsetCount = 0
-	do while (manager%hasNext())
-	  cs = CoreSubSet(c, p, manager%getNext())
+        subsetCount = 0
+        do while (manager%hasNext())
+          cs = CoreSubSet(c, p, manager%getNext())
 
-	  surrogates = Surrogate(cs, threshold, params%minOverlap)
-	  if (singleSurrogates) then
-	    results%surrogates(h-startCore+1) = surrogates
-	  end if
-	  if (params%minOverlap > 0) then
-	    call ErdosWithOverlap(surrogates, cs, params%numsurrdisagree, params%useSurrsN)
-	  else
-	    call ErdosWithoutOverlap(surrogates, cs, params%numsurrdisagree, params%useSurrsN)
-	  end if
-	  call CheckCompatHapGeno(cs, params%percgenohaplodisagree)
+          surrogates = Surrogate(cs, threshold, params%minOverlap)
+          if (singleSurrogates) then
+            results%surrogates(h-startCore+1) = surrogates
+          end if
+          if (params%minOverlap > 0) then
+            call ErdosWithOverlap(surrogates, cs, params%numsurrdisagree, params%useSurrsN)
+          else
+            call ErdosWithoutOverlap(surrogates, cs, params%numsurrdisagree, params%useSurrsN)
+          end if
+          call CheckCompatHapGeno(cs, params%percgenohaplodisagree)
 
-	  subsetCount = subsetCount + 1
-	  if ((.not. quietInternal) .and. (params%iterateType .ne. "Off")) then
-	    print '(6x, i5, a21, f6.2, a7)', subsetCount, " Subsets completed ", c%getTotalYield(), "% Yield"
-	  end if
-	end do
-	
-	call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
-	if (.not. quietInternal) then
-	    print '(6x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
-	      library%numberPercentPhased(params%percMinToKeep), " Haplotypes"
-	  print*, "   Haplotype Library Imputation step"
-	end if
-	call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%percMinPresent, params%minoverlap, params%minHapFreq, &
-	  params%percMinToKeep, quietInternal)
+          subsetCount = subsetCount + 1
+          if ((.not. quietInternal) .and. (params%iterateType .ne. "Off")) then
+            print '(6x, i5, a21, f6.2, a7)', subsetCount, " Subsets completed ", c%getTotalYield(), "% Yield"
+          end if
+        end do
+
+        call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
+        if (.not. quietInternal) then
+          print '(6x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
+          library%numberPercentPhased(params%percMinToKeep), " Haplotypes"
+          print*, "   Haplotype Library Imputation step"
+        end if
+        call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%percMinPresent, params%minoverlap, params%minHapFreq, &
+          params%percMinToKeep, quietInternal)
       end do
 
       call rationaliseLibrary(library,c,params%percMinToKeep)
-      
+
       call cleanErrors(c, library)
 
       if (.not. quietInternal) then
-	print *, "   Core complete"
+        print *, "   Core complete"
       end if
 
       if (present(TruePhase)) then
-	allocate(CoreTruePhase(nAnisG,2))
-	do i = 1, nAnisG
-	  hap = TruePhase(i,1)
-	  CoreTruePhase(i,1) = hap%subset(startCoreSnp,endCoreSnp)
-	  hap = TruePhase(i,2)
-	  CoreTruePhase(i,2) = hap%subset(startCoreSnp,endCoreSnp)
-	end do
-	call c%flipHaplotypes(CoreTruePhase)
-	results%testResults(h-startCore+1) = TestResults(c,CoreTruePhase)
-	deallocate(CoreTruePhase)
+        allocate(CoreTruePhase(nAnisG,2))
+        do i = 1, nAnisG
+          hap = TruePhase(i,1)
+          CoreTruePhase(i,1) = hap%subset(startCoreSnp,endCoreSnp)
+          hap = TruePhase(i,2)
+          CoreTruePhase(i,2) = hap%subset(startCoreSnp,endCoreSnp)
+        end do
+        call c%flipHaplotypes(CoreTruePhase)
+        results%testResults(h-startCore+1) = TestResults(c,CoreTruePhase)
+        deallocate(CoreTruePhase)
       end if
 
       results%libraries(h-startCore+1) = library
@@ -227,9 +227,9 @@ contains
 
     if (.not. present(existingLibraries)) then
       if (.not. present(userCoreIndex)) then
-	CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
+        CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
       else
-	CoreIndex => userCoreIndex
+        CoreIndex => userCoreIndex
       end if
     else
       CoreIndex => getCoresFromLibraries(existingLibraries)
@@ -263,9 +263,9 @@ contains
 
       c = Core(Phase,StartCoreSnp,EndCoreSnp)
       if (.not. present(existingLibraries)) then
-	library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
+        library = HaplotypeLibrary(c%getNCoreSnp(),500,500)
       else
-	library = existingLibraries(h)
+        library = existingLibraries(h)
       end if
       call UpdateHapLib(c,library,params%percminpresent,params%minoverlap,params%PercGenoHaploDisagree) 
 
@@ -276,24 +276,24 @@ contains
       results%endIndexes(h-startCore+1) = CoreIndex(h,2)
     end do
   end function createLibraries
-  
+
   subroutine cleanErrors(c, library)
-      use HaplotypeLibraryModule
-      type(Core) :: c
+    use HaplotypeLibraryModule
+    type(Core) :: c
     type(HaplotypeLibrary) :: library
-    
+
     integer :: i
-    
+
     do i = 1, c%getNAnisG()
       call c%phase(i,1)%setErrorToMissing()
       call c%phase(i,2)%setErrorToMissing()
     end do
-    
+
     do i = 1, library%size
       call library%newstore(i)%setErrorToMissing()
     end do
-    
+
   end subroutine cleanErrors
-    
+
 end module AlphaPhaseFunctions
 
