@@ -285,7 +285,6 @@ contains
 
         if (trim(params%PedigreeFile) /= "NoPedigree") then
             p = initPedigreeGenotypeFiles(params%GenotypeFile,nAnisG,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile )
-
         else
             p = initPedigreeGenotypeFiles(params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat )
         endif
@@ -486,6 +485,11 @@ contains
                 case("corefile")
                     if (allocated(second)) then
                         read(second(1), *) params%CoreFile
+                    end if
+
+                case("presphasefile")
+                    if (allocated(second)) then
+                        read(second(1), *) params%PrePhaseFile
                     end if
 
                 case("graphics")
