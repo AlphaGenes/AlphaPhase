@@ -402,14 +402,16 @@ contains
 
                 case("percentagesurrdisagree")
                     read(second(1), *) PercSurrDisagree
-                    PercSurrDisagree = PercSurrDisagree/100
+                    PercSurrDisagree = PercSurrDisagree / 100
 
 
                 case("percentagegenohaplodisagree")
                     read(second(1),*) params%params%PercGenoHaploDisagree
+                    params%params%PercGenoHaploDisagree = params%params%PercGenoHaploDisagree / 100
 
                 case("genotypemissingerrorpercentage")
                     read(second(1), *) params%params%GenotypeMissingErrorPercentage
+                    params%params%GenotypeMissingErrorPercentage = params%params%GenotypeMissingErrorPercentage / 100
 
 
                 case("fulloutput")
