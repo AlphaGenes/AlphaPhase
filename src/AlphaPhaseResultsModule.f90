@@ -117,6 +117,28 @@ contains
     end do
   end function getFullPhase
 
+  function getFullPhaseSingleHap(results, ind, phase) result(hap)
+    ! use HaplotypeModule needed here due to compiler issues (Roberto / 16.0.3)
+    use HaplotypeModule
+    class(AlphaPhaseResults) :: results
+    integer, intent(in) :: ind,phase
+    type(Haplotype), pointer :: hap
+
+    integer :: nAnisG, nSnp
+    integer :: k
+
+    nAnisG = results%cores(1)%getNAnisG()
+    nSnp = 0
+    do k = 1, size(results%cores)
+      nSnp = nSnp + results%cores(k)%getNCoreSnp()
+    end do
+
+    hap = Haplotype(nSnp)
+    do k = 1, size(results%cores)
+      call hap%setSubset(results%cores(k)%phase(ind,phase), results%startIndexes(k))
+    end do
+  end function getFullPhaseSingleHap
+
 
 
   !---------------------------------------------------------------------------
