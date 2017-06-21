@@ -1,32 +1,32 @@
 module ProgramParametersModule
-  use AlphaPhaseParametersModule
-  use OutputParametersModule
-  implicit none
-  
-  type:: ProgramParameters
-    character(len=300) GenotypeFile
-    integer :: GenotypeFileFormat
-    logical :: Simulation
-    character (len = 300) :: PedigreeFile, TruePhaseFile, Library, CoreFile
-    integer :: nSnp
+    use AlphaPhaseParametersModule
+    use OutputParametersModule
+    implicit none
 
-    type(OutputParameters) :: outputParams
-    type(AlphaPhaseParameters) :: params
-    
-  end type ProgramParameters
+    type:: ProgramParameters
+        character(len=300) GenotypeFile
+        integer :: GenotypeFileFormat
+        logical :: Simulation
+        character (len = 300) :: PedigreeFile, TruePhaseFile, Library, CoreFile
+        integer :: nSnp
 
-  interface ProgramParameters
-    module procedure newProgramParameters
-  end interface ProgramParameters
-  
+        type(OutputParameters) :: outputParams
+        type(AlphaPhaseParameters) :: params
+
+    end type ProgramParameters
+
+    interface ProgramParameters
+        module procedure newProgramParameters
+    end interface ProgramParameters
+
 contains
-  function newProgramParameters result(programParams)
-    type(ProgramParameters) :: programParams
-    
-    programParams%params = AlphaPhaseParameters()
-    programParams%outputParams = OutputParameters()
-    programParams%library = "None"
-    programParams%CoreFile = "None"
-  end function newProgramParameters
-    
+    function newProgramParameters result(programParams)
+        type(ProgramParameters) :: programParams
+
+        programParams%params = AlphaPhaseParameters()
+        programParams%outputParams = OutputParameters()
+        programParams%library = "None"
+        programParams%CoreFile = "None"
+    end function newProgramParameters
+
 end module ProgramParametersModule
