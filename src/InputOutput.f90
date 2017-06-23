@@ -958,7 +958,7 @@ contains
         print*, ""
         print*, "                              ************************                         "
         print*, "                              *                      *                         "
-        print*, "                              *   AlphaPhase 1.3.1   *                         "
+        print*, "                              *   AlphaPhase 1.3.3   *                         "
         print*, "                              *                      *                         "
         print*, "                              ************************                         "
         print*, "                                                                              "
