@@ -42,6 +42,7 @@ module AlphaPhaseResultsModule
     contains
       procedure :: getFullPhase
       procedure :: getFullPhaseIntArray
+      procedure :: getfullphasesinglehap
   end type AlphaPhaseResults
 
   type :: AlphaPhaseResultsContainer
@@ -122,7 +123,7 @@ contains
     use HaplotypeModule
     class(AlphaPhaseResults) :: results
     integer, intent(in) :: ind,phase
-    type(Haplotype), pointer :: hap
+    type(Haplotype) :: hap
 
     integer :: nAnisG, nSnp
     integer :: k
@@ -133,7 +134,7 @@ contains
       nSnp = nSnp + results%cores(k)%getNCoreSnp()
     end do
 
-    hap = Haplotype(nSnp)
+    hap = newHaplotypeMissing(nSnp)
     do k = 1, size(results%cores)
       call hap%setSubset(results%cores(k)%phase(ind,phase), results%startIndexes(k))
     end do
