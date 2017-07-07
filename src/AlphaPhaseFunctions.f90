@@ -61,7 +61,7 @@ contains
         type(CoreSubset) :: cs
         type(Haplotype), allocatable, dimension(:,:) :: CoreTruePhase
         integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
-        integer, dimension (:,:), allocatable :: CoreIndex, TailIndex
+        integer, dimension (:,:), pointer :: CoreIndex, TailIndex
         integer :: nCores
         integer :: nAnisG, nSnp
         integer :: subsetCount
@@ -89,7 +89,7 @@ contains
 
         if (.not. present(existingLibraries)) then
             if (.not. present(userCoreIndex)) then
-                CoreIndex = CalculateCores(nSnp, params%Jump, params%offset)
+                CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
             else
                 CoreIndex = userCoreIndex
             end if
@@ -97,9 +97,9 @@ contains
             CoreIndex = getCoresFromLibraries(existingLibraries)
         end if
         if (params%tailLength == -1) then
-            TailIndex = oldCalculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
+            TailIndex => oldCalculateTails(CoreIndex, nSnp, params%Jump, params%CoreAndTailLength)
         else
-            TailIndex = calculateTails(CoreIndex, params%tailLength, nSnp)
+            TailIndex => calculateTails(CoreIndex, params%tailLength, nSnp)
         end if
         nCores = size(CoreIndex,1)
 
@@ -201,6 +201,11 @@ contains
             results%startIndexes(h-startCore+1) = CoreIndex(h,1)
             results%endIndexes(h-startCore+1) = CoreIndex(h,2)
         end do
+
+
+        deallocate(CoreIndex)
+        deallocate(TailIndex)
+
     end function phaseAndCreateLibraries
 
     function createLibraries(phase, params, existingLibraries, userCoreIndex) result (results)
