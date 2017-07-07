@@ -46,8 +46,12 @@ contains
         outputParams%outputSurrogates = .true.
         outputParams%outputSurrogatesSummary = .true.
         outputParams%outputHaplotypeLibraryText = .true.
+        outputParams%outputHaplotypeLibraryBinary = .true.
         outputParams%outputPhasingYield = .true.
+        outputParams%outputTimer = .true.
+        outputParams%outputCombined = .true.
         outputParams%outputIndivMistakes = .true.
+        outputParams%outputIndivMistakesPercent = .true.
         outputParams%outputCombined = .true.
         outputParams%outputGlobalCoreMistakesPercent = .true.
 
@@ -74,6 +78,7 @@ contains
         outputParams%outputIndivMistakes = .false.
         outputParams%outputIndivMistakesPercent = .false.
         outputParams%outputCoreMistakesPercent = .false.
+        outputParams%outputGlobalCoreMistakesPercent = .false.
 
     end function newOutputParametersImpute
 end module OutputParametersModule
