@@ -53,7 +53,7 @@ contains
         integer, dimension(:,:), intent(in), optional :: userCoreIndex
         logical, optional :: quiet
 
-        integer :: h, i, threshold
+        integer :: h, i, j, threshold
 
         type(HaplotypeLibrary) :: library
         type(Surrogate) :: surrogates
@@ -194,6 +194,12 @@ contains
                 results%testResults(h-startCore+1) = TestResults(c,CoreTruePhase)
                 deallocate(CoreTruePhase)
             end if
+
+            do i = 1, nAnisG
+                do j = 1, 2
+                    call p%pedigree(p%hdMap(i))%individualPhase(j)%setSubset(c%phase(i,j), CoreIndex(h,1))
+                end do
+            end do
 
             results%libraries(h-startCore+1) = library
             results%cores(h-startCore+1) = c

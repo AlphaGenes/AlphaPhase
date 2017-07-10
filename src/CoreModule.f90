@@ -43,6 +43,7 @@ contains
         integer, intent(in) :: startCoreSnp, endCoreSnp, startTailSnp, endTailSnp
         type(Core) :: c
         type(Genotype) :: tempFullGeno
+        type(Haplotype) :: tempFullHaplotype
 
         integer :: nAnisG, i
 
@@ -59,8 +60,10 @@ contains
             tempFullGeno = p%pedigree(p%hdMap(i))%individualGenotype
             c%coreGenos(i) = tempFullGeno%subset(startCoreSnp, endCoreSnp)
             c%coreAndTailGenos(i) = tempFullGeno%subset(startTailSnp, endTailSnp)
-            c%phase(i,1) = Haplotype(c%nCoreSnps)
-            c%phase(i,2) = Haplotype(c%nCoreSnps)
+            tempFullHaplotype = p%pedigree(p%hdMap(i))%individualPhase(1)
+            c%phase(i,1) = tempFullHaplotype%subset(startCoreSnp,endCoreSnp)
+            tempFullHaplotype = p%pedigree(p%hdMap(i))%individualPhase(2)
+            c%phase(i,2) = tempFullHaplotype%subset(startCoreSnp,endCoreSnp)
         end do
 
         allocate(c%hapAnis(nAnisG,2))

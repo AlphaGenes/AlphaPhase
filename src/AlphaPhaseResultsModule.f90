@@ -69,12 +69,12 @@ contains
     allocate(results%libraries(nCores))
     if (present(containSurrogates)) then
       if (containSurrogates) then
-	allocate(results%surrogates(nCores))
+    allocate(results%surrogates(nCores))
       end if
     end if
     if (present(containTestResults)) then
       if (containTestResults) then
-	allocate(results%testResults(nCores))
+    allocate(results%testResults(nCores))
       end if
     end if
 
@@ -110,10 +110,10 @@ contains
 
     do i = 1, nAnisG
       do j = 1, 2
-	haps(i,j) = Haplotype(nSnp)
-	do k = 1, size(results%cores)
-	  call haps(i,j)%setSubset(results%cores(k)%phase(i,j), results%startIndexes(k))
-	end do
+    haps(i,j) = Haplotype(nSnp)
+    do k = 1, size(results%cores)
+      call haps(i,j)%setSubset(results%cores(k)%phase(i,j), results%startIndexes(k))
+    end do
       end do
     end do
   end function getFullPhase
@@ -164,10 +164,10 @@ contains
 
     do i = 1, nAnisG
       do j = 1, 2
-	tmpHap = Haplotype(nSnp)
-	do k = 1, size(results%cores)
-	  call tmpHap%setSubset(results%cores(k)%phase(i,j), results%startIndexes(k))
-	end do
+    tmpHap = Haplotype(nSnp)
+    do k = 1, size(results%cores)
+      call tmpHap%setSubset(results%cores(k)%phase(i,j), results%startIndexes(k))
+    end do
   res(i,:,j) = tmpHap%toIntegerArray()
       end do
     end do

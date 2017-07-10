@@ -63,6 +63,7 @@ contains
                     call exit(0)
                 end if
                 if (cmd(1:2) .eq. "-c") then
+                    call Titles
                     params%outputParams%outputPerCore = .false.
                     params%outputParams%outputCombined = .true.
 
@@ -105,6 +106,10 @@ contains
         params = ReadInParameterFile(specfile)
 
         p = ParsePedigreeAndGenotypeData(params)
+
+        if (params%prePhaseFile .ne. "None") then
+            call p%addPhaseInformationFromFile(params%prePhaseFile, p%nsnpsPopulation, p%nGenotyped)
+        end if
 
         if (Command_Argument_Count() > 0) then
             if (cmd(1:2) .eq. "-r") then
