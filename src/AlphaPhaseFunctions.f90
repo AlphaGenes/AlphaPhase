@@ -40,7 +40,7 @@ module AlphaPhaseFunctions
     implicit none
 
 contains
-    function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, userCoreIndex, quiet) result(results)
+    function phaseAndCreateLibraries(p, params, existingLibraries, truePhase, userCoreIndex, updatePedigree, quiet) result(results)
         ! Following use statements needed here due to compiler issues (Roberto / 16.0.3)
         use HaplotypeLibraryModule
         use PedigreeModule
@@ -51,7 +51,7 @@ contains
         type(HaplotypeLibrary), dimension(:), intent(in), optional :: existingLibraries
         type(Haplotype), dimension(:,:), intent(in), optional :: truePhase
         integer, dimension(:,:), intent(in), optional :: userCoreIndex
-        logical, optional :: quiet
+        logical, optional :: updatePedigree, quiet
 
         integer :: h, i, j, threshold
 
@@ -69,9 +69,15 @@ contains
         type(AlphaPhaseResults) :: results
 
         integer :: startCore, endCore
-        logical :: printOldProgress, singleSurrogates, quietInternal
+        logical :: printOldProgress, singleSurrogates, quietInternal, updatePedigreeInternal
 
         type(MemberManager) :: manager
+
+        if (.not. present(updatePedigree)) then
+            updatePedigreeInternal = .false.
+        else
+            updatePedigreeInternal = updatePedigree
+        end if
 
         if (.not. present(quiet)) then
             quietInternal = .true.
@@ -195,11 +201,13 @@ contains
                 deallocate(CoreTruePhase)
             end if
 
-            do i = 1, nAnisG
-                do j = 1, 2
-                    call p%pedigree(p%hdMap(i))%individualPhase(j)%setSubset(c%phase(i,j), CoreIndex(h,1))
+            if (updatePedigreeInternal) then
+                do i = 1, nAnisG
+                    do j = 1, 2
+                        call p%pedigree(p%hdMap(i))%individualPhase(j)%setSubset(c%phase(i,j), CoreIndex(h,1))
+                    end do
                 end do
-            end do
+            end if
 
             results%libraries(h-startCore+1) = library
             results%cores(h-startCore+1) = c
