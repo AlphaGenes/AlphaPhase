@@ -159,11 +159,12 @@ contains
         integer, dimension(:), intent(in) :: startIndex, endIndex
 
         integer :: i
-
+        open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"information.txt", status = "unknown")
+        write (25, *) "numCores",nCores
+        write (25, *) "numAnimals", nAnisG
+        write (25, *) "numSnp", nSnp
+        close(25)
         open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
-        write (25, *) nCores
-        write (25, *) nAnisG
-        write (25, *) nSnp
         do i = 1, nCores
             write (25, *) i, startIndex(i), endIndex(i)
         end do
@@ -1207,10 +1208,12 @@ contains
 
 
         if (params%outputCoreIndex) then
+             open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"information.txt", status = "unknown")
+            read (25, *) dumC,nCores
+            read (25, *) dumC, nAnisG
+            read (25, *) dumC, nSnp
+            close(25)
             open (unit = 25, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
-            read (25, *) nCores
-            read (25, *) nAnisG
-            read (25, *) nSnp
             results = AlphaPhaseResults(nCores, .true., .true.)
             allocate(startIndex(nCores))
             allocate(endIndex(nCores))
