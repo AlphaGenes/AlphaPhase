@@ -4,3 +4,6 @@
 [submodule "alphahouse"]
 	path = alphahouse
 	url = https://bitbucket.org/hickeyjohnteam/alphahouse.git
+[submodule "alphaphase-doc"]
+	path = alphaphase-doc
+	url = https://bitbucket.org/hickeyjohnteam/alphaphase-doc.git
