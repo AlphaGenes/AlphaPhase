@@ -425,7 +425,7 @@ contains
 
 
                 case("truephasefile")
-                    read(second(1), *) params%TruePhaseFile
+                    write(params%TruePhaseFile, "(A)") second(1)
 
 
                 case("iteratemethod")
