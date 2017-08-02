@@ -55,7 +55,13 @@ contains
         hap = c % phase(animal, phase)
         ids = library%matchWithErrorAndMinOverlap(hap,0,minoverlap)
         if (size(ids) == 0) then
-            id = library%addHap(hap)
+            ! Don't think this if is needed since it should match itself if c%hapAnis
+            ! but out of an abundance of caution... (dmoney - 2 Aug 2017)
+            if (c%hapAnis(animal,phase) == MissingHaplotypeCode) then
+                id = library%addHap(hap)
+            else
+                id = c%hapAnis(animal,phase)
+            end if
         end if
         if (size(ids) == 1) then
             id = ids(1)
@@ -75,7 +81,7 @@ contains
             end if
         end if
         if (size(ids) > 1) then
-            id = ids(1) 
+            id = ids(1)
             merged = hap
             do i = 1, size(ids)
                 merged = merged%merge(library%newstore(ids(i)))
@@ -107,7 +113,11 @@ contains
                     end do
                 end do
             else
-                id = library%addHap(hap)
+                if (c%hapAnis(animal,phase) == MissingHaplotypeCode) then
+                    id = library%addHap(hap)
+                else
+                    id = c%hapAnis(animal,phase)
+                end if
             end if
         end if
 
