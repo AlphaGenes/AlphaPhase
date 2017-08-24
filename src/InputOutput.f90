@@ -966,7 +966,7 @@ contains
         print*, ""
         print*, "                              ************************                         "
         print*, "                              *                      *                         "
-        print*, "                              *   AlphaPhase 1.3.5   *                         "
+        print*, "                              *   AlphaPhase 1.3.6   *                         "
         print*, "                              *                      *                         "
         print*, "                              ************************                         "
         print*, "                                                                              "
