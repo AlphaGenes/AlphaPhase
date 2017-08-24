@@ -150,7 +150,8 @@ contains
     function getYield(c,phase) result (yield)
         class(Core) :: c
         integer, intent(in) :: phase
-        integer :: counter, i
+        integer(kind=int64) :: counter
+        integer :: i
         double precision :: yield
 
         counter = 0
@@ -164,7 +165,8 @@ contains
 
     function getTotalYield(c) result(yield)
         class(Core) :: c
-        integer :: counter, i
+        integer(kind=int64) :: counter
+        integer :: i
         double precision :: yield
 
         counter = 0

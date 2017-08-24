@@ -5,7 +5,7 @@ module TestResultModule
     implicit none
 
     type:: TestResults
-        integer, dimension(:,:,:,:), allocatable :: countA
+        integer(kind=int64), dimension(:,:,:,:), allocatable :: countA
     contains
         procedure :: percentAll
         procedure :: counts
@@ -119,7 +119,7 @@ contains
     function percentAll(results, phase, group, state) result(p)
         class(TestResults) :: results
         integer, intent(in) :: phase,group,state
-        integer :: s
+        integer(kind=int64) :: s
         double precision :: p
 
         s = sum(results%countA(:,phase,group,:))
@@ -133,7 +133,7 @@ contains
     function percent(results, animal, phase, group, state) result(p)
         class(TestResults) :: results
         integer, intent(in) :: animal,phase,group,state
-        integer :: s
+        integer(kind=int64) :: s
         double precision :: p
 
         s = sum(results%countA(animal,phase,group,:))
@@ -147,7 +147,7 @@ contains
     function counts(results, animal, phase, group, state) result(c)
         class(TestResults) :: results
         integer, intent(in) :: animal,phase,group,state
-        integer:: c
+        integer(kind=int64) :: c
 
         c = results%countA(animal,phase,group,state)
     end function counts 
