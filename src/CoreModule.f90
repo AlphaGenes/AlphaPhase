@@ -160,7 +160,7 @@ contains
             counter = counter + c%phase(i,phase)%numberNotMissingOrError()
         end do
 
-        yield = (float(counter)/(size(c%phase,1) * c%getNCoreSnp())) * 100
+        yield = (float(counter)/(float(size(c%phase,1)) * float(c%getNCoreSnp()))) * 100
     end function getYield
 
     function getTotalYield(c) result(yield)
@@ -174,7 +174,7 @@ contains
             counter = counter + c%phase(i,1)%numberNotMissingOrError()
             counter = counter + c%phase(i,2)%numberNotMissingOrError()
         end do
-        yield = (float(counter)/(size(c%phase,1) * c%nCoreSnps * 2)) * 100
+        yield = (float(counter)/(float(size(c%phase,1)) * float(c%nCoreSnps) * float(2))) * 100
     end function getTotalYield
 
     function getHaplotype(c,animal, phase) result(haplotype)
