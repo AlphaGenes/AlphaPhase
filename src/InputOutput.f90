@@ -675,6 +675,7 @@ contains
 
         integer :: i, SizeCore, nHaps
         character(len = 300) :: filout
+        character(len = 100) :: fmt
 
         integer, allocatable, dimension (:,:) :: HapRel
         integer :: HapCommonalityUnit
@@ -685,9 +686,10 @@ contains
         open (newunit = HapCommonalityUnit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
 
         HapRel = library%getHapRel()
+        write (fmt, '(a,i10,a)') '(i10,', size(HapRel,2), 'f5.2)'
 
         do i = 1, nHaps
-            write (HapCommonalityUnit, '(i10,20000F5.2,20000F5.2,20000F5.2,20000F5.2)') i, float(HapRel(i,:))/SizeCore
+            write (HapCommonalityUnit, fmt) i, float(HapRel(i,:))/SizeCore
         enddo
 
         close(HapCommonalityUnit)
@@ -1024,6 +1026,7 @@ contains
         integer :: haplibUnitBin, haplibunit
         character(len = 300) :: filout
         type(Haplotype) :: hap
+        character(len=100) :: fmt
 
         SizeCore = library%getNumSnps()
 
@@ -1041,11 +1044,12 @@ contains
             write (haplibunitbin) nHaps, SizeCore
         end if
 
+        write(fmt, '(a,i10,a)') '(2i10,a2,', library%nSnps, 'i1)'
+
         do i = 1, nHaps
             hap = library%getHap(i)
             if (params%outputHaplotypeLibraryText) then   
-                write (haplibunit, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') &
-                i, library%getHapFreq(i), " ", hap%toIntegerArray()
+                write (haplibunit, fmt) i, library%getHapFreq(i), " ", hap%toIntegerArray()
 
             end if
             if (params%outputHaplotypeLibraryBinary) then
@@ -1144,6 +1148,8 @@ contains
         type(Haplotype) :: hap
         integer(kind=1), dimension(:), allocatable :: hapArray
         integer :: haplibunit, haplibunitbin
+        character(len=100) :: fmt
+
         if (params%outputHaplotypeLibraryText) then
             write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
             open (newunit = haplibunit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
@@ -1159,15 +1165,16 @@ contains
 
         allocate(hapArray(SizeCore))
         do i = 1, nHaps
-
+            
 
             if (params%outputHaplotypeLibraryBinary) then
                 read (haplibunitbin) hapArray
                 hap = newHaplotypeInt(hapArray)
                 dumI = library%addHap(hap)
             end if
-            if (params%outputHaplotypeLibraryText) then    
-                read (haplibunit, '(2i6,a2,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)') dumI, freq,dumC, hapArray
+            if (params%outputHaplotypeLibraryText) then
+                write(fmt, '(a,i10,a)') '(2i10,a2,', sizeCore, 'i1)'
+                read (haplibunit, fmt) dumI, freq,dumC, hapArray
                 call library%setHapFreq(i,freq)
                 hap = newHaplotypeInt(hapArray)
                 dumI = library%addHap(hap)
