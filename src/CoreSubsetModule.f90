@@ -175,7 +175,8 @@ contains
         class(CoreSubSet) :: set
         integer, intent(in) :: phase
         double precision :: yield
-        integer :: counter, i
+        integer(kind=int64) :: counter
+        integer :: i
         type(Haplotype), pointer :: hap
 
         counter = 0
@@ -185,7 +186,7 @@ contains
             counter = counter + hap%numberNotMissing()
         end do
 
-        yield = (float(counter)/(set%nAnisG * set%parentCore%getNCoreSnp())) * 100
+        yield = (float(counter)/(float(set%nAnisG) * float(set%parentCore%getNCoreSnp()))) * 100
     end function getYieldCoreSubset
 
     subroutine setSwappableCoreSubset(set, animal, val)
