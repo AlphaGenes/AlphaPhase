@@ -1138,7 +1138,8 @@ contains
         use HaplotypeModule
         use HaplotypeLibraryModule
 
-        type(HaplotypeLibrary), intent(out) :: library
+        type(HaplotypeLibrary), intent(inout) :: library
+        type(HaplotypeLibrary) :: tmp
         integer, intent(in) :: currentcore
         type(OutputParameters), intent(in) :: params
 
@@ -1160,7 +1161,9 @@ contains
             open (newunit = haplibunitbin, FILE = trim(params%outputDirectory)//filout, form = "unformatted", status = 'unknown')
             read (haplibunitbin) nHaps, SizeCore
         endif
+
         library = HaplotypeLibrary(sizeCore,nHaps,1)
+
         ! library%setSize(nHaps) 
 
         allocate(hapArray(SizeCore))
