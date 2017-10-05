@@ -286,9 +286,9 @@ contains
         call CountInData(nAnisRawPedigree, nAnisG, params)
 
         if (trim(params%PedigreeFile) /= "NoPedigree") then
-            p = initPedigreeGenotypeFiles(params%GenotypeFile,nAnisG,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile )
+            call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile )
         else
-            p = initPedigreeGenotypeFiles(params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat )
+            call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat )
         endif
     end function ParsePedigreeAndGenotypeData
 
