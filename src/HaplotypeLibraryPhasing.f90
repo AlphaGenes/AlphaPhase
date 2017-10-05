@@ -195,7 +195,7 @@ contains
 
                 if ((size(candHapsPat) > 0) .and. (size(candHapsMat) == 0)) then
                     libHap = library%getConsensusHap(candHapsPat)
-                    newHap = newHaplotypeHaplotype(hap1)
+                    call newHap%newHaplotypeHaplotype(hap1)
                     call newHap%setFromOther(libHap)
                     hap1changed = .not. newHap%equalHap(hap1)
                     c%phase(i,1) = newHap
@@ -206,7 +206,7 @@ contains
 
                 if ((size(candHapsPat) == 0) .and. (size(candHapsMat) > 0)) then
                     libHap = library%getConsensusHap(candHapsMat)
-                    newHap = newHaplotypeHaplotype(hap2)
+                    call newHap%newHaplotypeHaplotype(hap2)
                     call newHap%setFromOther(libHap)
                     hap2changed = .not. newHap%equalHap(hap2)
                     c%phase(i,2) = newHap
@@ -220,7 +220,7 @@ contains
 
                     if (size(CandPairs,1) > 0) then
                         libHap = library%getConsensusHap(candPairs(:,1))
-                        newHap = newHaplotypeHaplotype(hap1)
+                        call newHap%newHaplotypeHaplotype(hap1)
                         call newHap%setFromOther(libHap)
                         hap1changed = .not. newHap%equalHap(hap1)
                         c%phase(i,1) = newHap
@@ -229,7 +229,7 @@ contains
                         end if
 
                         libHap = library%getConsensusHap(candPairs(:,2))
-                        newHap = newHaplotypeHaplotype(hap2)
+                        call newHap%newHaplotypeHaplotype(hap2)
                         call newHap%setFromOther(libHap)
                         hap2changed = .not. newHap%equalHap(hap2)
                         c%phase(i,2) = newHap
@@ -242,7 +242,7 @@ contains
                 hap2 = c%phase(i,2)
                 comp = geno%complement(c%phase(i,1))
                 candHapsPat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
-                newHap = newHaplotypeHaplotype(hap2)
+                call newHap%newHaplotypeHaplotype(hap2)
                 if (size(candHapsPat) > 0) then
                     libHap = library%getConsensusHap(candHapsPat)
                     call newHap%setFromOther(libHap)
@@ -257,7 +257,7 @@ contains
                 hap1 = c%phase(i,1)
                 comp = geno%complement(c%phase(i,2))
                 candHapsMat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
-                newHap = newHaplotypeHaplotype(hap1)
+                call newHap%newHaplotypeHaplotype(hap1)
                 if (size(candHapsMat) > 0) then
                     libHap = library%getConsensusHap(candHapsMat)
                     call newHap%setFromOther(libHap)
@@ -294,7 +294,7 @@ contains
             hap2 = c%phase(i,2)
             comp = geno%complement(c%phase(i,1))
             candHapsPat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
-            newHap = newHaplotypeHaplotype(hap2)
+            call newHap%newHaplotypeHaplotype(hap2)
             if (size(candHapsPat) > 0) then
                 libHap = library%getConsensusHap(candHapsPat)
                 call newHap%setFromOther(libHap)
@@ -310,7 +310,7 @@ contains
             hap1 = c%phase(i,1)
             comp = geno%complement(c%phase(i,2))
             candHapsMat = library % limitedMatchWithErrorAndMinOverlap(comp, ErrorAllow, minPresent, compatHaps)
-            newHap = newHaplotypeHaplotype(hap1)
+            call newHap%newHaplotypeHaplotype(hap1)
             if (size(candHapsMat) > 0) then
                 libHap = library%getConsensusHap(candHapsMat)
                 call newHap%setFromOther(libHap)

@@ -310,9 +310,9 @@ contains
 
         do i = 1, nAnisG
             read (unit, *) dummy, ReadingVector(:)
-            Phase(i,1) = newHaplotypeInt(ReadingVector)
+            call Phase(i,1)%newHaplotypeInt(ReadingVector)
             read (unit, *) dummy, ReadingVector(:)
-            Phase(i,2) = newHaplotypeInt(ReadingVector)
+            call Phase(i,2)%newHaplotypeInt(ReadingVector)
         enddo
 
         close(unit)
@@ -1172,14 +1172,14 @@ contains
 
             if (params%outputHaplotypeLibraryBinary) then
                 read (haplibunitbin) hapArray
-                hap = newHaplotypeInt(hapArray)
+                call hap%newHaplotypeInt(hapArray)
                 dumI = library%addHap(hap)
             end if
             if (params%outputHaplotypeLibraryText) then
                 write(fmt, '(a,i10,a)') '(2i10,a2,', sizeCore, 'i1)'
                 read (haplibunit, fmt) dumI, freq,dumC, hapArray
                 call library%setHapFreq(i,freq)
-                hap = newHaplotypeInt(hapArray)
+                call hap%newHaplotypeInt(hapArray)
                 dumI = library%addHap(hap)
             end if
         end do
@@ -1250,12 +1250,12 @@ contains
             do i = 1, nAnisG
                 read(unit, *) dumC, TempPhase
                 do j = 1, nCores
-                    hap1 = newHaplotypeInt(TempPhase(startIndex(j):endIndex(j)))
+                    call hap1%newHaplotypeInt(TempPhase(startIndex(j):endIndex(j)))
                     allCores(j)%phase(i,1) = hap1
                 end do
                 read(unit, *) dumC, TempPhase
                 do j = 1, nCores
-                    hap2 = newHaplotypeInt(TempPhase(startIndex(j):endIndex(j)))
+                    call hap2%newHaplotypeInt(TempPhase(startIndex(j):endIndex(j)))
                     allCores(j)%phase(i,2) = hap2
                 end do
             end do
@@ -1353,10 +1353,10 @@ contains
                 allocate(TempPhase(endIndex(j) - startIndex(j) + 1))
                 do i = 1, nAnisG
                     read(unit, *) dumC, TempPhase
-                    hap1 = newHaplotypeInt(TempPhase)
+                    call hap1%newHaplotypeInt(TempPhase)
                     allCores(j)%phase(i,1) = hap1
                     read(unit, *) dumC, TempPhase
-                    hap2 = newHaplotypeInt(TempPhase)
+                    call hap2%newHaplotypeInt(TempPhase)
                     allCores(j)%phase(i,2) = hap2
                 end do
                 deallocate(tempPhase)

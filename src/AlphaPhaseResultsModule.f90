@@ -110,7 +110,7 @@ contains
 
     do i = 1, nAnisG
       do j = 1, 2
-    haps(i,j) = Haplotype(nSnp)
+    call haps(i,j)%Haplotype(nSnp)
     do k = 1, size(results%cores)
       call haps(i,j)%setSubset(results%cores(k)%phase(i,j), results%startIndexes(k))
     end do
@@ -134,7 +134,7 @@ contains
       nSnp = nSnp + results%cores(k)%getNCoreSnp()
     end do
 
-    hap = newHaplotypeMissing(nSnp)
+    call hap%newHaplotypeMissing(nSnp)
     do k = 1, size(results%cores)
       call hap%setSubset(results%cores(k)%phase(ind,phase), results%startIndexes(k))
     end do
@@ -164,7 +164,7 @@ contains
 
     do i = 1, nAnisG
       do j = 1, 2
-    tmpHap = Haplotype(nSnp)
+    call tmpHap%Haplotype(nSnp)
     do k = 1, size(results%cores)
       call tmpHap%setSubset(results%cores(k)%phase(i,j), results%startIndexes(k))
     end do
