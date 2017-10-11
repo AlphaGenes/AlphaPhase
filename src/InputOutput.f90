@@ -277,7 +277,7 @@ contains
         use SortingModule
         use PedigreeModule
 
-        type(ProgramParameters), intent(in) :: params
+        type(ProgramParameters), intent(inout) :: params
         type(PedigreeHolder) :: p
 
         integer :: nAnisG
