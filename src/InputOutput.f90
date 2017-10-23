@@ -486,6 +486,11 @@ contains
                         read(second(1), *) params%outputParams%outputDirectory
                     end if
 
+                case("hapcommonalitythreshold")
+                    if (allocated(second)) then
+                        read(second(1), *) params%outputParams%outputHapCommonalityThreshold
+                    end if
+
                 case("corefile")
                     if (allocated(second)) then
                         read(second(1), *) params%CoreFile
@@ -682,6 +687,8 @@ contains
         SizeCore = library%getNumSnps()
         nHaps = library%getSize()
 
+        if (nHaps < params%outputHapCommonalityThreshold) then
+
         write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"Extras",a1,"HapCommonality",i0,".txt")') DASH, DASH, DASH, DASH, OutputPoint
         open (newunit = HapCommonalityUnit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
 
@@ -693,6 +700,7 @@ contains
         enddo
 
         close(HapCommonalityUnit)
+        end
 
     end subroutine HapCommonality
 
