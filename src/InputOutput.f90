@@ -700,7 +700,7 @@ contains
         enddo
 
         close(HapCommonalityUnit)
-        end
+        end if
 
     end subroutine HapCommonality
 
