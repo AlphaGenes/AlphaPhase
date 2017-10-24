@@ -23,6 +23,8 @@ module OutputParametersModule
         logical :: outputCombined
         logical :: outputGlobalCoreMistakesPercent
 
+        integer :: outputHapCommonalityThreshold
+
         character(len=300) :: outputDirectory
 
     end type OutputParameters
@@ -54,7 +56,7 @@ contains
         outputParams%outputIndivMistakesPercent = .true.
         outputParams%outputCombined = .true.
         outputParams%outputGlobalCoreMistakesPercent = .true.
-
+        outputParams%outputHapCommonalityThreshold = 10000
 
     end function newOutputParameters
 
@@ -79,6 +81,7 @@ contains
         outputParams%outputIndivMistakesPercent = .false.
         outputParams%outputCoreMistakesPercent = .false.
         outputParams%outputGlobalCoreMistakesPercent = .false.
+        outputParams%outputHapCommonalityThreshold = 0
 
     end function newOutputParametersImpute
 end module OutputParametersModule
