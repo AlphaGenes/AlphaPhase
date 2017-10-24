@@ -111,7 +111,7 @@ contains
     function getCoreAndTailGenos(c) result (ctGenos)
         ! use GenotypeModule needed here due to compiler issues (Roberto / 16.0.3)
         use GenotypeModule
-        class(Core), target :: c
+        class(CoreType), target :: c
         type(Genotype), dimension(:), pointer :: ctGenos
 
         ctGenos => c%coreAndTailGenos
@@ -120,35 +120,35 @@ contains
     end function getCoreAndTailGenos
 
     function getNAnisG(c) result(num)
-        class(Core) :: c
+        class(CoreType) :: c
         integer :: num
 
         num = size(c%phase,1)
     end function getNAnisG
 
     function getNSnp(c) result(num)
-        class(Core) :: c
+        class(CoreType) :: c
         integer :: num
 
         num = c%nCoreAndTailSnps
     end function getNSnp
 
     function getNCoreSnp(c) result(num)
-        class(Core) :: c
+        class(CoreType) :: c
         integer :: num
 
         num = c%nCoreSnps
     end function getNCoreSnp
 
     function getNCoreTailSnp(c) result(num)
-        class(Core) :: c
+        class(CoreType) :: c
         integer :: num
 
         num = c%nCoreAndTailSnps
     end function getNCoreTailSnp
 
     function getYield(c,phase) result (yield)
-        class(Core) :: c
+        class(CoreType) :: c
         integer, intent(in) :: phase
         integer(kind=int64) :: counter
         integer :: i
@@ -164,7 +164,7 @@ contains
     end function getYield
 
     function getTotalYield(c) result(yield)
-        class(Core) :: c
+        class(CoreType) :: c
         integer(kind=int64) :: counter
         integer :: i
         double precision :: yield
@@ -178,7 +178,7 @@ contains
     end function getTotalYield
 
     function getHaplotype(c,animal, phase) result(haplotype)
-        class(Core) :: c
+        class(CoreType) :: c
         integer, intent(in) :: animal, phase
         type(Haplotype), pointer :: haplotype
 
@@ -186,7 +186,7 @@ contains
     end function getHaplotype
 
     function getPercentFullyPhased(c) result (percent)
-        class(Core) :: c
+        class(CoreType) :: c
         double precision :: percent
 
         integer :: count, i, j
@@ -206,7 +206,7 @@ contains
 
     function getCoreGenos(c,animal) result(g)
         use GenotypeModule
-        class(Core), intent(in) :: c
+        class(CoreType), intent(in) :: c
         integer, intent(in) :: animal
 
         type(Genotype), pointer :: g
@@ -217,7 +217,7 @@ contains
     subroutine flipHaplotypes(c, TruePhase)
         use HaplotypeModule
 
-        class(Core) :: c
+        class(CoreType) :: c
         type(Haplotype), dimension(:,:), intent(in) :: TruePhase
 
         integer :: i, j, CountAgreeStay1, CountAgreeStay2, CountAgreeSwitch1, CountAgreeSwitch2, truth

@@ -42,7 +42,7 @@ contains
         use CoreModule
         use HaplotypeLibraryModule
 
-        class(Core) :: c
+        class(CoreType) :: c
         integer, intent(in) :: animal, phase, minoverlap, errorallow
         class(HaplotypeLibrary) :: library
 
@@ -130,7 +130,7 @@ contains
         use CoreModule
 
         type(HaplotypeLibrary), intent(in) :: library
-        class(Core) :: c
+        class(CoreType) :: c
         double precision, intent(in) :: PercGenoHaploDisagree
         integer, intent(in) :: minHapFreq, minoverlap
         double precision :: percMinToKeep, percminpresent
@@ -167,7 +167,7 @@ contains
         use HaplotypeModule
 
         type(HaplotypeLibrary), intent(in) :: library
-        class(Core) :: c
+        class(CoreType) :: c
         integer, intent(in) :: errorAllow, minPresent, minOverlap, minHapFreq
 
         integer :: i
@@ -280,7 +280,7 @@ contains
         use HaplotypeModule
 
         type(HaplotypeLibrary), intent(in) :: library
-        class(Core) :: c
+        class(CoreType) :: c
         integer, intent(in) :: errorAllow, minPresent, minOverlap, minHapFreq
 
         type(Haplotype) :: hap1, hap2, comp, libHap, newHap

@@ -24,7 +24,7 @@ module MemberManagerModule
 contains
 
     function newMemberManager(c, iterateType, iterateNumber) result(manager)
-        class(Core), intent(in) :: c
+        class(CoreType), intent(in) :: c
         type(MemberManager) :: manager
         character (len = 300) :: iterateType
         integer, intent(in) :: iterateNumber
@@ -53,7 +53,7 @@ contains
 
     subroutine createInputOrder(manager, c, number)
         class(MemberManager) :: manager
-        class(Core), intent(in), target :: c
+        class(CoreType), intent(in), target :: c
         integer, intent(in) :: number
 
         integer :: nAnisG, i
@@ -77,7 +77,7 @@ contains
         use Random
 
         class(MemberManager) :: manager
-        class(Core), intent(in), target :: c
+        class(CoreType), intent(in), target :: c
         integer, intent(in) :: number
 
         integer :: nAnisG, secs, nCount
@@ -100,7 +100,7 @@ contains
     subroutine createCluster(manager, c, number)
         use GenotypeModule
         class(MemberManager) :: manager
-        class(Core), intent(in), target :: c
+        class(CoreType), intent(in), target :: c
         integer, intent(in) :: number
 
         logical, dimension(c%getNAnisG()) :: used
@@ -177,7 +177,7 @@ contains
 
     subroutine createAll(manager, c)
         class(MemberManager) :: manager
-        class(Core), intent(in), target :: c
+        class(CoreType), intent(in), target :: c
 
         manager%noneleft = .false.
         call createInputOrder(manager, c, c%getNAnisG())
