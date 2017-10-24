@@ -7,7 +7,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
 PROJECT(Alphaphase)
 enable_language (Fortran)
-SET(VERSION 1.2.1)
+# SET(VERSION 1.2.1)
 
 OPTION(RUN_TESTS "Run and compile tests"
        false)
@@ -18,8 +18,9 @@ OPTION(USE_HDF5 "Use hdf"
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/alphacmakefiles/cmake/modules")
 set(CMAKE_MACOSX_RPATH 0)
 
-INCLUDE(${CMAKE_MODULE_PATH}/setVersion.cmake)
-
+# INCLUDE(${CMAKE_MODULE_PATH}/setVersion.cmake)
+include(${CMAKE_MODULE_PATH}/GetGitRevisionDescription.cmake)
+git_describe(VERSION)
 ############################################################
 # Define the actual files and folders that make up the build
 ############################################################

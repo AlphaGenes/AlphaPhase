@@ -4,7 +4,7 @@ module CoreModule
     use HaplotypeModule
     implicit none
 
-    type :: Core
+    type :: CoreType
         type(Genotype), dimension(:), pointer :: coreAndTailGenos
         type(Genotype), dimension(:), pointer :: coreGenos
         type(Haplotype), dimension(:,:), pointer :: phase
@@ -27,7 +27,7 @@ module CoreModule
         procedure :: flipHaplotypes
 
         final :: destroyCore
-    end type Core
+    end type CoreType
 
     interface Core
         module procedure newCore
@@ -41,7 +41,7 @@ contains
 
         type(PedigreeHolder), intent(in) :: p
         integer, intent(in) :: startCoreSnp, endCoreSnp, startTailSnp, endTailSnp
-        type(Core) :: c
+        type(CoreType) :: c
         type(Genotype) :: tempFullGeno
         type(Haplotype) :: tempFullHaplotype
 
@@ -79,7 +79,7 @@ contains
 
         type(Haplotype), dimension(:,:), intent(in) :: phase
         integer, intent(in) :: startSnp, endSnp
-        type(Core) :: c
+        type(CoreType) :: c
 
         integer :: nAnisG, i
         type(Haplotype) :: tempFullHaplotype
@@ -101,7 +101,7 @@ contains
     end function newPhaseCore
 
     subroutine destroyCore(c)
-        type(Core) :: c
+        type(CoreType) :: c
 
         if (associated(c%coreGenos)) then
             deallocate(c%hapAnis)

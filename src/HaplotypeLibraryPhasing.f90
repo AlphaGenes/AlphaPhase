@@ -10,7 +10,7 @@ contains
         use HaplotypeModule
         use CoreModule
 
-        type(Core), intent(in) :: c
+        type(CoreType), intent(in) :: c
         type(HaplotypeLibrary), intent(in) :: library
         integer, intent(in) :: minoverlap
         double precision, intent(in) :: PercGenoHaploDisagree, percminpresent
@@ -368,7 +368,7 @@ contains
         use CoreModule
 
         type(HaplotypeLibrary) :: library
-        type(Core) :: c
+        type(CoreType) :: c
         double precision :: percMinToKeep
 
         integer, dimension(:), allocatable :: newIDs

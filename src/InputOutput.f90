@@ -23,7 +23,7 @@ contains
         use OutputParametersModule
         use HaplotypeModule
 
-        type(Core), dimension(:), intent(in) :: allCores
+        type(CoreType), dimension(:), intent(in) :: allCores
         integer, dimension(:), intent(in) :: startIndex, endIndex
         type(PedigreeHolder), intent(in) :: p
         type(OutputParameters), intent(in) :: params
@@ -177,7 +177,7 @@ contains
         use OutputParametersModule
         use HaplotypeModule
 
-        type(Core), intent(in) :: c
+        type(CoreType), intent(in) :: c
         integer, intent(in) :: coreID
         integer, intent(in) :: coreStart
         type(PedigreeHolder), intent(in) :: p
@@ -832,7 +832,7 @@ contains
         use OutputParametersModule
 
         type(TestResults), intent(in) :: results
-        type(Core), intent(in) :: c
+        type(CoreType), intent(in) :: c
         type(PedigreeHolder), intent(in) :: p
         type(OutputParameters), intent(in) :: params
         integer, intent(in) :: OutputPoint
@@ -1202,7 +1202,7 @@ contains
         use AlphaPhaseResultsModule
         use HaplotypeModule
 
-        type(Core), dimension(:),allocatable :: allCores
+        type(CoreType), dimension(:),allocatable :: allCores
         integer, dimension(:), allocatable :: startIndex, endIndex
         type(AlphaPhaseResults), intent(out) :: results
         type(OutputParameters), intent(in) :: params
@@ -1306,7 +1306,7 @@ contains
         use AlphaPhaseResultsModule
         use HaplotypeModule
 
-        type(Core), dimension(:),allocatable :: allCores
+        type(CoreType), dimension(:),allocatable :: allCores
         integer, dimension(:), allocatable :: startIndex, endIndex
         type(AlphaPhaseResults), intent(out) :: results
         type(OutputParameters), intent(in) :: params

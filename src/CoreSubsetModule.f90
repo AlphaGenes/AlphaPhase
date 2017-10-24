@@ -6,7 +6,7 @@ module CoreSubsetModule
     implicit none
 
     type :: CoreSubset
-        type(Core), pointer :: parentCore !< cor is genotype and phase for every animal, for subset of all the sSnPs.
+        type(CoreType), pointer :: parentCore !< cor is genotype and phase for every animal, for subset of all the sSnPs.
         type(PedigreeHolder), pointer :: parentPedigree 
         integer(kind = 4), allocatable, dimension(:) :: full2sub !< mapping from fillIndex to subset fillIndex 
         integer(kind = 4), allocatable, dimension(:) :: sub2full !< mapping from subsetIndex to fullIndex
@@ -37,7 +37,7 @@ contains
 
     function newCoreSubSet(parentCore, parentPedigree, members) result(set)
 
-        type(Core), target :: parentCore
+        type(CoreType), target :: parentCore
         type(PedigreeHolder), target :: parentPedigree
         integer, dimension(:), intent(in) :: members
         type(CoreSubset) :: set

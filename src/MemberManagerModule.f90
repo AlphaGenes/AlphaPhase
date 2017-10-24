@@ -5,7 +5,7 @@ module MemberManagerModule
 
     type :: MemberManager
 
-        type(Core), pointer :: c
+        type(CoreType), pointer :: c
         integer :: number
         integer :: curPos
         integer, dimension(:), allocatable :: order

@@ -57,7 +57,7 @@ contains
 
         type(HaplotypeLibrary) :: library
         type(Surrogate) :: surrogates
-        type(Core) :: c
+        type(CoreType) :: c
         type(CoreSubset) :: cs
         type(Haplotype), allocatable, dimension(:,:) :: CoreTruePhase
         integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
@@ -237,7 +237,7 @@ contains
         integer :: h
 
         type(HaplotypeLibrary) :: library
-        type(Core) :: c
+        type(CoreType) :: c
         integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
         integer, dimension (:,:), pointer :: CoreIndex, TailIndex
         integer :: startCore, endCore, nCores, nSnp
@@ -298,7 +298,7 @@ contains
 
     subroutine cleanErrors(c, library)
         use HaplotypeLibraryModule
-        type(Core) :: c
+        type(CoreType) :: c
         type(HaplotypeLibrary) :: library
 
         integer :: i

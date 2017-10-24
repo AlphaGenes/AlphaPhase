@@ -24,7 +24,7 @@ contains
     function newResults(c, TruePhase) result (results)
         use CoreModule
 
-        type(Core) :: c
+        type(CoreType) :: c
         type(Haplotype), dimension(:,:), intent(in) :: TruePhase    
         type(TestResults) :: results
 
