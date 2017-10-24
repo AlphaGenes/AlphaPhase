@@ -5,7 +5,7 @@ module CoreSubsetModule
 
     implicit none
 
-    type :: CoreSubset
+    type :: CoreSubsetType
         type(CoreType), pointer :: parentCore !< cor is genotype and phase for every animal, for subset of all the sSnPs.
         type(PedigreeHolder), pointer :: parentPedigree 
         integer(kind = 4), allocatable, dimension(:) :: full2sub !< mapping from fillIndex to subset fillIndex 
@@ -27,7 +27,7 @@ module CoreSubsetModule
         procedure :: setSwappableCoreSubset
 
         final :: destroyCoreSubset
-    end type CoreSubset
+    end type CoreSubsetType
 
     interface CoreSubSet
         module procedure newCoreSubSet
@@ -40,7 +40,7 @@ contains
         type(CoreType), target :: parentCore
         type(PedigreeHolder), target :: parentPedigree
         integer, dimension(:), intent(in) :: members
-        type(CoreSubset) :: set
+        type(CoreSubsetType) :: set
 
         integer :: i
 
@@ -62,7 +62,7 @@ contains
     end function newCoreSubset
 
     subroutine destroyCoreSubset(set)
-        type(CoreSubSet) :: set
+        type(CoreSubsetType) :: set
 
         if (allocated(set%full2sub)) then
             deallocate(set%full2sub)
@@ -71,28 +71,28 @@ contains
     end subroutine destroyCoreSubset
 
     function getNAnisGCoreSubset(set) result(num)
-        class(CoreSubSet) :: set
+        class(CoreSubsetType) :: set
         integer :: num
 
         num = set%nAnisG
     end function getNAnisGCoreSubset
 
     function getNSnpCoreSubset(set) result(num)
-        class(CoreSubSet) :: set
+        class(CoreSubsetType) :: set
         integer :: num
 
         num = set%parentCore%getNSnp()
     end function getNSnpCoreSubset
 
     function getNCoreSnpCoreSubset(set) result(num)
-        class(CoreSubSet) :: set
+        class(CoreSubsetType) :: set
         integer :: num
 
         num = set%parentCore%getNCoreSnp()
     end function getNCoreSnpCoreSubset
 
     function getNCoreTailSnpCoreSubset(set) result(num)
-        class(CoreSubSet) :: set
+        class(CoreSubsetType) :: set
         integer :: num
 
         num = set%parentCore%getNCoreTailSnp()
@@ -100,7 +100,7 @@ contains
 
     function getSingleCoreAndTailGenos(set,i) result (ctGenos)
 
-        class(CoreSubset), target :: set
+        class(CoreSubsetType), target :: set
         integer, intent(in) :: i
         type(Genotype), pointer :: ctGenos
 
@@ -111,7 +111,7 @@ contains
 
     function getSingleCoreGenos(set, i) result (cGenos)
 
-        class(CoreSubset), target :: set
+        class(CoreSubsetType), target :: set
         integer, intent(in) :: i
         type(Genotype), pointer :: cGenos
 
@@ -122,7 +122,7 @@ contains
 
     function getCoreAndTailGenosCoreSubset(set) result (ctGenos)
 
-        class(CoreSubset) :: set
+        class(CoreSubsetType) :: set
         type(Genotype), dimension(:), pointer :: ctGenos
         integer :: i
 
@@ -137,7 +137,7 @@ contains
 
     function getCoreGenosCoreSubset(set) result (cGenos)
 
-        class(CoreSubset) :: set
+        class(CoreSubsetType) :: set
         type(Genotype), dimension(:), pointer :: cGenos
         integer :: i
 
@@ -151,7 +151,7 @@ contains
     end function getCoreGenosCoreSubset
 
     function getSireCoreSubset(set,animal) result(sire)
-        class(CoreSubSet) :: set
+        class(CoreSubsetType) :: set
         integer, intent(in) :: animal
         integer :: sire, s, p
 
@@ -161,7 +161,7 @@ contains
     end function getSireCoreSubset
 
     function getDamCoreSubset(set,animal) result(dam)
-        class(CoreSubSet) :: set
+        class(CoreSubsetType) :: set
         integer, intent(in) :: animal
         integer :: dam,s, p
 
@@ -172,7 +172,7 @@ contains
 
     function getYieldCoreSubset(set,phase) result (yield)
         use HaplotypeModule
-        class(CoreSubSet) :: set
+        class(CoreSubsetType) :: set
         integer, intent(in) :: phase
         double precision :: yield
         integer(kind=int64) :: counter
@@ -190,7 +190,7 @@ contains
     end function getYieldCoreSubset
 
     subroutine setSwappableCoreSubset(set, animal, val)
-        class(CoreSubSet) :: set
+        class(CoreSubsetType) :: set
         integer, intent(in) :: animal
         integer(kind=1), intent(in) :: val
 
@@ -199,7 +199,7 @@ contains
 
     function getHaplotypeCoreSubset(set, animal, phase) result(hap)
         use HaplotypeModule
-        class(CoreSubSet), intent(in) :: set
+        class(CoreSubsetType), intent(in) :: set
         integer, intent(in) :: animal, phase
 
         type(Haplotype), pointer :: hap

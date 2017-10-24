@@ -56,9 +56,9 @@ contains
         integer :: h, i, j, threshold
 
         type(HaplotypeLibrary) :: library
-        type(Surrogate) :: surrogates
+        type(SurrogateType) :: surrogates
         type(CoreType) :: c
-        type(CoreSubset) :: cs
+        type(CoreSubsetType) :: cs
         type(Haplotype), allocatable, dimension(:,:) :: CoreTruePhase
         integer :: StartSurrSnp, EndSurrSnp, StartCoreSnp, EndCoreSnp
         integer, dimension (:,:), pointer :: CoreIndex, TailIndex

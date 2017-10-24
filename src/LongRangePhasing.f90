@@ -6,7 +6,7 @@ module LongRangePhasing
     function gtvTest(surrogates, surrAveDiff, toVisit, next) result (gtv)
         use SurrogateModule
 
-        type(Surrogate), intent(in) :: surrogates
+        type(SurrogateType), intent(in) :: surrogates
         integer, dimension(:), intent(in) :: surravediff
         integer, intent(in) :: toVisit, next
 
@@ -21,8 +21,8 @@ contains
         use GenotypeModule
         use HaplotypeModule
 
-        type(Surrogate), intent(in) :: surrogates
-        type(CoreSubSet) :: c
+        type(SurrogateType), intent(in) :: surrogates
+        type(CoreSubsetType) :: c
         integer, intent(in) :: numsurrdisagree, useSurrsN
 
         type(Genotype), dimension(:), pointer :: genos
@@ -194,8 +194,8 @@ contains
         use GenotypeModule
         use HaplotypeModule
 
-        type(Surrogate), intent(in) :: surrogates
-        type(CoreSubSet) :: c
+        type(SurrogateType), intent(in) :: surrogates
+        type(CoreSubsetType) :: c
         integer, intent(in) :: numsurrdisagree, useSurrsN
 
         type(Genotype), dimension(:), pointer :: genos
@@ -364,7 +364,7 @@ contains
     use SurrogateModule
 
     integer, intent(in) :: next, sideon, visiting
-    type(Surrogate), intent(in) :: surrogates
+    type(SurrogateType), intent(in) :: surrogates
     logical, dimension(:), intent(in) :: visited
     integer, dimension(:), intent(in) :: surravediff
     integer, dimension(:), intent(in) :: tovisit, depths
@@ -401,7 +401,7 @@ function goodToVisitWithoutOverlap(next, depths, sideon, surrogates, visited, &
 use SurrogateModule
 
 integer, intent(in) :: next, sideon, visiting
-type(Surrogate), intent(in) :: surrogates
+type(SurrogateType), intent(in) :: surrogates
 logical, dimension(:), intent(in) :: visited
 integer, dimension(:), intent(in) :: surravediff
 integer, dimension(:), intent(in) :: tovisit, depths
@@ -457,7 +457,7 @@ subroutine CheckCompatHapGeno(c, PercGenoHaploDisagree)
     use HaplotypeModule
     use BitUtilities
 
-    class(CoreSubset) :: c
+    class(CoreSubsetType) :: c
     double precision, intent(in) :: PercGenoHaploDisagree
 
     type(Genotype), pointer :: genos

@@ -32,7 +32,7 @@ module AlphaPhaseResultsModule
   type :: AlphaPhaseResults
     type(CoreType), dimension(:), allocatable :: cores
     type(HaplotypeLibrary), dimension(:), allocatable :: libraries
-    type(Surrogate), dimension(:), allocatable :: surrogates
+    type(SurrogateType), dimension(:), allocatable :: surrogates
     type(TestResults), dimension(:), allocatable :: testResults
     integer, dimension(:), allocatable :: ids
     integer, dimension(:), allocatable :: startIndexes

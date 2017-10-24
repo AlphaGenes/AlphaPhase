@@ -712,7 +712,7 @@ contains
         character(len = 300) :: filout
         integer :: i, j, nSurrogates
 
-        type(Surrogate), intent(in) :: definition
+        type(SurrogateType), intent(in) :: definition
         integer, intent(in) :: OutputPoint
         type(PedigreeHolder), intent(in) :: p
         type(OutputParameters), intent(in) :: params

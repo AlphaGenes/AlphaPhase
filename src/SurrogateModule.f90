@@ -4,7 +4,7 @@ module SurrogateModule
 
 
     !< surrogates are animal pairs that should share haplotypes
-    type :: Surrogate
+    type :: SurrogateType
         integer(kind = 2), allocatable, dimension(:,:) :: numOppose !< opposing homozygotes between two aniam;s 
         logical, allocatable, dimension(:,:) :: enoughInCommon
         integer(kind = 1), allocatable, dimension(:,:) :: partition !< partion every animal into paternal or maternal surrogate
@@ -13,7 +13,7 @@ module SurrogateModule
         integer :: incommonThreshold !< whether two animals have enough snps in common that you can define surragates
     contains
         final :: destroySurrogate
-    end type Surrogate
+    end type SurrogateType
 
     interface Surrogate
         module procedure newSurrogate
@@ -24,10 +24,10 @@ contains
         use ClusteringModule
         use CoreSubSetModule
 
-        class(CoreSubSet), intent(in) :: cs    
+        class(CoreSubsetType), intent(in) :: cs    
         integer, intent(in) :: threshold
         integer, intent(in) :: incommonThreshold
-        type(Surrogate) :: definition
+        type(SurrogateType) :: definition
 
         type(Genotype), dimension (:), pointer :: genos
 
@@ -313,7 +313,7 @@ contains
     end function newSurrogate
 
     subroutine destroySurrogate(definition)
-        type(Surrogate) :: definition
+        type(SurrogateType) :: definition
 
         if (allocated(definition%partition)) then
             deallocate(definition%partition)
