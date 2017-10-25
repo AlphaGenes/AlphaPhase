@@ -50,7 +50,7 @@ contains
                 params = ReadInParameterFile(specfile)
                 if (cmd(1:2) .eq. "-s") then
                     CoreIndex => calculateCores(params%nSnp,params%params%Jump,params%params%offset)
-                    p = ParsePedigreeAndGenotypeData(params)
+                    call ParsePedigreeAndGenotypeData(params, p)
 
                     print *
                     call printCoreInfo(CoreIndex)
@@ -78,7 +78,7 @@ contains
                     params%outputParams%outputIndivMistakesPercent = .false.
                     params%outputParams%outputCoreMistakesPercent = .false.
 
-                    p = ParsePedigreeAndGenotypeData(params)
+                    call ParsePedigreeAndGenotypeData(params, p)
                     call readInPerCoreResults(results, params%outputParams, p)
                     call writeAlphaPhaseResults(results, p, params%outputParams)
                     print *, "Results combined"
@@ -105,7 +105,7 @@ contains
         end if
         params = ReadInParameterFile(specfile)
 
-        p = ParsePedigreeAndGenotypeData(params)
+        call ParsePedigreeAndGenotypeData(params, p)
 
         if (params%prePhaseFile .ne. "None") then
             call p%addPhaseInformationFromFile(params%prePhaseFile, p%nsnpsPopulation, p%nGenotyped)

@@ -271,14 +271,14 @@ contains
         res = trim(tmp)
     end function
 
-    function ParsePedigreeAndGenotypeData(params) result(p)
+    subroutine ParsePedigreeAndGenotypeData(params, p)
         use ProgramParametersModule
         use PedigreeModule
         use SortingModule
         use PedigreeModule
 
         type(ProgramParameters), intent(inout) :: params
-        type(PedigreeHolder) :: p
+        type(PedigreeHolder), intent(out) :: p
 
         integer :: nAnisG
         integer :: nAnisRawPedigree
@@ -290,7 +290,7 @@ contains
         else
             call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat )
         endif
-    end function ParsePedigreeAndGenotypeData
+    end subroutine ParsePedigreeAndGenotypeData
 
     function ParsePhaseData(PhaseFile, nAnisG, nSnp) result(Phase)
         use HaplotypeModule
