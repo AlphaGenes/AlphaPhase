@@ -143,8 +143,8 @@ contains
 
         call complementStart(library, c, errorallow, minpresent, minoverlap, minhapfreq)
         if (.not. quiet) then
-            print '(6x, a21, 5x, f6.2, a8, i7, a11)', " After complementing ", c%getTotalYield(), "% Yield ", &
-            library%numberPercentPhased(percMinToKeep), " Haplotypes"
+            print '(6x, a21, 5x, f6.2, a9, f6.2, a7, i7, a11)', " After complementing ", c%getTotalYield(), "% Yield (", &
+            c%getHetYield(), "% Het) ", library%numberPercentPhased(percMinToKeep), " Haplotypes"
         end if
 
         nOldHaps = 0
@@ -154,8 +154,8 @@ contains
             call singleImputationRound(library, c, errorallow, minpresent, minoverlap,  minhapfreq)
             iterations = iterations + 1
             if (.not. quiet) then
-                print '(6x, a7, i2, a12, 5x, f6.2, a8, i7, a11)', " After ", iterations, " iterations ", c%getTotalYield(), "% Yield ", &
-                library%numberPercentPhased(percMinToKeep), " Haplotypes"
+                print '(6x, a7, i2, a12, 5x, f6.2, a9, f6.2, a7, i7, a11)', " After ", iterations, " iterations ", c%getTotalYield(), "% Yield (", &
+                c%getHetYield(), "% Het) ", library%numberPercentPhased(percMinToKeep), " Haplotypes"
             end if
         end do
     end subroutine imputeFromLib

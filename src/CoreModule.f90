@@ -21,6 +21,7 @@ module CoreModule
         procedure :: getNCoreSnp
         procedure :: getNCoreTailSnp
         procedure :: getYield
+        procedure :: getHetYield
         procedure :: getTotalYield
         procedure :: getPercentFullyPhased
         procedure :: getCoreGenos
@@ -176,6 +177,23 @@ contains
         end do
         yield = (float(counter)/(float(size(c%phase,1)) * float(c%nCoreSnps) * float(2))) * 100
     end function getTotalYield
+
+    function getHetYield(c) result(yield)
+        class(CoreType) :: c
+        integer(kind=int64) :: counter, total
+        integer :: i
+        double precision :: yield
+
+        counter = 0
+        total = 0
+        do i = 1, size(c%phase,1)
+            counter = counter + c%coreGenos(i)%hetPresent(c%phase(i,1))
+            counter = counter + c%coreGenos(i)%hetPresent(c%phase(i,2))
+            total = total + 2 * c%coreGenos(i)%numHet()
+        end do
+
+        yield = (float(counter) / float(total)) * 100
+    end function getHetYield
 
     function getHaplotype(c,animal, phase) result(haplotype)
         class(CoreType) :: c

@@ -166,14 +166,15 @@ contains
 
                     subsetCount = subsetCount + 1
                     if ((.not. quietInternal) .and. (params%iterateType .ne. "Off")) then
-                        print '(6x, i5, a21, f6.2, a7)', subsetCount, " Subsets completed ", c%getTotalYield(), "% Yield"
+                        print '(6x, i5, a21, f6.2, a9, f6.2, a6)', subsetCount, " Subsets completed ", c%getTotalYield(), "% Yield (", &
+                            c%getHetYield(), "% Het)"
                     end if
                 end do
 
                 call UpdateHapLib(c, library, params%percminpresent, params%minoverlap, params%PercGenoHaploDisagree)
                 if (.not. quietInternal) then
-                    print '(6x, a15, 11x, f6.2, a8, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield ", &
-                    library%numberPercentPhased(params%percMinToKeep), " Haplotypes"
+                    print '(6x, a15, 11x, f6.2, a9, f6.2, a7, i7, a11)', " LRP completed ", c%getTotalYield(), "% Yield (", &
+                    c%getHetYield(), "% Het) ", library%numberPercentPhased(params%percMinToKeep), " Haplotypes"
                     print*, "   Haplotype Library Imputation step"
                 end if
                 call imputeFromLib(library, c, params%PercGenoHaploDisagree, params%percMinPresent, params%minoverlap, params%minHapFreq, &
