@@ -1147,7 +1147,6 @@ contains
         use HaplotypeLibraryModule
 
         type(HaplotypeLibrary), intent(inout) :: library
-        type(HaplotypeLibrary) :: tmp
         integer, intent(in) :: currentcore
         type(OutputParameters), intent(in) :: params
 

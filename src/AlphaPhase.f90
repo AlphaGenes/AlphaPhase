@@ -23,7 +23,7 @@ contains
         type(PedigreeHolder) :: p
         type(Haplotype), pointer, dimension(:,:) :: Phase, TruePhase
         type(HaplotypeLibrary), dimension(:), pointer :: existingLibraries
-        integer :: nAnisG
+        integer :: nAnisG, nAnisP
         type(AlphaPhaseResults) :: results
         logical :: notPrephased
         integer, dimension(:,:), pointer :: CoreIndex
@@ -50,14 +50,15 @@ contains
                 params = ReadInParameterFile(specfile)
                 if (cmd(1:2) .eq. "-s") then
                     CoreIndex => calculateCores(params%nSnp,params%params%Jump,params%params%offset)
-                    call ParsePedigreeAndGenotypeData(params, p)
+
+                    call CountInData(nAnisP, nAnisG, params)
 
                     print *
                     call printCoreInfo(CoreIndex)
 
                     call makeDirectories(params%outputParams)
 
-                    call writeCoreIndex(params%outputParams, size(CoreIndex,1), p%nGenotyped, params%nSnp, CoreIndex(:,1), CoreIndex(:,2))
+                    call writeCoreIndex(params%outputParams, size(CoreIndex,1), nAnisG, params%nSnp, CoreIndex(:,1), CoreIndex(:,2))
                     print *
                     print *, "Setup complete"
                     call exit(0)
