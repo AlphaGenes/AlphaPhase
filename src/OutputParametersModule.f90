@@ -60,8 +60,9 @@ contains
 
     end function newOutputParameters
 
-    function newOutputParametersImpute result(outputParams)
+    function newOutputParametersImpute(binary) result(outputParams)
         type(OutputParameters) :: outputParams
+        integer, optional :: binary
 
         outputParams%outputFinalPhase = .true.
         outputParams%outputCoreIndex = .true.
@@ -72,8 +73,14 @@ contains
         outputParams%outputHapCommonality = .false.
         outputParams%outputSurrogates = .false.
         outputParams%outputSurrogatesSummary = .false.
-        outputParams%outputHaplotypeLibraryText = .false.
-        outputParams%outputHaplotypeLibraryBinary = .true.
+
+        if (present(binary)) then
+            outputParams%outputHaplotypeLibraryText = .false.
+            outputParams%outputHaplotypeLibraryBinary = .true.
+        else
+            outputParams%outputHaplotypeLibraryText = .true.
+            outputParams%outputHaplotypeLibraryBinary = .false.
+        endif
         outputParams%outputPhasingYield = .false.
         outputParams%outputTimer = .false.
         outputParams%outputCombined = .true.
