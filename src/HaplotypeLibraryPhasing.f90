@@ -23,7 +23,7 @@ contains
         minpresent = max(int(percminpresent * c%getNCoreSnp()),minoverlap)
 
         do i = 1, c % getNAnisG()
-            !      !Paternal Haps
+            !Paternal Haps
             hap = c % phase(i, 1)
             if (hap%numberNotMissing() >= minpresent) then
                 call newHaplotype(c, i, 1, library, minoverlap, errorallow)
@@ -65,9 +65,7 @@ contains
         end if
         if (size(ids) == 1) then
             id = ids(1)
-            if (hap%equalhap(library%newstore(id))) then
-                library%hapfreq(id) = library%hapfreq(id) + 1
-            else
+            if (.not. hap%equalhap(library%newstore(id))) then
                 merged = hap%merge(library%newstore(id))
                 do i = 1, c%getNAnisG()
                     do j = 1, 2
@@ -76,7 +74,6 @@ contains
                         end if
                     end do
                 end do
-                library%hapfreq(id) = library%hapfreq(id) + 1
                 c%phase(animal,phase) = merged
             end if
         end if
@@ -120,6 +117,11 @@ contains
                 end if
             end if
         end if
+
+        if (c%hapAnis(animal,phase) /= MissingHaplotypeCode) then
+            library%hapFreq(c%hapAnis(animal,phase)) = library%hapFreq(c%hapAnis(animal,phase)) - 1
+        end if
+        library%hapFreq(id) = library%hapFreq(id) + 1
 
         c%hapAnis(animal, phase) = id
         deallocate(ids)
