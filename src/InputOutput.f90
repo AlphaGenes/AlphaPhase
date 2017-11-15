@@ -332,11 +332,13 @@ contains
         character(len=:), allocatable::tag
         character(len=300),dimension(:),allocatable :: second
 
-        logical :: singleRun, singleSurrogates, minOverlapSet
+        logical :: singleRun, singleSurrogates, minOverlapSet, simsetoff
 
         params = ProgramParameters()
 
         open(newunit=unit, file=filename, action="read", status="old")
+
+        simsetoff = .false.
 
         status = 0
         READFILE: do while (status==0)
@@ -357,6 +359,9 @@ contains
                         write(*, "(A,A)") "No pedigree file specified. Using default filename: ", params%PedigreeFile
                     else
                         write(params%PedigreeFile, "(A)") second(1)
+                        if (params%PedigreeFile .eq. "None") then
+                            params%PedigreeFile = "NoPedigree"
+                        end if
                     end if
 
                 case("genotypefile")
@@ -384,7 +389,8 @@ contains
 
                 case("generalcoreandtaillength")
                     read(second(1), *) params%params%CoreAndTailLength
-                    write(*,*) "GeneralCoreAndTailLength is likely to be deprecated in a future release."
+                    write(*,*) "Use of GeneralCoreAndTailLength is deprecated"
+                    write(*,*) "and is likely to be removed in a future release."
                     write(*,*) "Please consider using TailLength instead."
 
                 case("taillength")
@@ -417,15 +423,18 @@ contains
 
                 case("fulloutput")
                     read(second(1),*) outputoption
+                    write(*,*) "Use of FullOutput is deprecated."
+                    write(*,*) "Please consider using TailLength instead."
 
 
-                case("simulation")
-                    read(second(1), *) tempInt
-                    params%Simulation = (TempInt == 1)
-
+                case("output")
+                    read(second(1),*) outputoption
 
                 case("truephasefile")
-                    write(params%TruePhaseFile, "(A)") second(1)
+                    if (.not. simsetoff) then
+                        write(params%TruePhaseFile, "(A)") second(1)
+                        params%Simulation = .true.
+                    endif
 
 
                 case("iteratemethod")
@@ -509,6 +518,12 @@ contains
 
                 case("nrmthresh")
                     write(*,"(A)") "nrmthresh is no longer a valid option for the AlphaPhase Spec File."
+
+                case("simulation")
+                    read(second(1),*) TempInt
+                    simsetoff = (TempInt == 0)
+                    write(*,"(A)") "simulation is depreceated."
+                    write(*,"(A)") "If truephasefile is present then it is assumed to be simulated data."
 
                 case default
                     write(*,"(A,A)") trim(tag), " is not valid for the AlphaPhase Spec File."
