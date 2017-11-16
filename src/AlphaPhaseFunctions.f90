@@ -88,6 +88,10 @@ contains
             ! TODO check if this is wanted behaviour
             p%nHd = p%nGenotyped
             p%hdMap = p%genotypeMap
+
+            if (.not. allocated(p%hdDictionary)) then
+                allocate(p%hdDictionary)
+            endif
             p%hdDictionary = p%genotypeDictionary
         endif
         nAnisG = p%nHd
