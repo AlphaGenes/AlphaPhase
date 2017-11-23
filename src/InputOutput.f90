@@ -424,7 +424,7 @@ contains
                 case("fulloutput")
                     read(second(1),*) outputoption
                     write(*,*) "Use of FullOutput is deprecated."
-                    write(*,*) "Please consider using TailLength instead."
+                    write(*,*) "Please consider using Output instead."
 
 
                 case("output")
