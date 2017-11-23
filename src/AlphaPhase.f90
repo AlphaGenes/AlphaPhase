@@ -64,7 +64,6 @@ contains
                     call exit(0)
                 end if
                 if (cmd(1:2) .eq. "-c") then
-                    call Titles
                     params%outputParams%outputPerCore = .false.
                     params%outputParams%outputCombined = .true.
 
