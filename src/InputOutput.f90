@@ -1349,9 +1349,9 @@ contains
 
         if (params%outputCoreIndex) then
             open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"information.txt", status = "unknown")
-            read (unit, *) nCores
-            read (unit, *) nAnisG
-            read (unit, *) nSnp
+            read (unit, *) dumC, nCores
+            read (unit, *) dumC, nAnisG
+            read (unit, *) dumC, nSnp
             close(unit)
             results = AlphaPhaseResults(nCores, .true., .true.)
 
