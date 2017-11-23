@@ -1348,11 +1348,14 @@ contains
 
 
         if (params%outputCoreIndex) then
-            open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
+            open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"information.txt", status = "unknown")
             read (unit, *) nCores
             read (unit, *) nAnisG
             read (unit, *) nSnp
+            close(unit)
             results = AlphaPhaseResults(nCores, .true., .true.)
+
+            open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
             allocate(startIndex(nCores))
             allocate(endIndex(nCores))
             allocate(allCores(nCores))
