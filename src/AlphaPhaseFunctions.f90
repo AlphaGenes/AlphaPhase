@@ -50,7 +50,7 @@ contains
         type(AlphaPhaseParameters) :: params
         type(HaplotypeLibrary), dimension(:), intent(in), optional :: existingLibraries
         type(Haplotype), dimension(:,:), intent(in), optional :: truePhase
-        integer, dimension(:,:), intent(in), optional :: userCoreIndex
+        integer, dimension(:,:), intent(in), optional, target :: userCoreIndex
         logical, optional :: updatePedigree, quiet
 
         integer :: h, i, j, threshold
@@ -101,7 +101,7 @@ contains
             if (.not. present(userCoreIndex)) then
                 CoreIndex => CalculateCores(nSnp, params%Jump, params%offset)
             else
-                CoreIndex = userCoreIndex
+                CoreIndex => userCoreIndex
             end if
         else
             CoreIndex = getCoresFromLibraries(existingLibraries)
