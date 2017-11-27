@@ -84,16 +84,7 @@ contains
         else
             quietInternal = quiet
         end if
-        if (p%nHd == 0) then
-            ! TODO check if this is wanted behaviour
-            p%nHd = p%nGenotyped
-            p%hdMap = p%genotypeMap
 
-            if (.not. allocated(p%hdDictionary)) then
-                allocate(p%hdDictionary)
-            endif
-            p%hdDictionary = p%genotypeDictionary
-        endif
         nAnisG = p%nHd
         nSnp = p%pedigree(p%hdMap(1))%individualGenotype%getLength()
 

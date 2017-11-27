@@ -290,6 +290,18 @@ contains
         else
             call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat )
         endif
+
+        !! Bit of a fudge for when AlphaPhase is being run standalone - set all animals to HD as AlphaPhase
+        !! only works with the HD animals
+        if (p%nHd == 0) then
+            p%nHd = p%nGenotyped
+            p%hdMap = p%genotypeMap
+
+            if (.not. allocated(p%hdDictionary)) then
+                allocate(p%hdDictionary)
+            endif
+            p%hdDictionary = p%genotypeDictionary
+        endif
     end subroutine ParsePedigreeAndGenotypeData
 
     function ParsePhaseData(PhaseFile, nAnisG, nSnp) result(Phase)
@@ -389,9 +401,9 @@ contains
 
                 case("generalcoreandtaillength")
                     read(second(1), *) params%params%CoreAndTailLength
-                    write(*,*) "Use of GeneralCoreAndTailLength is deprecated"
-                    write(*,*) "and is likely to be removed in a future release."
-                    write(*,*) "Please consider using TailLength instead."
+                    write(*,"(A)") "Use of GeneralCoreAndTailLength is deprecated"
+                    write(*,"(A)") "and is likely to be removed in a future release."
+                    write(*,"(A)") "Please consider using TailLength instead."
 
                 case("taillength")
                     read(second(1), *) params%params%TailLength
@@ -399,7 +411,7 @@ contains
                 case("generalcorelength")
 
                     if (size(second) <2) then
-                        write(*,*) "GeneralCoreLength incorrectly specified"
+                        write(*,"(A)") "GeneralCoreLength incorrectly specified"
                     endif
                     read (second(1), *) params%params%Jump
                     read (second(2), *)OffsetVariable
@@ -423,8 +435,8 @@ contains
 
                 case("fulloutput")
                     read(second(1),*) outputoption
-                    write(*,*) "Use of FullOutput is deprecated."
-                    write(*,*) "Please consider using Output instead."
+                    write(*,"(A)") "Use of FullOutput is deprecated."
+                    write(*,"(A)") "Please consider using Output instead."
 
 
                 case("output")
