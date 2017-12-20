@@ -166,11 +166,11 @@ contains
                             definition%partition(i, j) = 1
                         end if
                     endif
-                    !     if (definition%numoppose(cs%getSireCoreSubset(i), j) > threshold) then
-                    !       if (definition%enoughIncommon(cs%getSireCoreSubset(i), j)) then
-                    !         definition%partition(i, j) = 2
-                    !       end if
-                    !     end if
+                        if (definition%numoppose(cs%getSireCoreSubset(i), j) > threshold) then
+                          if (definition%enoughIncommon(cs%getSireCoreSubset(i), j)) then
+                            definition%partition(i, j) = 2
+                          end if
+                        end if
                 enddo
                 definition%method(i) = 2
             endif
@@ -184,11 +184,11 @@ contains
                             definition%partition(i, j) = 2
                         end if
                     endif
-                    !     if (definition%numoppose(cs%getDamCoreSubset(i), j) > threshold) then
-                    !       if (definition%enoughIncommon(cs%getDamCoreSubset(i), j)) then
-                    !         definition%partition(i, j) = 1
-                    !       end if
-                    !     end if
+                        if (definition%numoppose(cs%getDamCoreSubset(i), j) > threshold) then
+                          if (definition%enoughIncommon(cs%getDamCoreSubset(i), j)) then
+                            definition%partition(i, j) = 1
+                          end if
+                        end if
                 enddo
                 definition%method(i) = 3
             endif
