@@ -1,14 +1,14 @@
 module ProgramParametersModule
     use AlphaPhaseParametersModule
     use OutputParametersModule
+    use baseSpecFileModule
     implicit none
 
-    type:: ProgramParameters
+    type, extends(baseSpecFile) :: ProgramParameters
         character(len=300) GenotypeFile
         integer :: GenotypeFileFormat
         logical :: Simulation
         character (len = 300) :: PedigreeFile, TruePhaseFile, Library, CoreFile, PrePhaseFile
-        integer :: nSnp
 
         type(OutputParameters) :: outputParams
         type(AlphaPhaseParameters) :: params
@@ -28,6 +28,8 @@ contains
         programParams%library = "None"
         programParams%CoreFile = "None"
         programParams%PrePhaseFile = "None"
+        programParams%plinkInputFile = ""
+        programParams%resultFolderPath = "Results"
     end function newProgramParameters
 
 end module ProgramParametersModule
