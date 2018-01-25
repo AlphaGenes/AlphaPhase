@@ -286,9 +286,9 @@ contains
         call CountInData(nAnisRawPedigree, nAnisG, params)
 
         if (trim(params%PedigreeFile) /= "NoPedigree") then
-            call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile )
+            call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile, dontInitAll=1 )
         else
-            call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat )
+            call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat, dontInitAll=1 )
         endif
 
         !! Bit of a fudge for when AlphaPhase is being run standalone - set all animals to HD as AlphaPhase
