@@ -1083,7 +1083,7 @@ contains
 
         do i = 1, nHaps
             hap = library%getHap(i)
-            if (params%outputHaplotypeLibraryText) then   
+            if (params%outputHaplotypeLibraryText) then
                 write (haplibunit, fmt) i, library%getHapFreq(i), " ", hap%toIntegerArray()
 
             end if
@@ -1125,17 +1125,17 @@ contains
             if (params%outputSurrogates .or. params%outputSurrogatesSummary) then
                 call writeSurrogates(results%surrogates(i), id, p, params)
             end if
-            if (params%outputCombined) then
-                call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
-            end if
-            if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
-                call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
-            end if
         enddo
+        if (params%outputCombined) then
+            call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
+        end if
+        if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
+            call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
+        end if
         if (params%outputGlobalCoreMistakesPercent) then
             call makeCoreMistakes(params, results%nCores)
         end if
-    end subroutine writeAlphaPhaseResults  
+    end subroutine writeAlphaPhaseResults
 
     subroutine makeCoreMistakes(params, nCores)
         use OutputParametersModule
