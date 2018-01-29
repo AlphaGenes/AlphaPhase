@@ -1125,12 +1125,12 @@ contains
             if (params%outputSurrogates .or. params%outputSurrogatesSummary) then
                 call writeSurrogates(results%surrogates(i), id, p, params)
             end if
+            if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
+                call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
+            end if
         enddo
         if (params%outputCombined) then
             call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
-        end if
-        if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
-            call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
         end if
         if (params%outputGlobalCoreMistakesPercent) then
             call makeCoreMistakes(params, results%nCores)
