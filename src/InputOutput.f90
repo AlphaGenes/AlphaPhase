@@ -830,8 +830,6 @@ contains
 
         type(OutputParameters), intent(in) :: params
 
-        print*, ""
-
         call system(MD // trim(params%outputDirectory) // DASH // "PhasingResults")
         call system(MD // trim(params%outputDirectory) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary")
         if (params%outputHapCommonality) call system(MD // trim(params%outputDirectory) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
