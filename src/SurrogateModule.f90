@@ -24,7 +24,7 @@ contains
         use ClusteringModule
         use CoreSubSetModule
 
-        class(CoreSubsetType), intent(in) :: cs    
+        class(CoreSubsetType), intent(in) :: cs
         integer, intent(in) :: threshold
         integer, intent(in) :: incommonThreshold
         type(SurrogateType) :: definition
@@ -37,8 +37,8 @@ contains
         integer :: nAnisG, nSnp
 
         integer :: i, j, k, Counter, nSnpCommon
-        integer, allocatable, dimension(:) :: ProgCount
         integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam
+        integer :: KnownSire, KnownDam
 
         integer :: aj, ak
         integer :: pass
@@ -54,8 +54,6 @@ contains
         nSnp = cs%getNCoreTailSnpCoreSubset()
         genos => cs%getCoreAndTailGenosCoreSubset()
 
-        allocate(ProgCount(nAnisG)) !< how many prog each animal has 
-
         allocate(passThres(nAnisG, nAnisG)) !< list of surragates for a given animal
         allocate(numPassThres(nAnisG)) !< count of how many surragates animal has
         numPassThres = 0
@@ -64,7 +62,7 @@ contains
         if (allocated(definition%partition)) then
             deallocate(definition%partition)
             deallocate(definition%numoppose)
-            deallocate(definition%enoughIncommon)      
+            deallocate(definition%enoughIncommon)
             deallocate(definition%method)
         end if
         allocate(definition%partition(nAnisG,nAnisG))
@@ -111,16 +109,6 @@ contains
             definition%numoppose(i, i) = 0
         end do
 
-        ProgCount = 0
-        do i = 1, nAnisG
-            if (cs%getSireCoreSubset(i) /= 0) then
-                ProgCount(cs%getSireCoreSubset(i)) = ProgCount(cs%getSireCoreSubset(i)) + 1
-            end if
-            if (cs%getDamCoreSubset(i) /= 0) then
-                ProgCount(cs%getDamCoreSubset(i)) = ProgCount(cs%getDamCoreSubset(i)) + 1
-            end if
-        end do
-
         do i = 1, nAnisG
 
             DumSire = 0
@@ -157,115 +145,28 @@ contains
                 definition%method(i) = 1
             end if
 
-            if ((definition%method(i) == 0).and.(cs%getSireCoreSubset(i) /= 0)) then
-                definition%partition(i, cs%getSireCoreSubset(i)) = 1
-                do aj = 1, numPassThres(i)
-                    j = passThres(i, aj)
-                    if (definition%numoppose(cs%getSireCoreSubset(i), j) <= threshold) then
-                        if (definition%enoughIncommon(cs%getSireCoreSubset(i), j)) then
-                            definition%partition(i, j) = 1
-                        end if
-                    endif
-                        if (definition%numoppose(cs%getSireCoreSubset(i), j) > threshold) then
-                          if (definition%enoughIncommon(cs%getSireCoreSubset(i), j)) then
-                            definition%partition(i, j) = 2
-                          end if
-                        end if
-                enddo
-                definition%method(i) = 2
-            endif
-
-            if ((definition%method(i) == 0).and.(cs%getDamCoreSubset(i) /= 0)) then
-                definition%partition(i, cs%getDamCoreSubset(i)) = 2
-                do aj = 1, numPassThres(i)
-                    j = passThres(i, aj)
-                    if (definition%numoppose(cs%getDamCoreSubset(i), j) <= threshold) then
-                        if (definition%enoughIncommon(cs%getDamCoreSubset(i), j)) then
-                            definition%partition(i, j) = 2
-                        end if
-                    endif
-                        if (definition%numoppose(cs%getDamCoreSubset(i), j) > threshold) then
-                          if (definition%enoughIncommon(cs%getDamCoreSubset(i), j)) then
-                            definition%partition(i, j) = 1
-                          end if
-                        end if
-                enddo
-                definition%method(i) = 3
-            endif
-
-            if ((definition%method(i) == 0).and.(ProgCount(i) /= 0)) then
-                DumSire = 0
-                do aj = 1, numPassThres(i)
-                    j = passThres(i, aj)
-                    if (i == cs%getDamCoreSubset(j)) then
-                        DumSire = j
-                        exit
-                    endif
-                    if (i == cs%getSireCoreSubset(j)) then
-                        DumSire = j
-                        exit
-                    endif
-                end do
-                if (DumSire /= 0) then
-                    definition%partition(i, DumSire) = 1
-                    do aj = 1, numPassThres(i)
-                        j = passThres(i, aj)
-                        if ((i == cs%getSireCoreSubset(j)).or.(i == cs%getDamCoreSubset(j))) then
-                            if (definition%numoppose(j, DumSire) > threshold) then
-                                if (definition%enoughIncommon(j, DumSire)) then
-                                    definition%partition(i, j) = 2
-                                    exit
-                                end if
-                            else
-                                if (definition%enoughIncommon(j, DumSire)) then
-                                    definition%partition(i, j) = 1
-                                    exit
-                                end if
-                            endif
-                        end if
-                    end do
-                end if
-                definition%method(i) = 5
-            end if
-
-            if (definition%method(i) > 1) then
-                do aj = 1, numPassThres(i)
-                    j = passThres(i, aj)
-                    CountAgreePat = 0
-                    CountAgreeMat = 0
-                    do ak = 1, numPassThres(j)
-                        k = passThres(j, ak)
-                        if (definition%partition(i, k) == 1) then
-                            CountAgreePat = CountAgreePat + 1
-                            exit !here
-                        endif
-                        if (definition%partition(i, k) == 2) then
-                            CountAgreeMat = CountAgreeMat + 1
-                            exit !here
-                        endif
-                    end do
-                    if ((CountAgreePat /= 0).and.(CountAgreeMat == 0)) then
-                        definition%partition(i, j) = 1
-                    end if
-                    if ((CountAgreePat == 0).and.(CountAgreeMat /= 0)) then
-                        definition%partition(i, j) = 2
-                    end if
-                end do
-            end if
-
             if (definition%method(i) == 0) then
                 SurrCounter = numPassThres(i)
                 if (SurrCounter > 0) then
                     allocate(TempSurrArray(SurrCounter, SurrCounter))
                     allocate(TempSurrVector(SurrCounter))
                     SurrCounter = 0
-                    do j = 1, nAnisG
-                        if ((definition%numoppose(i, j) <= threshold).and.(i /= j)) then
+                    ! do j = 1, nAnisG
+                    do aj = 1, numPassThres(i)
+                        j = passThres(i,aj)
+                        ! WHY DO WE LOOP OVER ALL ANIMALS HERE AND NOT ONLY SURROGATES?
+                        ! if ((definition%numoppose(i, j) <= threshold).and.(i /= j)) then
                             if (definition%enoughIncommon(i, j)) then
                                 SurrCounter = SurrCounter + 1
                                 TempSurrVector(SurrCounter) = j
+                                if (cs%getSireCoreSubset(i) == j) then
+                                    knownSire = SurrCounter
+                                end if
+                                if (cs%getDamCoreSubset(i) == j) then
+                                    knownDam = SurrCounter
+                                end if
                             end if
-                        endif
+                        ! endif
                     end do
                     TempSurrArray = 0
                     do j = 1, SurrCounter
@@ -289,20 +190,74 @@ contains
                         endif
                     end do
                     rounds = cluster(TempSurrArray, ClusterMember, 2, SurrCounter, .true.)
+
                     if (rounds <= SurrCounter) then
-                        do j = 1, SurrCounter
-                            definition%partition(i, TempSurrVector(j)) = ClusterMember(j)
-                        enddo
-                        definition%method(i) = 7
+
+                        if (cs%getSireCoreSubset(i) /= 0) then
+                            ! Swap 1/2 if dam/sire are labelled the wrong way round after clustering
+                            if (ClusterMember(knownSire) == 2) then
+                                do j = 1, SurrCounter
+                                    if (ClusterMember(j) == 1) then
+                                        ClusterMember(j) = 2
+                                    else
+                                        ClusterMember(j) = 1
+                                    end if
+                                end do
+                            end if
+
+                            do j = 1, SurrCounter
+                                if (ClusterMember(j) == 1) then
+                                    if (definition%numoppose(cs%getSireCoreSubset(i), TempSurrVector(j)) <= threshold) then
+                                        if (definition%enoughIncommon(cs%getSireCoreSubset(i), TempSurrVector(j))) then
+                                            definition%partition(i, TempSurrVector(j)) = ClusterMember(j)
+                                        end if
+                                    endif
+                                else
+                                    definition%partition(i, TempSurrVector(j)) = ClusterMember(j)
+                                end if
+                            end do
+                            definition%method(i) = 2
+                        end if
+
+                        if (cs%getDamCoreSubset(i) /= 0) then
+                            ! Swap 1/2 if dam/sire are labelled the wrong way round after clustering
+                            if (ClusterMember(knownDam) == 1) then
+                                do j = 1, SurrCounter
+                                    if (ClusterMember(j) == 1) then
+                                        ClusterMember(j) = 2
+                                    else
+                                        ClusterMember(j) = 1
+                                    end if
+                                end do
+                            end if
+
+                            do j = 1, SurrCounter
+                                if (ClusterMember(j) == 2) then
+                                    if (definition%numoppose(cs%getDamCoreSubset(i), TempSurrVector(j)) <= threshold) then
+                                        if (definition%enoughIncommon(cs%getDamCoreSubset(i), TempSurrVector(j))) then
+                                            definition%partition(i, TempSurrVector(j)) = ClusterMember(j)
+                                        end if
+                                    endif
+                                else
+                                    definition%partition(i, TempSurrVector(j)) = ClusterMember(j)
+                                end if
+                            end do
+                            definition%method(i) = 3
+                        end if
+
+                        if ((cs%getSireCoreSubset(i) == 0) .and. (cs%getDamCoreSubset(i) == 0)) then
+                            do j = 1, SurrCounter
+                                definition%partition(i, TempSurrVector(j)) = ClusterMember(j)
+                            end do
+                            definition%method(i) =4
+                        end if
                     end if
 
                     deallocate(ClusterMember)
                     deallocate(TempSurrArray)
                     deallocate(TempSurrVector)
                 endif
-                definition%method(i) = 6
             endif
-            definition%partition(i, i) = 0
 
             if (definition%method(i) > 3) then
                 call cs%setSwappableCoreSubset(i, definition%method(i))
