@@ -1001,7 +1001,7 @@ contains
         print*, ""
         print*, "                              ************************                         "
         print*, "                              *                      *                         "
-        print*, "                              *   AlphaPhase 1.3.6   *                         "
+        print*, "                              *   AlphaPhase 1.3.7   *                         "
         print*, "                              *                      *                         "
         print*, "                              ************************                         "
         print*, "                                                                              "
