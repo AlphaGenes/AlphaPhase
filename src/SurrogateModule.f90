@@ -150,23 +150,15 @@ contains
                 if (SurrCounter > 0) then
                     allocate(TempSurrArray(SurrCounter, SurrCounter))
                     allocate(TempSurrVector(SurrCounter))
-                    SurrCounter = 0
-                    ! do j = 1, nAnisG
+                    TempSurrVector = passThres(i,:)
                     do aj = 1, numPassThres(i)
                         j = passThres(i,aj)
-                        ! WHY DO WE LOOP OVER ALL ANIMALS HERE AND NOT ONLY SURROGATES?
-                        ! if ((definition%numoppose(i, j) <= threshold).and.(i /= j)) then
-                            if (definition%enoughIncommon(i, j)) then
-                                SurrCounter = SurrCounter + 1
-                                TempSurrVector(SurrCounter) = j
-                                if (cs%getSireCoreSubset(i) == j) then
-                                    knownSire = SurrCounter
-                                end if
-                                if (cs%getDamCoreSubset(i) == j) then
-                                    knownDam = SurrCounter
-                                end if
-                            end if
-                        ! endif
+                        if (cs%getSireCoreSubset(i) == j) then
+                            knownSire = aj
+                        end if
+                        if (cs%getDamCoreSubset(i) == j) then
+                            knownDam = aj
+                        end if
                     end do
                     TempSurrArray = 0
                     do j = 1, SurrCounter
