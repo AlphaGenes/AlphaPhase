@@ -68,7 +68,7 @@ contains
         manager%number = number
         manager%curPos = 1
         manager%random = .false.
-    end subroutine createInputOrder
+    end subroutine createPedigreeOrder
 
     subroutine createRandomOrder(manager, c, number)
         use Random
