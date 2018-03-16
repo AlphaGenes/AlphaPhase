@@ -32,9 +32,6 @@ contains
         if (iterateType .eq. "Off") then
             call createAll(manager, c)
         end if
-        if (iterateType .eq. "InputOrder") then
-            call createInputOrder(manager, c, iterateNumber)
-        end if
         if (iterateType .eq. "RandomOrder") then
             call createRandomOrder(manager, c, iterateNumber)
         end if
@@ -51,7 +48,7 @@ contains
         end if
     end subroutine destroy
 
-    subroutine createInputOrder(manager, c, number)
+    subroutine createPedigreeOrder(manager, c, number)
         class(MemberManager) :: manager
         class(CoreType), intent(in), target :: c
         integer, intent(in) :: number
@@ -180,7 +177,7 @@ contains
         class(CoreType), intent(in), target :: c
 
         manager%noneleft = .false.
-        call createInputOrder(manager, c, c%getNAnisG())
+        call createPedigreeOrder(manager, c, c%getNAnisG())
     end subroutine createAll
 
     function hasNext(manager) result (has)
