@@ -286,9 +286,9 @@ module InputOutput
 			call CountInData(nAnisRawPedigree, nAnisG, params)
 
 			if (trim(params%PedigreeFile) /= "NoPedigree") then
-				call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile )
+            call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile, dontInitAll=1 )
 			else
-				call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat )
+            call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat, dontInitAll=1 )
 			endif
 
 			!! Bit of a fudge for when AlphaPhase is being run standalone - set all animals to HD as AlphaPhase
@@ -849,8 +849,6 @@ module InputOutput
 
 			type(OutputParameters), intent(in) :: params
 
-			print*, ""
-
 			call system(MD // trim(params%outputDirectory) // DASH // "PhasingResults")
 			call system(MD // trim(params%outputDirectory) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary")
 			if (params%outputHapCommonality) call system(MD // trim(params%outputDirectory) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
@@ -1022,7 +1020,7 @@ module InputOutput
 			print*, ""
 			print*, "                              ************************                         "
 			print*, "                              *                      *                         "
-			print*, "                              *   AlphaPhase 1.3.6   *                         "
+        print*, "                              *   AlphaPhase 1.3.7   *                         "
 			print*, "                              *                      *                         "
 			print*, "                              ************************                         "
 			print*, "                                                                              "
@@ -1102,7 +1100,7 @@ module InputOutput
 
 			do i = 1, nHaps
 				hap = library%getHap(i)
-				if (params%outputHaplotypeLibraryText) then
+            if (params%outputHaplotypeLibraryText) then
 					write (haplibunit, fmt) i, library%getHapFreq(i), " ", hap%toIntegerArray()
 
 				end if
@@ -1144,17 +1142,17 @@ module InputOutput
 				if (params%outputSurrogates .or. params%outputSurrogatesSummary) then
 					call writeSurrogates(results%surrogates(i), id, p, params)
 				end if
-				if (params%outputCombined) then
-					call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
-				end if
 				if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
 					call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
 				end if
 			enddo
+        if (params%outputCombined) then
+            call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
+        end if
 			if (params%outputGlobalCoreMistakesPercent) then
 				call makeCoreMistakes(params, results%nCores)
 			end if
-		end subroutine writeAlphaPhaseResults
+    end subroutine writeAlphaPhaseResults
 
 		subroutine makeCoreMistakes(params, nCores)
 			use OutputParametersModule
