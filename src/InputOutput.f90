@@ -492,6 +492,15 @@ module InputOutput
 							read(second(1), *) params%params%startCoreChar
 							read(second(2), *) params%params%endCoreChar
 						endif
+                        if (params%params%endCoreChar .eq. "Combine") then
+                            params%params%endCoreChar = "0"
+                        end if
+                        write(*,"(A)") "Use of Cores is deprecated."
+                        if ((params%params%endCoreChar .eq. "0") .and. (params%params%startCoreChar .eq. "1")) then
+                            write(*,"(A)") "As default values are being used this line can just be removed from the spec file."
+                        else
+                            write(*,"(A)") "Please use command line options as described in the manual."
+                        end if
 
 					case("minhapfreq")
 						if(allocated(second)) then
