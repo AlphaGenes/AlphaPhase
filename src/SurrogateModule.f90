@@ -37,10 +37,10 @@ contains
         integer :: nAnisG, nSnp
 
         integer :: i, j, k, Counter, nSnpCommon
-        integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam
+        integer :: DumSire, DumDam
         integer :: KnownSire, KnownDam
 
-        integer :: aj, ak
+        integer :: aj
         integer :: pass
 
 

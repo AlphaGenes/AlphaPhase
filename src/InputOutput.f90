@@ -352,6 +352,9 @@ contains
 
         simsetoff = .false.
 
+        ! Not sure why this is like this here but we need a default so...
+        PercSurrDisagree = 0.1
+
         status = 0
         READFILE: do while (status==0)
             read(unit,"(A)", IOStat=status)  line
@@ -404,6 +407,8 @@ contains
                     write(*,"(A)") "Use of GeneralCoreAndTailLength is deprecated"
                     write(*,"(A)") "and is likely to be removed in a future release."
                     write(*,"(A)") "Please consider using TailLength instead."
+                    ! Set tail length to -1 so old beahviour is used
+                    params%params%TailLength = -1
 
                 case("taillength")
                     read(second(1), *) params%params%TailLength
@@ -415,6 +420,11 @@ contains
                     endif
                     read (second(1), *) params%params%Jump
                     read (second(2), *)OffsetVariable
+
+                    if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
+                        print*, "Offset variable is not properly parameterised"
+                        stop
+                    endif
 
                 case("usethisnumberofsurrogates")
                     read(second(1), *) params%params%UseSurrsN
@@ -554,14 +564,6 @@ contains
         print *, " Using ", trim(params%GenotypeFile), " as the genotype file"
         print *, " "
 
-        if (params%params%CoreAndTailLength > params%nSnp) then
-            print*, "GeneralCoreAndTailLength is too long"
-            stop
-        endif
-        if (params%params%Jump > params%nSnp) then
-            print*, "GeneralCoreLength is too long"
-            stop
-        endif
         if ((params%params%CoreAndTailLength /= -1) .and. (params%params%CoreAndTailLength < params%params%Jump)) then
             print *, "GeneralCoreAndTailLength is shorted than GenralCoreLength"
             stop
@@ -572,11 +574,6 @@ contains
         endif
         if (OffsetVariable == "NotOffset") then
             params%params%Offset = .false.
-        endif
-
-        if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
-            print*, "Offset variable is not properly parameterised"
-            stop
         endif
 
         if ((params%params%percminpresent /= 1) .and. (params%params%percgenohaplodisagree /= 0)) then

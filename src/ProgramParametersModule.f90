@@ -28,6 +28,8 @@ contains
         programParams%library = "None"
         programParams%CoreFile = "None"
         programParams%PrePhaseFile = "None"
+        programParams%PedigreeFile = "NoPedigree"
+        programParams%nSnp = 0
     end function newProgramParameters
 
 end module ProgramParametersModule
