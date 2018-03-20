@@ -149,7 +149,11 @@ contains
                 SurrCounter = numPassThres(i)
                 if (SurrCounter > 0) then
                     allocate(TempSurrArray(SurrCounter, SurrCounter))
-                    allocate(TempSurrVector(SurrCounter))
+                    if (SurrCounter == 1) then
+                        allocate(TempSurrVector(SurrCounter+1))
+                    else
+                        allocate(TempSurrVector(SurrCounter))
+                    endif
                     TempSurrVector = passThres(i,:)
                     do aj = 1, numPassThres(i)
                         j = passThres(i,aj)
