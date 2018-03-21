@@ -46,7 +46,7 @@ module InputOutput
 			end do
 
 			if (params%outputFinalPhase) then
-				open (newUnit = finalPhaseUnit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
+				open (newUnit = finalPhaseUnit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
 				allocate(tempPhase(nSnp))
 				write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
 				do i = 1, nAnisG
@@ -72,7 +72,7 @@ module InputOutput
 			end if
 
 			if (params%outputSnpPhaseRate) then
-				open (newUnit = snpPhaseRateUnit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SnpPhaseRate.txt", status = "unknown")
+				open (newUnit = snpPhaseRateUnit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"SnpPhaseRate.txt", status = "unknown")
 				do i = 1, nCores
 					do j = 1, allCores(i)%getNCoreSnp()
 						counter = 0
@@ -89,7 +89,7 @@ module InputOutput
 			end if
 
 			if (params%outputIndivPhaseRate) then
-				open (newunit = indivPhaseRateunit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"IndivPhaseRate.txt", status = "unknown")
+				open (newunit = indivPhaseRateunit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"IndivPhaseRate.txt", status = "unknown")
 				allocate(CoreCount(nCores * 2))
 				write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'f7.2)'
 				do i = 1, nAnisG
@@ -111,7 +111,7 @@ module InputOutput
 			end if
 
 			if (params%outputHapIndex) then
-				open (newunit = finaHapIndCarryUnit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
+				open (newunit = finaHapIndCarryUnit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
 				allocate(WorkOut(nCores * 2))
 				write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'i8)'
 				do i = 1, nAnisG
@@ -128,7 +128,7 @@ module InputOutput
 			end if
 
 			if (params%outputSwappable) then
-				open (newunit = swappatmatunit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
+				open (newunit = swappatmatunit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
 				allocate(TempSwap(nCores))
 				write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
 				do i = 1, nAnisG
@@ -142,7 +142,7 @@ module InputOutput
 			end if
 
 			if (params%outputPhasingYield) then
-				open (newunit = PhasingYieldunit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"PhasingYield.txt", status = "unknown")
+				open (newunit = PhasingYieldunit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"PhasingYield.txt", status = "unknown")
 				do j = 1,nCores
 					write (PhasingYieldunit, '(i10,f7.2)') j, AllCores(j)%getTotalYield()
 				end do
@@ -159,12 +159,12 @@ module InputOutput
 			integer, dimension(:), intent(in) :: startIndex, endIndex
 			integer :: unit
 			integer :: i
-			open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"information.txt", status = "unknown")
+			open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"information.txt", status = "unknown")
 			write (unit, *) "numCores",nCores
 			write (unit, *) "numAnimals", nAnisG
 			write (unit, *) "numSnp", nSnp
 			close(unit)
-			open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
+			open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
 			do i = 1, nCores
 				write (unit, *) i, startIndex(i), endIndex(i)
 			end do
@@ -202,7 +202,7 @@ module InputOutput
 			coreIDtxt = itoa(coreID)
 
 			if (params%outputFinalPhase) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"FinalPhase" // coreIDtxt // ".txt", status = "unknown")
 				write(fmt, '(a,i10,a)') '(a20,', c%getNSnp(), 'i2)'
 				do i = 1, nAnisG
 					hap1 => c%phase(i, 1)
@@ -216,7 +216,7 @@ module InputOutput
 			end if
 
 			if (params%outputSnpPhaseRate) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"SnpPhaseRate" // coreIDtxt // ".txt", status = "unknown")
 				do i = 1, nSnp
 					counter = 0
 					do j = 1, nAnisG
@@ -231,7 +231,7 @@ module InputOutput
 			end if
 
 			if (params%outputIndivPhaseRate) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"IndivPhaseRate" // coreIDtxt // ".txt", status = "unknown")
 				do i = 1, nAnisG
 					hap1 => c%phase(i, 1)
 					hap2 => c%phase(i, 2)
@@ -245,7 +245,7 @@ module InputOutput
 			end if
 
 			if (params%outputHapIndex) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // coreIDtxt // ".txt", status = "unknown")
 				do i = 1, nAnisG
 					WorkOut(1) = c%hapAnis(i, 1)
 					WorkOut(2) = c%hapAnis(i, 2)
@@ -255,7 +255,7 @@ module InputOutput
 			end if
 
 			if (params%outputSwappable) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"SwapPatMat" // coreIDtxt // ".txt", status = "unknown")
 				do i = 1, nAnisG
 					write (unit, '(a20,i2)') p%pedigree(p%hdMap(i))%originalId, c%swappable(i)
 				end do
@@ -588,8 +588,12 @@ module InputOutput
 			print *
 			print *, " Parameter file read"
 			print *, " "
-			print *, " Using ", trim(params%PedigreeFile), " as the pedigree file"
-			print *, " Using ", trim(params%GenotypeFile), " as the genotype file"
+            if (params%plinkinputfile .eq. "") then
+    			print *, " Using ", trim(params%PedigreeFile), " as the pedigree file"
+    			print *, " Using ", trim(params%GenotypeFile), " as the genotype file"
+            else
+                print *, " Using ", trim(params%plinkinputfile), " as Plink input"
+            end if
 			print *, " "
 
 			if ((params%params%CoreAndTailLength /= -1) .and. (params%params%CoreAndTailLength < params%params%Jump)) then
@@ -742,7 +746,7 @@ module InputOutput
 			if (nHaps < params%outputHapCommonalityThreshold) then
 
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"Extras",a1,"HapCommonality",i0,".txt")') DASH, DASH, DASH, DASH, OutputPoint
-				open (newunit = HapCommonalityUnit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+				open (newunit = HapCommonalityUnit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, status = 'unknown')
 
 				HapRel = library%getHapRel()
 				write (fmt, '(a,i10,a)') '(i10,', size(HapRel,2), 'f5.2)'
@@ -777,7 +781,7 @@ module InputOutput
 
 			if (params%outputSurrogates) then
 				write (filout, '(a1,"Miscellaneous",a1,"Surrogates",i0,".txt")') DASH, DASH, OutputPoint
-				open (newunit = unit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+				open (newunit = unit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, status = 'unknown')
 				write(fmt, '(a,i10,a)') '(a20,', size(definition%partition,2), 'i6)'
 				do i = 1, nAnisG
 					write (unit, fmt) p%pedigree(p%hdMap(i))%originalId, definition%partition(i,:)
@@ -788,7 +792,7 @@ module InputOutput
 
 			if (params%outputSurrogatesSummary) then
 				write (filout, '(a1,"Miscellaneous",a1,"SurrogatesSummary",i0,".txt")') DASH, DASH, OutputPoint
-				open (newunit = unit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+				open (newunit = unit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, status = 'unknown')
 				do i = 1, nAnisG
 					nSurrogates = 0
 					do j = 1, nAnisG
@@ -838,13 +842,13 @@ module InputOutput
 
 			type(OutputParameters), intent(in) :: params
 
-			call system(MD // trim(params%outputDirectory) // DASH // "PhasingResults")
-			call system(MD // trim(params%outputDirectory) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary")
-			if (params%outputHapCommonality) call system(MD // trim(params%outputDirectory) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
-			call system(MD // trim(params%outputDirectory) // DASH //"Miscellaneous")
+			call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH // "PhasingResults")
+			call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary")
+			if (params%outputHapCommonality) call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
+			call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"Miscellaneous")
 
 			if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
-				call system(MD // trim(params%outputDirectory) // DASH //"Simulation")
+				call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"Simulation")
 			endif
 
 		end subroutine MakeDirectories
@@ -859,7 +863,7 @@ module InputOutput
 			integer :: unit
 
 			if (params%outputTimer) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"Timer.txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"Timer.txt", status = "unknown")
 				write(unit, '(A27,A7,I3,A9,I3,A9,F6.2)') "Time Elapsed", "Hours", INT(Hours), "Minutes", INT(Minutes), "Seconds", Seconds
 				close(unit)
 			end if
@@ -887,7 +891,7 @@ module InputOutput
 
 			if (params%outputIndivMistakes) then
 				write (filout, '(a1,"Simulation",a1,"IndivMistakes",i0,".txt")') DASH, DASH, OutputPoint
-				open (newunit = unit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+				open (newunit = unit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, status = 'unknown')
 				do i = 1, nAnisG
 					write(unit, '(a20,6i6,a6,6i6,a6,6i6,a6,6i6)') p%pedigree(p%hdMap(i))%originalId, &
 					results%counts(i,1,ALL_,CORRECT_), results%counts(i,2,ALL_,CORRECT_), &
@@ -908,7 +912,7 @@ module InputOutput
 
 			if (params%outputIndivMistakesPercent) then
 				write (filout, '(a1,"Simulation",a1,"IndivMistakesPercent",i0,".txt")') DASH, DASH, OutputPoint
-				open (newunit = unit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+				open (newunit = unit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, status = 'unknown')
 
 				do i = 1, nAnisG
 					write (unit, '(a20,6f7.1,a6,6f7.1,a6,6f7.1,a6,6f7.1)') p%pedigree(p%hdMap(i))%originalId, &
@@ -930,7 +934,7 @@ module InputOutput
 
 			if (params%outputCoreMistakesPercent) then
 				write (filout, '(a1,"Simulation",a1,"CoreMistakesPercent",i0,".txt")') DASH, DASH, OutputPoint
-				open (newunit = unit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+				open (newunit = unit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, status = 'unknown')
 				write (unit, '(6f9.4)') &
 				(results%percentAll(1,ALL_,CORRECT_) + results%percentAll(2,ALL_,CORRECT_)) / 2, &
 				(results%percentAll(1,HET_,CORRECT_) + results%percentAll(2,HET_,CORRECT_)) / 2, &
@@ -1075,12 +1079,12 @@ module InputOutput
 
 			if (params%outputHaplotypeLibraryText) then
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
-				open (newunit = haplibunit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+				open (newunit = haplibunit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, status = 'unknown')
 				write (haplibunit,*) nHaps, SizeCore
 			endif
 			if (params%outputHaplotypeLibraryBinary) then
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
-				open (newunit = haplibunitbin, FILE = trim(params%outputDirectory)//filout, form = "unformatted", status = 'unknown')
+				open (newunit = haplibunitbin, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, form = "unformatted", status = 'unknown')
 
 				write (haplibunitbin) nHaps, SizeCore
 			end if
@@ -1154,11 +1158,11 @@ module InputOutput
 			character(len = 4096) :: filin, filout
 			integer :: coreMissUnit, inunit
 			write (filout, '(a1,"Simulation",a1,"CoreMistakesPercent.txt")') DASH, DASH
-			open (newunit = coreMissUnit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+			open (newunit = coreMissUnit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, status = 'unknown')
 
 			do i = 1, nCores
 				write (filin, '(a1,"Simulation",a1,"CoreMistakesPercent",i0,".txt")') DASH, DASH, i
-				open (newunit = inunit, FILE = trim(params%outputDirectory)//filin, status = 'unknown')
+				open (newunit = inunit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filin, status = 'unknown')
 				read(inunit,'(6f9.4)') single
 				close(inunit)
 
@@ -1193,12 +1197,12 @@ module InputOutput
 
 			if (params%outputHaplotypeLibraryText) then
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
-				open (newunit = haplibunit, FILE = trim(params%outputDirectory)//filout, status = 'unknown')
+				open (newunit = haplibunit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, status = 'unknown')
 				read (haplibunit,*) nHaps, SizeCore
 			endif
 			if (params%outputHaplotypeLibraryBinary) then
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
-				open (newunit = haplibunitbin, FILE = trim(params%outputDirectory)//filout, form = "unformatted", status = 'unknown')
+				open (newunit = haplibunitbin, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, form = "unformatted", status = 'unknown')
 				read (haplibunitbin) nHaps, SizeCore
 			endif
 
@@ -1262,12 +1266,12 @@ module InputOutput
 
 
 			if (params%outputCoreIndex) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"information.txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"information.txt", status = "unknown")
 				read (unit, *) dumC,nCores
 				read (unit, *) dumC, nAnisG
 				read (unit, *) dumC, nSnp
 				close(unit)
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
 				results = AlphaPhaseResults(nCores, .true., .true.)
 				allocate(startIndex(nCores))
 				allocate(endIndex(nCores))
@@ -1283,7 +1287,7 @@ module InputOutput
 
 
 			if (params%outputFinalPhase) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"FinalPhase.txt", status = "unknown")
 				allocate(tempPhase(nSnp))
 				write(fmt, '(a,i10,a)') '(a20,', nSnp, 'i2)'
 
@@ -1304,7 +1308,7 @@ module InputOutput
 			end if
 
 			if (params%outputHapIndex) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry.txt", status = "unknown")
 				allocate(WorkOut(nCores * 2))
 				write(fmt, '(a,i10,a)') '(a20,', nCores*2, 'i8)'
 				do i = 1, nAnisG
@@ -1322,7 +1326,7 @@ module InputOutput
 			end if
 
 			if (params%outputSwappable) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"SwapPatMat.txt", status = "unknown")
 				allocate(TempSwap(nCores))
 				write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
 				do i = 1, nAnisG
@@ -1366,14 +1370,14 @@ module InputOutput
 
 
 			if (params%outputCoreIndex) then
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"information.txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"information.txt", status = "unknown")
 				read (unit, *) dumC, nCores
 				read (unit, *) dumC, nAnisG
 				read (unit, *) dumC, nSnp
 				close(unit)
 				results = AlphaPhaseResults(nCores, .true., .true.)
 
-				open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
+				open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"CoreIndex.txt", status = "unknown")
 				allocate(startIndex(nCores))
 				allocate(endIndex(nCores))
 				allocate(allCores(nCores))
@@ -1389,7 +1393,7 @@ module InputOutput
 
 			do j = 1, nCores
 				if (params%outputFinalPhase) then
-					open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalPhase" // itoa(j) // ".txt", status = "unknown")
+					open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"FinalPhase" // itoa(j) // ".txt", status = "unknown")
 
 					write(fmt, '(a,i10,a)') '(a20,', endIndex(j) - startIndex(j) + 1, 'i2)'
 
@@ -1407,7 +1411,7 @@ module InputOutput
 				end if
 
 				if (params%outputHapIndex) then
-					open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // itoa(j) // ".txt", status = "unknown")
+					open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"FinalHapIndCarry" // itoa(j) // ".txt", status = "unknown")
 					allocate(WorkOut(2))
 					write(fmt, '(a,i10,a)') '(a20,', 2, 'i8)'
 					do i = 1, nAnisG
@@ -1420,7 +1424,7 @@ module InputOutput
 				end if
 
 				if (params%outputSwappable) then
-					open (newunit = unit, file = trim(params%outputDirectory)//DASH//"PhasingResults"//DASH//"SwapPatMat" // itoa(j) // ".txt", status = "unknown")
+					open (newunit = unit, file = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//DASH//"PhasingResults"//DASH//"SwapPatMat" // itoa(j) // ".txt", status = "unknown")
 					allocate(TempSwap(nCores))
 					write(fmt, '(a,i10,a)') '(a20,', nCores, 'i2)'
 					do i = 1, nAnisG

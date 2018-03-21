@@ -57,6 +57,9 @@ program AlphaPhase
                         print *
                         call printCoreInfo(CoreIndex)
 
+                        ! Doesn't make sense to use Plink + specifing cores to run (at least for now) so set "plink" output directory
+                        ! tot he current one
+                        params%outputParams%resultFolderPath = "."
                         call makeDirectories(params%outputParams)
 
                         call writeCoreIndex(params%outputParams, size(CoreIndex,1), nAnisG, params%nSnp, CoreIndex(:,1), CoreIndex(:,2))
@@ -78,6 +81,8 @@ program AlphaPhase
                         params%outputParams%outputIndivMistakes = .false.
                         params%outputParams%outputIndivMistakesPercent = .false.
                         params%outputParams%outputCoreMistakesPercent = .false.
+                        ! As above
+                        params%outputParams%resultFolderPath = "."
 
                         call ParsePedigreeAndGenotypeData(params, p)
                         call readInPerCoreResults(results, params%outputParams, p)
@@ -232,6 +237,9 @@ program AlphaPhase
                     end if
                 end if
             end if
+
+            ! Copy the path from the Plink chromosome stuff to output params
+            params%outputParams%resultFolderPath = params%resultFolderPath
 
             call writeAlphaPhaseResults(results, p, params%outputParams)
 

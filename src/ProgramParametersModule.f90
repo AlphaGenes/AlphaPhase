@@ -29,7 +29,7 @@ contains
         programParams%CoreFile = "None"
         programParams%PrePhaseFile = "None"
         programParams%plinkInputFile = ""
-        programParams%resultFolderPath = "Results"
+        programParams%resultFolderPath = "."
         programParams%PedigreeFile = "NoPedigree"
         programParams%nSnp = 0
     end function newProgramParameters

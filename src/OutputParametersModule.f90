@@ -26,6 +26,7 @@ module OutputParametersModule
         integer :: outputHapCommonalityThreshold
 
         character(len=300) :: outputDirectory
+        character(len=512) :: resultFolderPath
 
     end type OutputParameters
 
