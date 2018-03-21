@@ -147,13 +147,12 @@ contains
 
             if (definition%method(i) == 0) then
                 SurrCounter = numPassThres(i)
-                if (SurrCounter > 0) then
+                ! No point clustering if we only have one surrogate
+                ! Also avoids nastly compilier bug in older compilers
+                if (SurrCounter > 1) then
                     allocate(TempSurrArray(SurrCounter, SurrCounter))
-                    if (SurrCounter == 1) then
-                        allocate(TempSurrVector(SurrCounter+1))
-                    else
-                        allocate(TempSurrVector(SurrCounter))
-                    endif
+                    allocate(TempSurrVector(SurrCounter))
+
                     TempSurrVector = passThres(i,:)
                     do aj = 1, numPassThres(i)
                         j = passThres(i,aj)
