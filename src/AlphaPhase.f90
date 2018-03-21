@@ -85,6 +85,18 @@ program AlphaPhase
                         params%outputParams%resultFolderPath = "."
 
                         call ParsePedigreeAndGenotypeData(params, p)
+
+                        ! Hack copied from below...
+                        if (p%nHd == 0) then
+                            p%nHd = p%nGenotyped
+                            p%hdMap = p%genotypeMap
+
+                            if (.not. allocated(p%hdDictionary)) then
+                                allocate(p%hdDictionary)
+                            endif
+                            p%hdDictionary = p%genotypeDictionary
+                        endif
+
                         call readInPerCoreResults(results, params%outputParams, p)
                         call writeAlphaPhaseResults(results, p, params%outputParams)
                         print *, "Results combined"
