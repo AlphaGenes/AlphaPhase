@@ -147,10 +147,12 @@ contains
 
             if (definition%method(i) == 0) then
                 SurrCounter = numPassThres(i)
-                if (SurrCounter > 0) then
+                if (SurrCounter > 1) then
                     allocate(TempSurrArray(SurrCounter, SurrCounter))
                     allocate(TempSurrVector(SurrCounter))
                     TempSurrVector = passThres(i,:)
+                    knownSire = 0
+                    knownDam = 0
                     do aj = 1, numPassThres(i)
                         j = passThres(i,aj)
                         if (cs%getSireCoreSubset(i) == j) then
@@ -185,7 +187,7 @@ contains
 
                     if (rounds <= SurrCounter) then
 
-                        if (cs%getSireCoreSubset(i) /= 0) then
+                        if (knownSire /= 0) then
                             ! Swap 1/2 if dam/sire are labelled the wrong way round after clustering
                             if (ClusterMember(knownSire) == 2) then
                                 do j = 1, SurrCounter
@@ -211,7 +213,7 @@ contains
                             definition%method(i) = 2
                         end if
 
-                        if (cs%getDamCoreSubset(i) /= 0) then
+                        if (knownDam /= 0) then
                             ! Swap 1/2 if dam/sire are labelled the wrong way round after clustering
                             if (ClusterMember(knownDam) == 1) then
                                 do j = 1, SurrCounter
