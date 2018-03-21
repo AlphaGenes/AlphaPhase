@@ -780,42 +780,25 @@ contains
 
     subroutine CountInData(nAnisRawPedigree, nAnisG, params)
         use ProgramParametersModule
+        use AlphaHouseMod
 
-        type(ProgramParameters), intent(in) :: params
+        type(ProgramParameters), intent(inout) :: params
         integer, intent(out) :: nAnisRawPedigree, nAnisG
 
-        integer :: k,unit
-        character (len = 300) :: dumC
+        if (params%nsnp == 0) then
+                params%nsnp = countColumns(params%GenotypeFile,' ') - 1
+        end if
 
         nAnisRawPedigree = 0
         if (trim(params%PedigreeFile) /= "NoPedigree") then
-            open (newunit = unit, file = trim(params%PedigreeFile), status = "old")
-            do
-                read (unit, *, iostat = k) dumC
-                nAnisRawPedigree = nAnisRawPedigree + 1
-                if (k /= 0) then
-                    nAnisRawPedigree = nAnisRawPedigree - 1
-                    exit
-                endif
-            enddo
-            close(unit)
+            nAnisRawPedigree = CountLinesWithBlankLines(trim(params%PedigreeFile))
             print*, " ", nAnisRawPedigree, " individuals in the pedigree file"
         endif
 
-        nAnisG = 0
-        open (newunit = unit, file = trim(params%GenotypeFile), status = "old")
-        do
-            read (unit, *, iostat = k) dumC
-            nAnisG = nAnisG + 1
-            if (k /= 0) then
-                nAnisG = nAnisG - 1
-                exit
-            endif
-        enddo
+        nAnisG = CountLinesWithBlankLines(trim(params%GenotypeFile))
         if (params%GenotypeFileFormat == 2) then
             nAnisG = nAnisG /2
         end if
-        close(unit)
         print*, " ", nAnisG, " individuals in the genotype file"
 
         if (trim(params%PedigreeFile) == "NoPedigree") nAnisRawPedigree = nAnisG
