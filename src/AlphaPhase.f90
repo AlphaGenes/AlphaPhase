@@ -51,9 +51,8 @@ program AlphaPhase
                     end if
                     params = ReadInParameterFile(specfile)
                     if (cmd(1:2) .eq. "-s") then
-                        CoreIndex => calculateCores(params%nSnp,params%params%Jump,params%params%offset)
-
                         call CountInData(nAnisP, nAnisG, params)
+                    CoreIndex => calculateCores(params%nSnp,params%params%Jump,params%params%offset)
 
                         print *
                         call printCoreInfo(CoreIndex)

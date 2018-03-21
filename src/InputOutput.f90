@@ -344,6 +344,9 @@ module InputOutput
 
 			simsetoff = .false.
 
+        ! Not sure why this is like this here but we need a default so...
+        PercSurrDisagree = 0.1
+
 			status = 0
 			READFILE: do while (status==0)
 				read(unit,"(A)", IOStat=status)  line
@@ -423,6 +426,8 @@ module InputOutput
 						write(*,"(A)") "Use of GeneralCoreAndTailLength is deprecated"
 						write(*,"(A)") "and is likely to be removed in a future release."
 						write(*,"(A)") "Please consider using TailLength instead."
+                    ! Set tail length to -1 so old beahviour is used
+                    params%params%TailLength = -1
 
 					case("taillength")
 						read(second(1), *) params%params%TailLength
@@ -434,6 +439,11 @@ module InputOutput
 						endif
 						read (second(1), *) params%params%Jump
 						read (second(2), *)OffsetVariable
+
+                    if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
+                        print*, "Offset variable is not properly parameterised"
+                        stop
+                    endif
 
 					case("usethisnumberofsurrogates")
 						read(second(1), *) params%params%UseSurrsN
@@ -582,14 +592,6 @@ module InputOutput
 			print *, " Using ", trim(params%GenotypeFile), " as the genotype file"
 			print *, " "
 
-			if (params%params%CoreAndTailLength > params%nSnp .and. params%nSnp /= 0) then
-				print*, "GeneralCoreAndTailLength is too long"
-				stop
-			endif
-			if (params%params%Jump > params%nSnp .and. params%nSnp /= 0) then
-				print*, "GeneralCoreLength is too long"
-				stop
-			endif
 			if ((params%params%CoreAndTailLength /= -1) .and. (params%params%CoreAndTailLength < params%params%Jump)) then
 				print *, "GeneralCoreAndTailLength is shorted than GenralCoreLength"
 				stop
@@ -600,11 +602,6 @@ module InputOutput
 			endif
 			if (OffsetVariable == "NotOffset") then
 				params%params%Offset = .false.
-			endif
-
-			if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
-				print*, "Offset variable is not properly parameterised"
-				stop
 			endif
 
 			if ((params%params%percminpresent /= 1) .and. (params%params%percgenohaplodisagree /= 0)) then
@@ -811,42 +808,25 @@ module InputOutput
 
 		subroutine CountInData(nAnisRawPedigree, nAnisG, params)
 			use ProgramParametersModule
+        use AlphaHouseMod
 
-			type(ProgramParameters), intent(in) :: params
+        type(ProgramParameters), intent(inout) :: params
 			integer, intent(out) :: nAnisRawPedigree, nAnisG
 
-			integer :: k,unit
-			character (len = 300) :: dumC
+        if (params%nsnp == 0) then
+                params%nsnp = countColumns(params%GenotypeFile,' ') - 1
+        end if
 
 			nAnisRawPedigree = 0
 			if (trim(params%PedigreeFile) /= "NoPedigree") then
-				open (newunit = unit, file = trim(params%PedigreeFile), status = "old")
-				do
-					read (unit, *, iostat = k) dumC
-					nAnisRawPedigree = nAnisRawPedigree + 1
-					if (k /= 0) then
-						nAnisRawPedigree = nAnisRawPedigree - 1
-						exit
-					endif
-				enddo
-				close(unit)
+            nAnisRawPedigree = CountLinesWithBlankLines(trim(params%PedigreeFile))
 				print*, " ", nAnisRawPedigree, " individuals in the pedigree file"
 			endif
 
-			nAnisG = 0
-			open (newunit = unit, file = trim(params%GenotypeFile), status = "old")
-			do
-				read (unit, *, iostat = k) dumC
-				nAnisG = nAnisG + 1
-				if (k /= 0) then
-					nAnisG = nAnisG - 1
-					exit
-				endif
-			enddo
+        nAnisG = CountLinesWithBlankLines(trim(params%GenotypeFile))
 			if (params%GenotypeFileFormat == 2) then
 				nAnisG = nAnisG /2
 			end if
-			close(unit)
 			print*, " ", nAnisG, " individuals in the genotype file"
 
 			if (trim(params%PedigreeFile) == "NoPedigree") nAnisRawPedigree = nAnisG

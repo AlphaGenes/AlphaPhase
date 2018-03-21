@@ -37,10 +37,10 @@ contains
         integer :: nAnisG, nSnp
 
         integer :: i, j, k, Counter, nSnpCommon
-        integer :: CountAgreePat, CountAgreeMat, DumSire, DumDam
+        integer :: DumSire, DumDam
         integer :: KnownSire, KnownDam
 
-        integer :: aj, ak
+        integer :: aj
         integer :: pass
 
 
@@ -147,9 +147,12 @@ contains
 
             if (definition%method(i) == 0) then
                 SurrCounter = numPassThres(i)
+                ! No point clustering if we only have one surrogate
+                ! Also avoids nastly compilier bug in older compilers
                 if (SurrCounter > 1) then
                     allocate(TempSurrArray(SurrCounter, SurrCounter))
                     allocate(TempSurrVector(SurrCounter))
+
                     TempSurrVector = passThres(i,:)
                     knownSire = 0
                     knownDam = 0
