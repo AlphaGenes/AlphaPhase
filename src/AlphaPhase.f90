@@ -170,6 +170,7 @@ program AlphaPhase
             end if
 
             if (Command_Argument_Count() > 0) then
+                call get_command_argument(1,cmd)
                 if (cmd(1:2) .eq. "-r") then
                     call get_command_argument(2,limit)
                     if (index(limit,"-") > 0) then
