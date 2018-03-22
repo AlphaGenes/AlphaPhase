@@ -391,7 +391,7 @@ module InputOutput
 
 						endif
 
-					case("numberofsnp")
+					case("numberofsnp", "numbersnp", "nsnp")
 						read(second(1), *) params%nSnp
 
 						!runs full chromosome
@@ -540,7 +540,7 @@ module InputOutput
 							params%params%PercMinToKeep = params%params%PercMinToKeep / 100
 						end if
 
-					case("outputdirectory")
+					case("outputdirectory","resultfolderpath")
 						if (allocated(second)) then
 							read(second(1), *) params%outputParams%outputDirectory
 						end if
@@ -555,7 +555,7 @@ module InputOutput
 							read(second(1), *) params%CoreFile
 						end if
 
-					case("presphasefile")
+					case("presphasefile","prephasedfile")
 						if (allocated(second)) then
 							read(second(1), *) params%PrePhaseFile
 						end if
