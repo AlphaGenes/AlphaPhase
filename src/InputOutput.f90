@@ -845,7 +845,9 @@ module InputOutput
 			call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH // "PhasingResults")
 			call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary")
 			if (params%outputHapCommonality) call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
-			call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"Miscellaneous")
+			if (params%outputSurrogates .or. params%outputSurrogatesSummary) then
+                call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"Miscellaneous")
+            end if
 
 			if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
 				call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"Simulation")
