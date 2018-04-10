@@ -5,10 +5,9 @@ module ProgramParametersModule
     implicit none
 
     type, extends(baseSpecFile) :: ProgramParameters
-        character(len=300) GenotypeFile
         integer :: GenotypeFileFormat
         logical :: Simulation
-        character (len = 300) :: PedigreeFile, TruePhaseFile, Library, CoreFile, PrePhaseFile
+        character (len = 300) :: TruePhaseFile, Library, CoreFile, PrePhaseFile
 
         type(OutputParameters) :: outputParams
         type(AlphaPhaseParameters) :: params
