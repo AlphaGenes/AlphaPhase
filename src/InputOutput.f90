@@ -1125,23 +1125,27 @@ module InputOutput
 
 
             print *, "funct start" 
-            
+
 			call MakeDirectories(params)
 			! write out core index -
 
 			print *, "pre Core"
 			do i = 1, results%nCores
 				id = results%ids(i)
+                print *, "pre haplib"
 				call WriteHapLib(results%libraries(i), id, params)
 				if (params%outputHapCommonality) then
 					call HapCommonality(results%libraries(i), id, params)
 				end if
+                print *, "pre coreout"
 				if (params%outputPerCore) then
 					call WriteOutCore(results%cores(i), id, results%startIndexes(i), p, params)
 				end if
+                print *, "pre sur"
 				if (params%outputSurrogates .or. params%outputSurrogatesSummary) then
 					call writeSurrogates(results%surrogates(i), id, p, params)
 				end if
+                print *, "pre testResults"
 				if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
 					call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
 				end if
