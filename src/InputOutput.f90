@@ -1123,6 +1123,9 @@ module InputOutput
 
 			integer :: i, id
 
+
+            print *, "funct start" 
+            
 			call MakeDirectories(params)
 			! write out core index -
 
