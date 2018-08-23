@@ -39,6 +39,7 @@ contains
         type(OutputParameters) :: outputParams
 
         outputParams%outputDirectory = "."
+        outputParams%resultFolderPath = "."
         outputParams%outputFinalPhase = .true.
         outputParams%outputCoreIndex = .true.
         outputParams%outputSnpPhaseRate = .true.
@@ -65,6 +66,8 @@ contains
         type(OutputParameters) :: outputParams
         integer, optional :: binary
 
+        outputParams%outputDirectory = "."
+        outputParams%resultFolderPath = "."
         outputParams%outputFinalPhase = .true.
         outputParams%outputCoreIndex = .true.
         outputParams%outputSnpPhaseRate = .false.
