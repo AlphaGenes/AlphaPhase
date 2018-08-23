@@ -1071,7 +1071,7 @@ module InputOutput
 
 			integer :: i, SizeCore, nHaps
 			integer :: haplibUnitBin, haplibunit
-			character(len = 300) :: filout
+			character(len = 512) :: filout
 			type(Haplotype) :: hap
 			character(len=100) :: fmt
 
@@ -1081,11 +1081,13 @@ module InputOutput
 
 			if (params%outputHaplotypeLibraryText) then
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
+                print *,"pre haplibtext"
 				open (newunit = haplibunit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, status = 'unknown')
 				write (haplibunit,*) nHaps, SizeCore
 			endif
 			if (params%outputHaplotypeLibraryBinary) then
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
+                print *,"pre haplibin"
 				open (newunit = haplibunitbin, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, form = "unformatted", status = 'unknown')
 
 				write (haplibunitbin) nHaps, SizeCore
