@@ -1123,43 +1123,31 @@ module InputOutput
 
 			integer :: i, id
 
-
-            print *, "funct start" 
-
 			call MakeDirectories(params)
 			! write out core index -
 
-			print *, "pre Core"
 			do i = 1, results%nCores
 				id = results%ids(i)
-                print *, "pre haplib"
 				call WriteHapLib(results%libraries(i), id, params)
-                 print *, "pre hapCom"
 				if (params%outputHapCommonality) then
 					call HapCommonality(results%libraries(i), id, params)
 				end if
-                print *, "pre coreout"
 				if (params%outputPerCore) then
 					call WriteOutCore(results%cores(i), id, results%startIndexes(i), p, params)
 				end if
-                print *, "pre sur"
 				if (params%outputSurrogates .or. params%outputSurrogatesSummary) then
 					call writeSurrogates(results%surrogates(i), id, p, params)
 				end if
-                print *, "pre testResults"
 				if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
 					call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
 				end if
 			enddo
-            print *, "pre combined"
 			if (params%outputCombined) then
 				call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
 			end if
-            print *, "pre outputcoremistake"
 			if (params%outputGlobalCoreMistakesPercent) then
 				call makeCoreMistakes(params, results%nCores)
 			end if
-			print *, "finished"
 		end subroutine writeAlphaPhaseResults
 
 		subroutine makeCoreMistakes(params, nCores)
