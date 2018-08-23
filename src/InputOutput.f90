@@ -1081,18 +1081,11 @@ module InputOutput
 
 			if (params%outputHaplotypeLibraryText) then
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
-                print *,"pre haplibtext"
-                print *,filout
-                filout2 = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//trim(filout)
-                print *,trim(params%resultFolderPath)
-                print *,trim(params%outputDirectory)//DASH//trim(filout)
-				open (newunit = haplibunit, FILE = filout, status = 'unknown')
-                print *,"after"
+				open (newunit = haplibunit, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//trim(filout), status = 'unknown')
 				write (haplibunit,*) nHaps, SizeCore
 			endif
 			if (params%outputHaplotypeLibraryBinary) then
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".bin")') DASH, DASH, DASH, currentcore
-                print *,"pre haplibin"
 				open (newunit = haplibunitbin, FILE = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout, form = "unformatted", status = 'unknown')
 
 				write (haplibunitbin) nHaps, SizeCore
