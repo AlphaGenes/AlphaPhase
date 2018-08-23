@@ -1071,7 +1071,7 @@ module InputOutput
 
 			integer :: i, SizeCore, nHaps
 			integer :: haplibUnitBin, haplibunit
-			character(len = 512) :: filout
+			character(len = 512) :: filout,filout2
 			type(Haplotype) :: hap
 			character(len=100) :: fmt
 
@@ -1083,8 +1083,8 @@ module InputOutput
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
                 print *,"pre haplibtext"
                 print *,filout
-                filout = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout
-                print *,filout
+                filout2 = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//trim(filout)
+                print *,filout2
 				open (newunit = haplibunit, FILE = filout, status = 'unknown')
                 print *,"after"
 				write (haplibunit,*) nHaps, SizeCore
