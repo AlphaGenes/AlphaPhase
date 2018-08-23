@@ -1083,7 +1083,7 @@ module InputOutput
 				write (filout, '(a1,"PhasingResults",a1,"HaplotypeLibrary",a1,"HapLib",i0,".txt")') DASH, DASH, DASH, currentcore
                 print *,"pre haplibtext"
                 filout = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//filout
-                print *,"filout"
+                print *,filout
 				open (newunit = haplibunit, FILE = filout, status = 'unknown')
                 print *,"after"
 				write (haplibunit,*) nHaps, SizeCore
