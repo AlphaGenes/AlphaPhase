@@ -1085,6 +1085,7 @@ module InputOutput
                 print *,filout
                 filout2 = trim(params%outputDirectory)//DASH//trim(params%resultFolderPath)//trim(filout)
                 print *,filout2
+                print *,trim(params%outputDirectory)//DASH//"test.txt"
 				open (newunit = haplibunit, FILE = filout, status = 'unknown')
                 print *,"after"
 				write (haplibunit,*) nHaps, SizeCore
