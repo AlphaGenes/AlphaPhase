@@ -286,14 +286,14 @@ module InputOutput
 			call CountInData(nAnisRawPedigree, nAnisG, params)
 
 			if (trim(params%PedigreeFile) /= "NoPedigree") then
-            call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile, dontInitAll=1 )
+				call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp,params%GenotypeFileFormat , params%PedigreeFile, dontInitAll=1 )
 			else
-            call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat, dontInitAll=1 )
+				call initPedigreeGenotypeFiles(p,params%GenotypeFile,nAnisG,params%nSnp, params%GenotypeFileFormat, dontInitAll=1 )
 			endif
 
 			!! Bit of a fudge for when AlphaPhase is being run standalone - set all animals to HD as AlphaPhase
 			!! only works with the HD animals
-			
+
 		end subroutine ParsePedigreeAndGenotypeData
 
 		function ParsePhaseData(PhaseFile, nAnisG, nSnp) result(Phase)
@@ -344,8 +344,8 @@ module InputOutput
 
 			simsetoff = .false.
 
-        ! Not sure why this is like this here but we need a default so...
-        PercSurrDisagree = 0.1
+			! Not sure why this is like this here but we need a default so...
+			PercSurrDisagree = 0.1
 
 			status = 0
 			READFILE: do while (status==0)
@@ -426,8 +426,8 @@ module InputOutput
 						write(*,"(A)") "Use of GeneralCoreAndTailLength is deprecated"
 						write(*,"(A)") "and is likely to be removed in a future release."
 						write(*,"(A)") "Please consider using TailLength instead."
-                    ! Set tail length to -1 so old beahviour is used
-                    params%params%TailLength = -1
+						! Set tail length to -1 so old beahviour is used
+						params%params%TailLength = -1
 
 					case("taillength")
 						read(second(1), *) params%params%TailLength
@@ -440,10 +440,10 @@ module InputOutput
 						read (second(1), *) params%params%Jump
 						read (second(2), *)OffsetVariable
 
-                    if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
-                        print*, "Offset variable is not properly parameterised"
-                        stop
-                    endif
+						if ((OffsetVariable /= "Offset").and.(OffsetVariable /= "NotOffset")) then
+							print*, "Offset variable is not properly parameterised"
+							stop
+						endif
 
 					case("usethisnumberofsurrogates")
 						read(second(1), *) params%params%UseSurrsN
@@ -502,15 +502,15 @@ module InputOutput
 							read(second(1), *) params%params%startCoreChar
 							read(second(2), *) params%params%endCoreChar
 						endif
-                        if (params%params%endCoreChar .eq. "Combine") then
-                            params%params%endCoreChar = "0"
-                        end if
-                        write(*,"(A)") "Use of Cores is deprecated."
-                        if ((params%params%endCoreChar .eq. "0") .and. (params%params%startCoreChar .eq. "1")) then
-                            write(*,"(A)") "As default values are being used this line can just be removed from the spec file."
-                        else
-                            write(*,"(A)") "Please use command line options as described in the manual."
-                        end if
+						if (params%params%endCoreChar .eq. "Combine") then
+							params%params%endCoreChar = "0"
+						end if
+						write(*,"(A)") "Use of Cores is deprecated."
+						if ((params%params%endCoreChar .eq. "0") .and. (params%params%startCoreChar .eq. "1")) then
+							write(*,"(A)") "As default values are being used this line can just be removed from the spec file."
+						else
+							write(*,"(A)") "Please use command line options as described in the manual."
+						end if
 
 					case("minhapfreq")
 						if(allocated(second)) then
@@ -588,12 +588,12 @@ module InputOutput
 			print *
 			print *, " Parameter file read"
 			print *, " "
-            if (params%plinkinputfile .eq. "") then
-    			print *, " Using ", trim(params%PedigreeFile), " as the pedigree file"
-    			print *, " Using ", trim(params%GenotypeFile), " as the genotype file"
-            else
-                print *, " Using ", trim(params%plinkinputfile), " as Plink input"
-            end if
+			if (params%plinkinputfile .eq. "") then
+				print *, " Using ", trim(params%PedigreeFile), " as the pedigree file"
+				print *, " Using ", trim(params%GenotypeFile), " as the genotype file"
+			else
+				print *, " Using ", trim(params%plinkinputfile), " as Plink input"
+			end if
 			print *, " "
 
 			if ((params%params%CoreAndTailLength /= -1) .and. (params%params%CoreAndTailLength < params%params%Jump)) then
@@ -812,22 +812,22 @@ module InputOutput
 
 		subroutine CountInData(nAnisRawPedigree, nAnisG, params)
 			use ProgramParametersModule
-        use AlphaHouseMod
+			use AlphaHouseMod
 
-        type(ProgramParameters), intent(inout) :: params
+			type(ProgramParameters), intent(inout) :: params
 			integer, intent(out) :: nAnisRawPedigree, nAnisG
 
-        if (params%nsnp == 0) then
-                params%nsnp = countColumns(params%GenotypeFile,' ') - 1
-        end if
+			if (params%nsnp == 0) then
+				params%nsnp = countColumns(params%GenotypeFile,' ') - 1
+			end if
 
 			nAnisRawPedigree = 0
 			if (trim(params%PedigreeFile) /= "NoPedigree") then
-            nAnisRawPedigree = CountLinesWithBlankLines(trim(params%PedigreeFile))
+				nAnisRawPedigree = CountLinesWithBlankLines(trim(params%PedigreeFile))
 				print*, " ", nAnisRawPedigree, " individuals in the pedigree file"
 			endif
 
-        nAnisG = CountLinesWithBlankLines(trim(params%GenotypeFile))
+			nAnisG = CountLinesWithBlankLines(trim(params%GenotypeFile))
 			if (params%GenotypeFileFormat == 2) then
 				nAnisG = nAnisG /2
 			end if
@@ -846,8 +846,8 @@ module InputOutput
 			call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary")
 			if (params%outputHapCommonality) call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"PhasingResults"//DASH//"HaplotypeLibrary"//DASH//"Extras")
 			if (params%outputSurrogates .or. params%outputSurrogatesSummary) then
-                call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"Miscellaneous")
-            end if
+				call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"Miscellaneous")
+			end if
 
 			if (params%outputIndivMistakes .or. params%outputIndivMistakesPercent .or. params%outputCoreMistakesPercent) then
 				call system(MD // trim(params%outputDirectory)//DASH//trim(params%resultFolderPath) // DASH //"Simulation")
@@ -1015,7 +1015,7 @@ module InputOutput
 			print*, ""
 			print*, "                              ************************                         "
 			print*, "                              *                      *                         "
-        print*, "                              *   AlphaPhase 1.3.7   *                         "
+			print*, "                              *   AlphaPhase 1.3.7   *                         "
 			print*, "                              *                      *                         "
 			print*, "                              ************************                         "
 			print*, "                                                                              "
@@ -1095,7 +1095,7 @@ module InputOutput
 
 			do i = 1, nHaps
 				hap = library%getHap(i)
-            if (params%outputHaplotypeLibraryText) then
+				if (params%outputHaplotypeLibraryText) then
 					write (haplibunit, fmt) i, library%getHapFreq(i), " ", hap%toIntegerArray()
 
 				end if
@@ -1125,6 +1125,8 @@ module InputOutput
 
 			call MakeDirectories(params)
 			! write out core index -
+
+			print *, "pre Core"
 			do i = 1, results%nCores
 				id = results%ids(i)
 				call WriteHapLib(results%libraries(i), id, params)
@@ -1141,13 +1143,16 @@ module InputOutput
 					call writeTestResults(results%testResults(i), results%cores(i), p, id, params)
 				end if
 			enddo
-        if (params%outputCombined) then
-            call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
-        end if
+            print *, "pre combined"
+			if (params%outputCombined) then
+				call WriteOutResults(results%cores,results%startIndexes,results%endIndexes,p,params)
+			end if
+            print *, "pre outputcoremistake"
 			if (params%outputGlobalCoreMistakesPercent) then
 				call makeCoreMistakes(params, results%nCores)
 			end if
-    end subroutine writeAlphaPhaseResults
+			print *, "finished"
+		end subroutine writeAlphaPhaseResults
 
 		subroutine makeCoreMistakes(params, nCores)
 			use OutputParametersModule
@@ -1484,4 +1489,5 @@ module InputOutput
 			print *, "                              Compiled: "//__DATE__//", "//__TIME__
 		end subroutine PrintVersion
 end module InputOutput
+
 
