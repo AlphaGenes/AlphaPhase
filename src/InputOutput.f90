@@ -1134,6 +1134,7 @@ module InputOutput
 				id = results%ids(i)
                 print *, "pre haplib"
 				call WriteHapLib(results%libraries(i), id, params)
+                 print *, "pre hapCom"
 				if (params%outputHapCommonality) then
 					call HapCommonality(results%libraries(i), id, params)
 				end if
