@@ -29,8 +29,6 @@ contains
         character (len = 300) :: iterateType
         integer, intent(in) :: iterateNumber
 
-        print *, iterateType
-
         if (iterateType .eq. "Off") then
             call createAll(manager, c)
         end if
