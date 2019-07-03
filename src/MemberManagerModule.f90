@@ -29,11 +29,16 @@ contains
         character (len = 300) :: iterateType
         integer, intent(in) :: iterateNumber
 
+        print *, iterateType
+
         if (iterateType .eq. "Off") then
             call createAll(manager, c)
         end if
         if (iterateType .eq. "RandomOrder") then
             call createRandomOrder(manager, c, iterateNumber)
+        end if
+        if (iterateType .eq. "FixedOrder") then
+            call createFixedOrder(manager, c, iterateNumber)
         end if
         if (iterateType .eq. "Cluster") then
             call createCluster(manager, c, iterateNumber)
@@ -69,7 +74,7 @@ contains
         manager%curPos = 1
         manager%random = .false.
     end subroutine createPedigreeOrder
-
+    
     subroutine createRandomOrder(manager, c, number)
         use Random
 
@@ -81,7 +86,7 @@ contains
 
         manager%c => c
 
-        call system_clock(nCount)
+        call system_clock(nCount) 
         secs = mod(nCount, int(1e6))
 
         nAnisG = c%getNAnisG()
@@ -93,6 +98,34 @@ contains
         manager%curPos = 1
         manager%random = .true.
     end subroutine createRandomOrder
+
+    subroutine createFixedOrder(manager, c, number)
+        use Random
+
+        class(MemberManager) :: manager
+        class(CoreType), intent(in), target :: c
+        integer, intent(in) :: number
+
+        integer :: nAnisG, secs, nCount
+
+        manager%c => c
+
+        ! OLD LINES
+        ! call system_clock(nCount) 
+        ! secs = mod(nCount, int(1e6))
+
+        ! NEW LINES
+        secs = mod(c%nCoreSnps, int(1e6))    
+
+        nAnisG = c%getNAnisG()
+        allocate(manager%order(nAnisG))
+        call RandomOrder(manager%order, nAnisG, 1, -abs(secs))
+
+        manager%noneleft = .false.
+        manager%number = number
+        manager%curPos = 1
+        manager%random = .true.
+    end subroutine createFixedOrder
 
     subroutine createCluster(manager, c, number)
         use GenotypeModule
