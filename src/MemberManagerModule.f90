@@ -122,7 +122,7 @@ contains
         manager%noneleft = .false.
         manager%number = number
         manager%curPos = 1
-        manager%random = .true.
+        manager%random = .false.
     end subroutine createFixedOrder
 
     subroutine createCluster(manager, c, number)
