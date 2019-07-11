@@ -23,11 +23,11 @@ module MemberManagerModule
 
 contains
 
-    function newMemberManager(c, iterateType, iterateNumber) result(manager)
+    function newMemberManager(c, iterateType, iterateNumber, seedOffset) result(manager)
         class(CoreType), intent(in) :: c
         type(MemberManager) :: manager
         character (len = 300) :: iterateType
-        integer, intent(in) :: iterateNumber
+        integer, intent(in) :: iterateNumber, seedOffset
 
         if (iterateType .eq. "Off") then
             call createAll(manager, c)
@@ -36,7 +36,7 @@ contains
             call createRandomOrder(manager, c, iterateNumber)
         end if
         if (iterateType .eq. "FixedOrder") then
-            call createFixedOrder(manager, c, iterateNumber)
+            call createFixedOrder(manager, c, iterateNumber, seedOffset)
         end if
         if (iterateType .eq. "Cluster") then
             call createCluster(manager, c, iterateNumber)
@@ -97,12 +97,12 @@ contains
         manager%random = .true.
     end subroutine createRandomOrder
 
-    subroutine createFixedOrder(manager, c, number)
+    subroutine createFixedOrder(manager, c, number, seedOffset)
         use Random
 
         class(MemberManager) :: manager
         class(CoreType), intent(in), target :: c
-        integer, intent(in) :: number
+        integer, intent(in) :: number, seedOffset
 
         integer :: nAnisG, secs, nCount
 
@@ -113,11 +113,13 @@ contains
         ! secs = mod(nCount, int(1e6))
 
         ! NEW LINES
-        secs = mod(c%nCoreSnps, int(1e6))    
+        secs = mod(c%nCoreSnps + seedOffset, int(1e6))    
 
         nAnisG = c%getNAnisG()
         allocate(manager%order(nAnisG))
         call RandomOrder(manager%order, nAnisG, 1, -abs(secs))
+
+        ! print *, number, c%nCoreSnps, seedOffset, secs, manager%order(1)
 
         manager%noneleft = .false.
         manager%number = number

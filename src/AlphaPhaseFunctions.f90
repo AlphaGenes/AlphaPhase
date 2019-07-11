@@ -142,7 +142,8 @@ contains
             end if
 
             do i = 1, params%NumIter
-                manager = MemberManager(c, params%iterateType, params%iterateNumber)
+                ! print *, i, StartCoreSnp, EndCoreSnp
+                manager = MemberManager(c, params%iterateType, params%iterateNumber, StartCoreSnp+EndCoreSnp)
 
                 subsetCount = 0
                 do while (manager%hasNext())
