@@ -12,7 +12,7 @@ mkdir AlphaPhase
 cp -r example AlphaPhase
 
 # Copy in the documentation.
-cp AlphaPhase-docs/build/latex/AlphaPhase.pdf AlphaPhase/AlphaPhase.pdf
+cp AlphaPhase-doc/build/latex/AlphaPhase.pdf AlphaPhase/AlphaPhase.pdf
 
 # Copy in the binaries
 cp binaries/* AlphaPhase
