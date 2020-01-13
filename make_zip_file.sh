@@ -1,3 +1,4 @@
+rm -rf AlphaPhase
 mkdir AlphaPhase
 
 # Assumes that the program and manual have both been built.

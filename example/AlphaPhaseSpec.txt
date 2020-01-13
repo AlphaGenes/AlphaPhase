@@ -1,0 +1,21 @@
+PedigreeFile, Pedigree.txt
+GenotypeFile,  Genotypes.txt,  GenotypeFormat
+NumberOfSnp                     ,1000
+GeneralCoreAndTailLength,100
+GeneralCoreLength,50,NotOffset
+UseThisNumberOfSurrogates       ,10
+PercentageSurrDisagree          ,10.0
+PercentageGenoHaploDisagree     ,0.0
+GenotypeMissingErrorPercentage  ,0.0
+NrmThresh                       ,0.0
+FullOutput                      ,0
+Graphics                        ,0
+Simulation                      ,0
+TruePhaseFile                   ,None
+CoreAtTime                      ,0
+IterateMethod                   ,Off
+IterateSubsetSize               ,500
+IterateIterations               ,1
+Cores                           ,1,Combine
+MinHapFreq                      ,1
+Library                         ,None
