@@ -1015,7 +1015,7 @@ module InputOutput
 			print*, ""
 			print*, "                              ************************                         "
 			print*, "                              *                      *                         "
-			print*, "                              *   AlphaPhase 1.3.7   *                         "
+			print*, "                              *   AlphaPhase 1.3.8   *                         "
 			print*, "                              *                      *                         "
 			print*, "                              ************************                         "
 			print*, "                                                                              "
