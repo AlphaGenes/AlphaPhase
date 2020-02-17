@@ -8,12 +8,17 @@ mkdir AlphaPhase
 #cmake . ; make
 
 # to build the manual using Sphinx:
-#( cd alphaphase-docs ; make latexpdf )
+#( cd alphaphase-doc ; make latexpdf )
 
 cp -r example AlphaPhase
 
 # Copy in the documentation.
 cp AlphaPhase-doc/build/latex/AlphaPhase.pdf AlphaPhase/AlphaPhase.pdf
+
+if [ $? != 0 ]; then                   # last command: echo
+    echo "The manual needs to be built." # last command: [
+    exit 1
+fi
 
 # Copy in the binaries
 cp binaries/* AlphaPhase
