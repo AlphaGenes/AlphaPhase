@@ -8,7 +8,7 @@ mkdir AlphaPhase
 #cmake . ; make
 
 # to build the manual using Sphinx:
-#( cd alphaphase-doc ; make latexpdf )
+( cd alphaphase-doc ; make latexpdf )
 
 cp -r example AlphaPhase
 
