@@ -31,4 +31,6 @@ commit=`git rev-parse --short HEAD`
 echo Version: $version > AlphaPhase/version.txt
 echo Commit: $commit >> AlphaPhase/version.txt
 
+cp MIT_License.txt AlphaPhase
+
 zip -r AlphaPhase.zip AlphaPhase
