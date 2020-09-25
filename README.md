@@ -1,4 +1,4 @@
-AlphaImpute
+AlphaPhase
 ===========
 
 AlphaPhase is a software package for phasing genotype data. The program implements methods to determine phase using an extended Long Range Phasing (Kong et al., 2008, Hickey et al., 2011) and Haplotype Library Imputation (Hickey et al., 2011). AlphaPhase consists of a single program. All information on the model of analysis, input files and their layout, is specified in a parameter file.
