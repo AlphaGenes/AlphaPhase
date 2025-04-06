@@ -700,8 +700,8 @@ module InputOutput
 			singleRun = (params%params%StartCoreChar .eq. "0")
 			! Should probably have an input option to always output per core even when a single run - hence two lines here - but not
 			! currently implemented
-			params%outputParams%outputPerCore = .not. singleRun
-			params%outputParams%outputCombined = singleRun
+			params%outputParams%outputPerCore = .true.
+			params%outputParams%outputCombined = .true.
 
 			! No purpose is served in writing out swappable info if data is prephased
 			params%outputParams%outputSwappable = params%outputParams%outputSwappable .and. (.not. (params%GenotypeFileFormat /= 2))

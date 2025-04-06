@@ -132,14 +132,16 @@ contains
         class(MemberManager) :: manager
         class(CoreType), intent(in), target :: c
         integer, intent(in) :: number
+		integer :: nAnisG
+        logical, allocatable :: used(:)
 
-        logical, dimension(c%getNAnisG()) :: used
-        integer :: nAnisG, numUsed, curMax, curOrder, seed, i, curIndiv, curSize
+        integer :: numUsed, curMax, curOrder, seed, i, curIndiv, curSize
         type(Genotype), pointer :: g1, g2
 
         manager%c => c
 
-        nAnisG = c%getNAnisG()
+		nAnisG = c%getNAnisG()
+        allocate(used(nAnisG))
         allocate(manager%order(nAnisG))
         used = .false.
         numUsed = 0
